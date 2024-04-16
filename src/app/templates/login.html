@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'includes/styles-imports.html' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" />
+    <title>Iniciar Sesion</title>
+</head>
+
+<body>
+
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+
+        <br>
+        <div class="alert alert-primary alert-dismissible" role="alert">
+            <strong>{{ message }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <header class="header">
+            <h1 id="title" class="text-center">Inicio de Sesion</h1>
+        </header>
+        <div class="form-wrap">
+            <form id="survey-form" action="/login" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label id="username-label" for="username">Usuario</label>
+                    <input type="text" name="username" id="username" placeholder="Ingrese su nombre de usuario"
+                        class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label id="password-label" for="password">Constraseña</label>
+                    <input type="password" name="password_hash" id="password" placeholder="Ingrese su contraseña"
+                        class="form-control" required>
+                </div>
+
+                <div class="btn-signin">
+                    <div class="btn-login">
+                        <button type="submit" id="submit" class="btn btn-primary">Iniciar Sesion</button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    {% include 'includes/js-imports.html' %}
+
+</body>
+
+</html>
