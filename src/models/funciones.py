@@ -9,7 +9,6 @@ import pandas as pd
 import paramiko
 from scapy.all import *
 
-# import pymysql
 import re
 
 import subprocess
@@ -34,7 +33,7 @@ def validar_ingreso(username, password_hash):
     try:
         user = User(0, username, password_hash)
         logged_user = modelUser.login(user)
-        if logged_user != None:
+        if logged_user is not None:
             if logged_user.password_hash:
                 login_user(logged_user)
                 return True
@@ -70,9 +69,7 @@ def obtener_reglas_ufw():
         rule_db = modelFirewall.getRules()
 
         if rule_db:
-
             for rule_tuple in rule_db:
-
                 domain = ""
                 domains = ""
 
@@ -84,14 +81,13 @@ def obtener_reglas_ufw():
                 assigned_name = (
                     rule_tuple[1].title().replace("_", " ").replace("-", " ")
                 )
-                status = rule_tuple[3]
-                created_date = rule_tuple[4].strftime("%Y-%m-%d")
+                status = rule_tuple[4]
+                created_date = rule_tuple[3].strftime("%Y-%m-%d")
                 tipo_regla = rule_tuple[2].title()
 
                 detail_domain_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
 
                 for detail_domain in detail_domain_rules:
-
                     rule_detail_parts = detail_domain[1].split(" comment ")
                     rule_detail_command = rule_detail_parts[0].split()
 
@@ -206,32 +202,30 @@ def obtener_reglas_ufw_contenido():
 
         if rule_db:
             for rule_tuple in rule_db:
-
                 id_regla = rule_tuple[0]
                 name_rule = rule_tuple[1]
-                print(name_rule)
+
                 assigned_name = (
                     name_rule.split(" - ")[1].strip().replace("_", " ").lower().title()
                 )
 
-                created_date = rule_tuple[4].strftime("%Y-%m-%d")
+                created_date = rule_tuple[3].strftime("%Y-%m-%d")
 
                 detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
 
                 for detail_rule in detail_rules:
-
                     rule_datail_id = detail_rule[0]
                     rule_string = detail_rule[1]
                     rule_status = detail_rule[2]
 
-                    rule_parts = rule_string.split(" comment ")
+                    rule_parts = rule_string.split(" -m comment --comment ")
 
                     rule_command = rule_parts[0].split()
                     domain = rule_parts[1].split("-", 2)[2].strip().replace("'", "")
 
-                    if "allow" in rule_command:
+                    if "ACCEPT" in rule_command:
                         permiso = "PERMITIDO"
-                    elif "reject" in rule_command:
+                    elif "REJECT" in rule_command:
                         permiso = "DENEGADO"
 
                     if "tcp" in rule_command:
@@ -241,9 +235,9 @@ def obtener_reglas_ufw_contenido():
                     else:
                         protocolo = "TCP/UDP"
 
-                    if "in" in rule_command:
+                    if "INPUT" in rule_command:
                         entry = "ENTRADA"
-                    elif "out" in rule_command:
+                    elif "OUTPUT" in rule_command:
                         entry = "SALIDA"
                     else:
                         entry = "ENTRADA"
@@ -316,10 +310,9 @@ def scan_network():
 def start_capture(
     command_filter,
 ):
-
     if command_filter == "":
         custom_command = (
-            f"(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
+            "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
         )
     else:
         custom_command = command_filter
@@ -357,7 +350,6 @@ def start_capture(
     )
 
     for line in process.stdout:
-
         if "ARP" in line:
             arp_info = line.strip().split(",")
             arp_parts = arp_info[0].split(" ")
@@ -385,7 +377,6 @@ def start_capture(
         current_part = ""
 
         for char in combined_line:
-
             if char == "(":
                 parenthesis_count += 1
             elif char == ")":
@@ -430,9 +421,8 @@ def start_capture(
 
 
 def pre_start_capture():
-
     custom_command = (
-        f"(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
+        "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
     )
 
     base_command = [
@@ -466,7 +456,6 @@ def pre_start_capture():
     packet_count = 0
 
     for line in process.stdout:
-
         if "ARP" in line:
             arp_info = line.strip().split(",")
             arp_parts = arp_info[0].split(" ")
@@ -494,7 +483,6 @@ def pre_start_capture():
         current_part = ""
 
         for char in combined_line:
-
             if char == "(":
                 parenthesis_count += 1
             elif char == ")":
@@ -546,25 +534,41 @@ def pre_start_capture():
 
 def delete_rule(regla_content_id, id_regla):
     try:
-
         if regla_content_id:
-
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
             rule_string = rule_detail[1]
+            estado_detail = rule_detail[2]
 
-            rule_delete = f"sudo ufw delete {rule_string}"
-            subprocess.run(
-                shlex.split(f"{rule_delete}"),
-                input="y\n",
-                text=True,
-                capture_output=True,
+            rule_detail_name = rule_string.split(" -m comment --comment ")[1].replace(
+                "'", ""
             )
+
+            if estado_detail == 1:
+                if "INPUT" in rule_string:
+                    direccion = "INPUT"
+                elif "OUTPUT" in rule_string:
+                    direccion = "OUTPUT"
+
+                salida_iptables = subprocess.check_output(
+                    [
+                        "sudo",
+                        "iptables",
+                        "-L",
+                        direccion,
+                        "--line-numbers",
+                        "-n",
+                    ]
+                )
+
+                iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
 
             modelFirewallDetail.deleteDetailById(regla_content_id)
 
         else:
-
             rule_db_filter = modelFirewall.getRuleById(id_regla)
+
+            rule_name = rule_db_filter[2]
+            tipo_regla = rule_db_filter[3]
 
             numero_data = int(rule_db_filter[5])
 
@@ -572,61 +576,95 @@ def delete_rule(regla_content_id, id_regla):
 
             if numero_data == 1:
                 for detail_rule in detail_rules:
-                    rule_string = ""
                     rule_string = detail_rule[1]
-                    print(rule_string)
 
-                    rule_delete = f"sudo ufw delete {rule_string}"
-                    subprocess.run(
-                        shlex.split(f"{rule_delete}"),
-                        input="y\n",
-                        text=True,
-                        capture_output=True,
+                    if tipo_regla == "contenido" or tipo_regla == "dominio":
+                        if "INPUT" in rule_string:
+                            direccion = "INPUT"
+                        elif "OUTPUT" in rule_string:
+                            direccion = "OUTPUT"
+
+                    else:
+                        rule_delete = (
+                            f"sudo {rule_string.replace('ufw ', 'ufw delete ')}"
+                        )
+
+                        print(rule_delete)
+
+                        subprocess.run(
+                            shlex.split(f"{rule_delete}"),
+                            input="y\n",
+                            text=True,
+                            capture_output=True,
+                        )
+
+                if tipo_regla == "contenido" or tipo_regla == "dominio":
+                    salida_iptables = subprocess.check_output(
+                        [
+                            "sudo",
+                            "iptables",
+                            "-L",
+                            direccion,
+                            "--line-numbers",
+                            "-n",
+                        ]
                     )
+
+                    iptables_rules_matched(salida_iptables, rule_name, direccion)
 
             modelFirewallDetail.deleteRuleDetail(id_regla)
             modelFirewall.deleteRule(id_regla)
 
-        return f"Regla Eliminada Correctamente"
+        return "Regla Eliminada Correctamente"
     except subprocess.CalledProcessError as e:
         return f"Error al obtener el número de la regla: {e}"
 
 
 def deactivate_activate_rule(id_regla, regla_content_id):
     try:
-
         if regla_content_id:
-
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
             rule_string = rule_detail[1]
             estado_detail = rule_detail[2]
-            print(rule_detail[1])
+
+            rule_detail_name = rule_string.split(" -m comment --comment ")[1].replace(
+                "'", ""
+            )
 
             if estado_detail == 1:
+                if "INPUT" in rule_string:
+                    direccion = "INPUT"
+                elif "OUTPUT" in rule_string:
+                    direccion = "OUTPUT"
 
-                rule_delete = f"sudo ufw delete {rule_string}"
-                subprocess.run(
-                    shlex.split(f"{rule_delete}"),
-                    input="y\n",
-                    text=True,
-                    capture_output=True,
+                salida_iptables = subprocess.check_output(
+                    [
+                        "sudo",
+                        "iptables",
+                        "-L",
+                        direccion,
+                        "--line-numbers",
+                        "-n",
+                    ]
                 )
+
+                iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
                 modelFirewallDetail.updateDetail(0, regla_content_id)
-                print('limipia cache')
-                # clean_cache()
-                return f"Regla Desactivada"
+
+                return "Regla Desactivada"
 
             elif estado_detail == 0:
-
-                rule = f"sudo ufw insert 1 {rule_string}"
+                rule = f"sudo {rule_string}"
                 subprocess.run(shlex.split(f"{rule}"))
 
                 modelFirewallDetail.updateDetail(1, regla_content_id)
-                clean_cache()
-                return f"Regla Activa"
+
+                return "Regla Activa"
 
         elif id_regla and not regla_content_id:
             rule_db_filter = modelFirewall.getRuleById(id_regla)
+
+            rule_name = rule_db_filter[2]
             numero_data = int(rule_db_filter[5])
             tipo_regla = rule_db_filter[3]
 
@@ -634,39 +672,85 @@ def deactivate_activate_rule(id_regla, regla_content_id):
             if rule_db_filter:
                 if numero_data == 1:
                     for detail_rule in detail_rules:
-                        rule_string = ""
+                        rule_detail_id = detail_rule[0]
                         rule_string = detail_rule[1]
-                        print(rule_string)
 
-                        rule_delete = f"sudo ufw delete {rule_string}"
-                        subprocess.run(
-                            shlex.split(f"{rule_delete}"),
-                            input="y\n",
-                            text=True,
-                            capture_output=True,
+                        if tipo_regla == "contenido" or tipo_regla == "dominio":
+                            if "INPUT" in rule_string:
+                                direccion = "INPUT"
+                            elif "OUTPUT" in rule_string:
+                                direccion = "OUTPUT"
+
+                        else:
+                            rule_delete = (
+                                f"sudo {rule_string.replace('ufw ', 'ufw delete ')}"
+                            )
+
+                            print(rule_delete)
+
+                            subprocess.run(
+                                shlex.split(f"{rule_delete}"),
+                                input="y\n",
+                                text=True,
+                                capture_output=True,
+                            )
+
+                        modelFirewallDetail.updateDetail(0, rule_detail_id)
+
+                    if tipo_regla == "contenido" or tipo_regla == "dominio":
+                        salida_iptables = subprocess.check_output(
+                            [
+                                "sudo",
+                                "iptables",
+                                "-L",
+                                direccion,
+                                "--line-numbers",
+                                "-n",
+                            ]
                         )
+
+                        iptables_rules_matched(salida_iptables, rule_name, direccion)
+
                     modelFirewall.updateRule(0, id_regla)
-                    return f"Regla Desactivada"
+                    return "Regla Desactivada"
                 elif numero_data == 0:
                     for detail_rule in detail_rules:
-                        rule_string = ""
+                        rule_detail_id = detail_rule[0]
                         rule_string = detail_rule[1]
-                        if tipo_regla == "contenido" or tipo_regla == "dominio":
-                            rule = f"sudo ufw insert 1 {rule_string}"
-                            subprocess.run(shlex.split(f"{rule}"))
-                        else:
-                            rule = f"sudo ufw {rule_string}"
-                            subprocess.run(shlex.split(f"{rule}"))
 
+                        rule = f"sudo {rule_string}"
+                        subprocess.run(shlex.split(f"{rule}"))
+
+                        modelFirewallDetail.updateDetail(1, rule_detail_id)
                     modelFirewall.updateRule(1, id_regla)
-                    return f"Regla Activa"
+                    return "Regla Activa"
             else:
-                return f"No se encontró una regla con ese nombre"
+                return "No se encontró una regla con ese nombre"
 
-        return f"El nombre de la regla no puede ser None o vacío"
+        return "El nombre de la regla no puede ser None o vacío"
     except subprocess.CalledProcessError as e:
-        print("some passed")
         return f"Error al obtener el número de la regla: {e}"
+
+
+def iptables_rules_matched(salida_iptables, name_iptable, direccion):
+    reglas = salida_iptables.decode("utf-8").splitlines()
+    id_iptable_delete = None
+
+    consulta_formateada = "\n".join(reglas[2:])
+
+    for line in consulta_formateada.splitlines():
+        id_iptable_rule = line.split()[0]
+        if name_iptable in line:
+            if id_iptable_delete is None:
+                id_iptable_delete = id_iptable_rule
+
+            rule_delete = f"sudo iptables -D {direccion} {id_iptable_delete}"
+
+            subprocess.run(
+                shlex.split(f"{rule_delete}"),
+            )
+
+    return "Regla Eliminada"
 
 
 def execute_command(command):
@@ -701,7 +785,7 @@ plataformas = {
         "ec.linkedin.com",
         "linkedin.com",
         "pinterest.com",
-        #"www.pinterest.com",
+        # "www.pinterest.com",
         "snapchat.com",
         "tiktok.com",
         "x.com",
@@ -782,11 +866,11 @@ plataformas = {
     "trabajo_colaborativo": ["dropbox.com"],
     # "videoconferencias": ["zoom.us", "teams.microsoft.com", "google.com/meet"],
     "videoconferencias": ["zoom.us", "teams.microsoft.com"],
-    "apuestas": [   
+    "apuestas": [
         "bet365.com",
-        #"bwin.com",
+        # "bwin.com",
         "www.bwin.com",
-        #"888sport.com",
+        # "888sport.com",
         "www.888sport.com",
         "williamhill.com",
         "betfair.com",
@@ -803,14 +887,14 @@ plataformas = {
 def clean_cache():
     # Obtener los datos del cuerpo de la solicitud
     ip_remota = "192.168.0.105"
-    puerto = 5335 
+    puerto = 5335
     usuario = "kali"
     password = "kali"
     comandos = [
         "pkill firefox",
         "rm -rf ~/.cache/mozilla/firefox/*.default/cache2/*",
         "rm -rf ~/.cache/google-chrome/Default/Cache/*",
-        "firefox &", # Se puede ejecutar como usuario normal
+        "firefox &",  # Se puede ejecutar como usuario normal
     ]
 
     # Verificar que todos los datos necesarios estén presentes
@@ -870,9 +954,7 @@ def allow_connections(
     comment,
     content_tp,
 ):
-
     try:
-
         if protocol == "tcp/udp":
             protocol = ""
 
@@ -887,8 +969,20 @@ def allow_connections(
         rule = f"sudo ufw {accion_regla}"
         fecha_creacion = datetime.now()
 
-        rulesDomain = []
         rulesTypeContent = []
+
+        if tipo_regla == "dominio" or tipo_regla == "contenido":
+            if accion_regla == "allow":
+                accion_regla = "ACCEPT"
+            elif accion_regla == "reject":
+                accion_regla = "REJECT"
+
+            if entry == "in":
+                entry = "INPUT"
+                direction = "-s"
+            elif entry == "out":
+                entry = "OUTPUT"
+                direction = "-d"
 
         if content_tp and not domain:
             for platform in content_tp:
@@ -897,33 +991,29 @@ def allow_connections(
                     rulesContent = []
                     for domainPlataform in plataformas[platform]:
                         comment_content = f"{comment} - {platform_name}"
-                        content_ip = get_domain_info(domainPlataform)
-                        for ip_content in content_ip:
 
-                            rule = f"sudo ufw insert 1 {accion_regla} {entry} {direction} {ip_content}"
+                        rule = f"sudo iptables -I {entry} 1 {direction} {domainPlataform} -j {accion_regla}"
 
-                            rule += f" comment '{comment_content} - {domainPlataform}'"
-                            rulesContent.append(rule)
+                        rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
+                        rulesContent.append(rule)
 
-                            subprocess.run(shlex.split(f"{rule}"))
+                        subprocess.run(shlex.split(f"{rule}"))
                     rulesTypeContent.append((rulesContent, comment_content))
                 else:
                     print(f"Invalid platform: {platform_name}")
-            
+
+            print(rulesTypeContent)
+
         elif domain:
-            domain_ip = get_domain_info(domain)
             comment_domain = f"{comment} - {domain}"
-            for ip in domain_ip:
 
-                rule = f"sudo ufw insert 1 {accion_regla} {entry} {direction} {ip}"
+            rule = f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
 
-                rule += f" comment '{comment_domain}'"
-                rulesDomain.append(rule)
+            rule += f" -m comment --comment '{comment_domain}'"
 
-                subprocess.run(shlex.split(f"{rule}"))
+            subprocess.run(shlex.split(f"{rule}"))
 
         elif (port or portStart or portLimit) and ip_addr and not domain:
-
             if ip_addr and netmask:
                 ip_addr += f"/{netmask}"
             if ip_dest and dest_netmask:
@@ -999,7 +1089,7 @@ def allow_connections(
 
             elif entry and direction and ip_dest and portLimit:
                 rule += f" {entry} {direction} any to {ip_dest} port {portLimit} comment '{comment}'"
-   
+
             elif entry and direction and ip_addr and port and protocol:
                 rule += f" {entry} {direction} {ip_addr} port {port} proto {protocol} comment '{comment}'"
 
@@ -1025,12 +1115,11 @@ def allow_connections(
 
             elif entry and direction and ip_dest and port:
                 rule += f" {entry} {direction} any to {ip_dest} port {port} comment '{comment}'"
-            
+
             subprocess.run(shlex.split(f"{rule}"))
 
         # IPs
         elif ip_addr and not domain:
-
             if ip_addr and netmask:
                 ip_addr += f"/{netmask}"
             if ip_dest and dest_netmask:
@@ -1055,12 +1144,11 @@ def allow_connections(
 
             elif entry and direction and ip_dest:
                 rule += f" {entry} {direction} any to {ip_dest} comment '{comment}'"
-            
+
             subprocess.run(shlex.split(f"{rule}"))
 
         # Port
         elif port or portStart or portLimit and not domain:
-
             if entry and direction and portStart and portLimit and protocol:
                 rule += f" {entry} {direction} any port {portStart}:{portLimit} proto {protocol} comment '{comment}'"
 
@@ -1080,11 +1168,10 @@ def allow_connections(
 
             elif entry and port:
                 rule += f" {entry} {port} comment '{comment}'"
-            
-            subprocess.run(shlex.split(f"{rule}"))
-            
-        if rulesTypeContent:
 
+            subprocess.run(shlex.split(f"{rule}"))
+
+        if rulesTypeContent:
             for rulesContentPlatform in rulesTypeContent:
                 firewall = Firewall(
                     0,
@@ -1097,7 +1184,6 @@ def allow_connections(
                 # Insertamos el firewall y obtenemos su id
                 firewall = modelFirewall.insertRule(firewall)
                 id_rule = firewall.id
-                print(id_rule)
 
                 # Iteramos sobre las reglas de la plataforma actual
                 for rule in rulesContentPlatform[0]:
@@ -1105,10 +1191,7 @@ def allow_connections(
                     firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
                     modelFirewallDetail.insertRuleDetail(firewallDetail)
 
-            clean_cache()
-
-        elif rulesDomain:
-
+        elif domain:
             firewall = Firewall(
                 0,
                 comment_domain,
@@ -1120,12 +1203,9 @@ def allow_connections(
             firewall = modelFirewall.insertRule(firewall)
             id_rule = firewall.id
 
-            for rule in rulesDomain:
-                save_rule = format_rule_save(rule)
-                firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
-                modelFirewallDetail.insertRuleDetail(firewallDetail)
-            
-            clean_cache()
+            save_rule = format_rule_save(rule)
+            firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+            modelFirewallDetail.insertRuleDetail(firewallDetail)
 
         else:
             firewall = Firewall(
@@ -1155,61 +1235,35 @@ def allow_connections_detail(
     entry,
     domain,
 ):
-
     try:
+        if entry == "INPUT":
+            direction = "-s"
+        elif entry == "OUTPUT":
+            direction = "-d"
 
-        if entry == "in":
-            direction = "from"
-        elif entry == "out":
-            direction = "to"
-
-        rulesDomain = []
         rulesSavedDomain = []
 
         detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
 
         for detail_rule in detail_rules:
-
             rule_save_string = detail_rule[1]
-            rule_saved_parts = rule_save_string.split(" comment ")
+            rule_saved_parts = rule_save_string.split(" -m comment --comment ")
             rule_save_command = rule_saved_parts[0]
             rulesSavedDomain.append(rule_save_command)
 
-        domain_ip = get_domain_info(domain)
         comment_domain = f"{regla_name} - {domain}"
-        for ip in domain_ip:
+        rule = f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
 
-            rule = (
-                f"sudo ufw insert 1 {accion_regla} {entry} {direction} {ip} proto tcp"
-            )
+        rule += f" -m comment --comment '{comment_domain}'"
 
-            rule += f" comment '{comment_domain}'"
-            rulesDomain.append(rule)
+        save_rule = format_rule_save(rule)
+        rule_parts = save_rule.split(" -m comment --comment ")
+        rule_command = rule_parts[0]
 
+        if not any(rule_command in detail_rule for detail_rule in rulesSavedDomain):
             subprocess.run(shlex.split(f"{rule}"))
-
-        if rulesDomain:
-
-            unmatched_rules = []
-
-            for rule in rulesDomain:
-                save_rule = format_rule_save(rule)
-                rule_parts = save_rule.split(" comment ")
-                rule_command = rule_parts[0]
-
-                if not any(
-                    rule_command in detail_rule for detail_rule in rulesSavedDomain
-                ):
-                    unmatched_rules.append(save_rule)
-
-            # Imprimir los valores de unmatched_rules
-            for unmatched_rule in unmatched_rules:
-                print("Valor de rulesDomain que no hizo match:", unmatched_rule)
-
-                firewallDetail = FirewallDetail(0, id_regla, unmatched_rule, 1)
-                modelFirewallDetail.insertRuleDetail(firewallDetail)
-
-        clean_cache()
+            firewallDetail = FirewallDetail(0, id_regla, save_rule, 1)
+            modelFirewallDetail.insertRuleDetail(firewallDetail)
 
         return "Regla creada correctamente"
     except subprocess.CalledProcessError:
@@ -1217,11 +1271,7 @@ def allow_connections_detail(
 
 
 def format_rule_save(rule):
-
-    if "insert 1" in rule:
-        formatted_rule = rule.replace("sudo ufw insert 1 ", "")
-    else:
-        formatted_rule = rule.replace("sudo ufw ", "")
+    formatted_rule = rule.replace("sudo ", "")
 
     return formatted_rule
 
@@ -1271,7 +1321,6 @@ def save_filter(
     logic_operator_proto_red_proto,
 ):
     try:
-
         type_filter = ""
         filter_values = [type_ip, type_content, type_mac, type_port, type_proto_red]
 
@@ -1481,11 +1530,11 @@ def save_filter(
 
         # Manejo de protocolos  ||  Siempre debe ir al final
         if packet_protocol == "tcp":
-            protocol_custom = f"(tcp)"
+            protocol_custom = "(tcp)"
         elif packet_protocol == "udp":
-            protocol_custom = f"(udp)"
+            protocol_custom = "(udp)"
         elif packet_protocol == "tcp/udp":
-            protocol_custom = f"(tcp or udp)"
+            protocol_custom = "(tcp or udp)"
 
         # Unir elementos para formar el filtro
         if ips_custom and port_custom and protocol_custom:
@@ -1519,8 +1568,6 @@ def save_filter(
 
         return "Filtro guardado correctamente"
     except Exception as e:
-        traceback.print_exc()
-        print("some passed again", str(e))
         return f"Error al guardar el filtro: {str(e)}"
 
 
@@ -1690,7 +1737,7 @@ def delete_report(id_reporte):
         print(id_reporte)
         modelPaquetes.deletePacket(id_reporte)
 
-        return f"Reporte Eliminado"
+        return "Reporte Eliminado"
     except subprocess.CalledProcessError as e:
         # Maneja cualquier error que pueda ocurrir durante la ejecución del comando
         print(f"Error al obtener el número de la regla: {e}")

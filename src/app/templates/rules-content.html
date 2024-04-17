@@ -153,18 +153,18 @@
 
                                     <div class="rule-name">
 
-                                        <div class="form-group">
+                                        <!-- <div class="form-group">
                                             <label for="comment">Nombre de la Regla</label>
                                             <input id="comment" class="form-control" name="comment"
                                                 placeholder="Ingrese el nombre de la regla" />
-                                        </div>
+                                        </div> -->
 
                                         <div class="form-group">
                                             <label for="regla">Accion de la regla</label>
                                             <select class="form-select" name="action_rule" id="formSelectAction">
                                                 <option value="" selected disabled>Seleccionar...</option>
-                                                <option value="allow">Permitir</option>
-                                                <option value="deny">Denegar</option>
+                                                <option value="ACCEPT">Permitir</option>
+                                                <option value="REJECT">Denegar</option>
                                             </select>
                                         </div>
 
@@ -172,8 +172,8 @@
                                             <label for="selectEntry">Dirección de la Regla</label>
                                             <select class="form-select" name="entry" id="selectEntry">
                                                 <option value="" selected>Seleccionar...</option>
-                                                <option value="in">Entrada</option>
-                                                <option value="out">Salida</option>
+                                                <option value="INPUT">Entrada</option>
+                                                <option value="OUTPUT">Salida</option>
                                             </select>
                                         </div>
 

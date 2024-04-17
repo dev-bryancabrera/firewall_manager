@@ -1,10 +1,8 @@
-from flask import jsonify
 from .entities.user import User
 from .db.connectDB import get_connection
 
 
 class modelUser:
-
     @classmethod
     def login(self, user):
         try:
@@ -16,7 +14,7 @@ class modelUser:
             cursor.execute(sql)
             row = cursor.fetchone()
             db.close()
-            if row != None:
+            if row is not None:
                 user = User(
                     row[0], row[1], User.check_password(row[2], user.password_hash)
                 )
@@ -35,7 +33,7 @@ class modelUser:
             cursor.execute(sql)
             row = cursor.fetchone()
             db.close()
-            if row != None:
+            if row is not None:
                 logged_user = User(row[0], row[1], None)
                 return logged_user
             else:

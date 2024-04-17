@@ -4,6 +4,7 @@ from .connectDB import get_connection
 class createTable:
     @classmethod
     def createTables(self):
+        db = None
         try:
             db = get_connection()
             cursor = db.cursor()

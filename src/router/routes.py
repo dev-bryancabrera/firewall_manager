@@ -218,7 +218,7 @@ def configurar_rutas(app, login_manager_app):
         try:
             id_regla = request.form.get("rule_id")
             regla_name = request.form.get("name_detail_rule")
-            comment = request.form.get("comment")
+            # comment = request.form.get("comment")
             accion_regla = request.form.get("action_rule")
             entry = request.form.get("entry")
             domain = request.form.get("domain")

@@ -151,7 +151,7 @@ $(document).ready(function () {
       protocolContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", true);
-    } else if (selectedOption === "direcicon ip y puerto") {
+    } else if (selectedOption === "direccion ip y puerto") {
       ipAddrInput.prop("disabled", false);
       selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);

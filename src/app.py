@@ -4,7 +4,7 @@ from flask_wtf.csrf import CSRFProtect
 import subprocess
 
 # Crear tablas
-from models.db.createTables import createTable
+# from models.db.createTables import createTable
 
 from config import config
 from router.routes import configurar_rutas
@@ -29,7 +29,7 @@ block_all_command = ["sudo", "ufw", "default", "deny", "outgoing"]
 subprocess.run(block_all_command)
 subprocess.run(block_all_command)
 
-crearTablas = createTable.createTables()
+# crearTablas = createTable.createTables()
 
 def status_401(error):
     return redirect(url_for("login"))
