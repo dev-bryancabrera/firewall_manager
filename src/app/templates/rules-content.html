@@ -1,262 +1,400 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {% include 'includes/styles-imports.html' %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.4.1/css/mdb.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/rules-content.css') }}">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.4.1/css/mdb.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/rules-content.css') }}"
+    />
     <title>Configurar reglas por contenido</title>
-</head>
+  </head>
 
-<body>
-
-    {% extends 'navbar.html' %}
-
-    {% block content %}
+  <body>
+    {% extends 'navbar.html' %} {% block content %}
 
     <section class="content-rules">
+      <div class="tables-contents">
+        <div class="container-title">
+          <h2 class="title-content">Configurar Reglas por Contenido</h2>
+        </div>
 
-        <div class="tables-contents">
+        <div class="table-firewall-data">
+          <div class="firewall-rules-content">
+            {% if reglas_contenido %} {% for contenido, reglas in
+            reglas_contenido.items() %}
 
-            <div class="container-title">
-                <h2 class="title-content">Configurar Reglas por Contenido</h2>
+            <div class="type_content">
+              <h3 class="type">{{ contenido[0] }}</h3>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="btn-agree-rule"
+                data-bs-toggle="modal"
+                data-bs-target="#modalDomain"
+                data-regla-id="{{ contenido[1] }}"
+                data-regla-nombre="{{ contenido[2] }}"
+              >
+                <i class="fas fa-plus"></i> Agregar Dominio
+              </button>
             </div>
 
-            <div class="table-firewall-data">
-                <div class="firewall-rules-content">
-
-                    {% if reglas_contenido %}
-                    {% for contenido, reglas in reglas_contenido.items() %}
-
-                    <div class="type_content">
-
-                        <h3 class="type">{{ contenido[0] }}</h3>
-                        <button type="button" class="btn btn-primary" id="btn-agree-rule" data-bs-toggle="modal"
-                            data-bs-target="#modalDomain" data-regla-id="{{ contenido[1] }}"
-                            data-regla-nombre="{{ contenido[2] }}">
-                            <i class="fas fa-plus"></i> Agregar Dominio
-                        </button>
-
-                    </div>
-
-                    <table id="tableFirewallContent_{{ loop.index }}" class="table">
-                        <!-- El encabezado de la tabla -->
-                        <thead class="thead-dark">
-                            <tr>
-                                <th data-field="number" data-sortable="true">N° REGLA</th>
-                                <th data-field="name" data-sortable="true" style="min-width: 180px;">DOMINOS DE
-                                    CONTENIDO</th>
-                                <th data-field="created_date" data-sortable="true">FECHA DE CREACION</th>
-                                <th data-field="action" data-sortable="true" style="min-width: 150px;">ACCION DE
-                                    FIREWALL</th>
-                                <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
-                                <th data-field="entry" data-sortable="true" style="min-width: 150px;">DIRECCION DE REGLA
-                                </th>
-                                <th data-field="en/dis"></th>
-                                <th data-field="delete"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for regla in reglas %}
-                            <!-- Filas de la tabla -->
-                            <tr>
-                                <td class="numero">{{ loop.index }}</td>
-                                <td class="nombre">{{ regla['nombre'] }}</td>
-                                <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
-                                <td class="accion">{{ regla['accion'] }}</td>
-                                <td class="protocolo">{{ regla['protocolo'] }}</td>
-                                <td class="entrada">{{ regla['entrada'] }}</td>
-                                <td>
-                                    {% if regla['estado'] == 1 %}
-                                    <a href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
-                                        class="btn btn-success">Desactivar</a>
-                                    {% elif regla['estado'] == 0 %}
-                                    <a href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
-                                        class="btn btn-secondary">Activar</a>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-danger" id="btn-delete-rule"
-                                        data-bs-toggle="modal" data-bs-target="#confirmarEliminar"
-                                        data-regla-detail-id="{{ regla['id_rule_detail'] }}"
-                                        data-regla-nombre="{{ regla['nombre_regla_contenido'] }}">
-                                        Eliminar Regla
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% endfor %}
-                    {% else %}
-                    <!-- Si no hay datos, muestra una tabla vacía o un mensaje indicando que no hay datos -->
-                    <p>No hay datos disponibles.</p>
+            <table id="tableFirewallContent_{{ loop.index }}" class="table">
+              <!-- El encabezado de la tabla -->
+              <thead class="thead-dark">
+                <tr>
+                  <th data-field="number" data-sortable="true">N° REGLA</th>
+                  <th
+                    data-field="name"
+                    data-sortable="true"
+                    style="min-width: 180px"
+                  >
+                    DOMINOS DE CONTENIDO
+                  </th>
+                  <th data-field="created_date" data-sortable="true">
+                    FECHA DE CREACION
+                  </th>
+                  <th
+                    data-field="action"
+                    data-sortable="true"
+                    style="min-width: 150px"
+                  >
+                    ACCION DE FIREWALL
+                  </th>
+                  <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
+                  <th
+                    data-field="entry"
+                    data-sortable="true"
+                    style="min-width: 150px"
+                  >
+                    DIRECCION DE REGLA
+                  </th>
+                  <th data-field="en/dis"></th>
+                  <th data-field="delete"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for regla in reglas %}
+                <!-- Filas de la tabla -->
+                <tr>
+                  <td class="numero">{{ loop.index }}</td>
+                  <td class="nombre">{{ regla['nombre'] }}</td>
+                  <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
+                  <td class="accion">{{ regla['accion'] }}</td>
+                  <td class="protocolo">{{ regla['protocolo'] }}</td>
+                  <td class="entrada">{{ regla['entrada'] }}</td>
+                  <td>
+                    {% if regla['estado'] == 1 %}
+                    <a
+                      href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
+                      class="btn btn-success"
+                      >Desactivar</a
+                    >
+                    {% elif regla['estado'] == 0 %}
+                    <a
+                      href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
+                      class="btn btn-secondary"
+                      >Activar</a
+                    >
                     {% endif %}
-                </div>
-            </div>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      id="btn-delete-rule"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmarEliminar"
+                      data-regla-detail-id="{{ regla['id_rule_detail'] }}"
+                      data-regla-nombre="{{ regla['nombre_regla_contenido'] }}"
+                    >
+                      Eliminar Regla
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% endfor %} {% else %}
+            <!-- Si no hay datos, muestra una tabla vacía o un mensaje indicando que no hay datos -->
+            <p>No hay datos disponibles.</p>
+            {% endif %}
+          </div>
         </div>
+      </div>
 
-        <!-- Modal Eliminar Regla -->
-        <div class="modal fade" id="confirmarEliminar" tabindex="-1" aria-labelledby="confirmacionModalLabel"
-            aria-hidden="true">
-            <input type="hidden" name="rule_name" id="rule_name" value="{{ rule_number }}">
-            <input type="hidden" name="rule_number" id="rule_number" value="{{ rule_name }}">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="confirmacionModalLabel">
-                            Confirmar Eliminación
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body">
-                        <span id="confirmDelete">¿Estás seguro de que deseas eliminar la regla?</span>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            Cancelar
-                        </button>
-                        <button class="btn btn-danger" id="deleteRuleConfirm">Eliminar</button>
-                    </div>
-                </div>
+      <!-- Modal Eliminar Regla -->
+      <div
+        class="modal fade"
+        id="confirmarEliminar"
+        tabindex="-1"
+        aria-labelledby="confirmacionModalLabel"
+        aria-hidden="true"
+      >
+        <input
+          type="hidden"
+          name="rule_name"
+          id="rule_name"
+          value="{{ rule_number }}"
+        />
+        <input
+          type="hidden"
+          name="rule_number"
+          id="rule_number"
+          value="{{ rule_name }}"
+        />
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="confirmacionModalLabel">
+                Confirmar Eliminación
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Cerrar"
+              ></button>
             </div>
+            <div class="modal-body">
+              <span id="confirmDelete"
+                >¿Estás seguro de que deseas eliminar la regla?</span
+              >
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button class="btn btn-danger" id="deleteRuleConfirm">
+                Eliminar
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Modal Crear Regla -->
-        <div class="modal fade left" id="modalDomain" tabindex="-1" aria-labelledby="modalReglasLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-notify modal-info">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalReglasLabel">Crear Nueva Regla</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="container-ssh">
-                            <div class="subtitle">
-                                <h2>Regla</h2>
-                            </div>
+      <!-- Modal Crear Regla -->
+      <div
+        class="modal fade left"
+        id="modalDomain"
+        tabindex="-1"
+        aria-labelledby="modalReglasLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered modal-notify modal-info">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalReglasLabel">
+                Crear Nueva Regla
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="container-ssh">
+                <div class="subtitle">
+                  <h2>Regla</h2>
+                </div>
 
-                            <div class="form-wrap">
+                <div class="form-wrap">
+                  <form class="form-content" id="formFirewall">
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <input
+                      type="hidden"
+                      id="rule-detail-name"
+                      name="name_detail_rule"
+                      value="{{ name_detail_rule }}"
+                    />
+                    <input
+                      type="hidden"
+                      id="rule_id"
+                      name="rule_id"
+                      value="{{ rule_id }}"
+                    />
 
-                                <form class="form-content" id="formFirewall">
-
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" id="rule-detail-name" name="name_detail_rule"
-                                        value="{{ name_detail_rule }}">
-                                    <input type="hidden" id="rule_id" name="rule_id" value="{{ rule_id }}">
-
-                                    <div class="rule-name">
-
-                                        <!-- <div class="form-group">
+                    <div class="rule-name">
+                      <!-- <div class="form-group">
                                             <label for="comment">Nombre de la Regla</label>
                                             <input id="comment" class="form-control" name="comment"
                                                 placeholder="Ingrese el nombre de la regla" />
                                         </div> -->
 
-                                        <div class="form-group">
-                                            <label for="regla">Accion de la regla</label>
-                                            <select class="form-select" name="action_rule" id="formSelectAction">
-                                                <option value="" selected disabled>Seleccionar...</option>
-                                                <option value="ACCEPT">Permitir</option>
-                                                <option value="REJECT">Denegar</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group">
+                        <label for="regla">Accion de la regla</label>
+                        <select
+                          class="form-select"
+                          name="action_rule"
+                          id="formSelectAction"
+                        >
+                          <option value="" selected disabled>
+                            Seleccionar...
+                          </option>
+                          <option value="ACCEPT">Permitir</option>
+                          <option value="REJECT">Denegar</option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group">
-                                            <label for="selectEntry">Dirección de la Regla</label>
-                                            <select class="form-select" name="entry" id="selectEntry">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="INPUT">Entrada</option>
-                                                <option value="OUTPUT">Salida</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group">
+                        <label for="selectEntry">Dirección de la Regla</label>
+                        <select
+                          class="form-select"
+                          name="entry"
+                          id="selectEntry"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="INPUT">Entrada</option>
+                          <option value="OUTPUT">Salida</option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group">
-                                            <label for="domain">Nombre de Dominio</label>
-                                            <input class="form-control" name="domain" id="domain"
-                                                placeholder="example.com">
-                                        </div>
-
-                                    </div>
-
-                                    <div class="form-group" id="footerBtn">
-                                        <button type="button" id="btnCancelar" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">Cerrar</button>
-                                        <button type="submit" id="btnSave" class="btn btn-primary">Crear
-                                            Regla</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11;">
-                            <div id="liveToast" class="toast hide" role="alert" aria-live="assertive"
-                                aria-atomic="true">
-                                <div class="toast-header">
-                                    <img src="../static/img/alert_message.png" class="rounded me-2" alt="...">
-                                    <strong class="me-auto">Campo Requerido</strong>
-                                    <button type="button" class="btn-close" data-bs-dismiss="toast"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="toast-body">
-                                </div>
-                            </div>
-                        </div>
+                      <div class="form-group">
+                        <label for="domain">Nombre de Dominio</label>
+                        <input
+                          class="form-control"
+                          name="domain"
+                          id="domain"
+                          placeholder="example.com"
+                        />
+                      </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Alerts Message -->
-            <div class='alert-message-container'>
-                <div class="alert-box" style="float: none; margin: 0 auto;">
-                    <div class="alert alert-success">
-                        <div class="alert-icon text-center">
-                            <i class="fas fa-check-circle fa-3x text-success"></i>
-                        </div>
-                        <div class="alert-message text-center">
-                        </div>
+                    <div class="form-group" id="footerBtn">
+                      <button
+                        type="button"
+                        id="btnCancelar"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                      >
+                        Cerrar
+                      </button>
+                      <button
+                        type="submit"
+                        id="btnSave"
+                        class="btn btn-primary"
+                      >
+                        Crear Regla
+                      </button>
                     </div>
+                  </form>
                 </div>
-            </div>
-        </div>
-
-        <!-- Toast -->
-        <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
-            <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <img src="../static/img/alert_message.png" class="rounded me-2" alt="...">
+              </div>
+              <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+                <div
+                  id="liveToast"
+                  class="toast hide"
+                  role="alert"
+                  aria-live="assertive"
+                  aria-atomic="true"
+                >
+                  <div class="toast-header">
+                    <img
+                      src="../static/img/alert_message.png"
+                      class="rounded me-2"
+                      alt="..."
+                    />
                     <strong class="me-auto">Campo Requerido</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    <button
+                      type="button"
+                      class="btn-close"
+                      data-bs-dismiss="toast"
+                      aria-label="Close"
+                    ></button>
+                  </div>
+                  <div class="toast-body"></div>
                 </div>
-                <div class="toast-body">
-                </div>
+              </div>
             </div>
+          </div>
         </div>
 
         <!-- Alerts Message -->
-        <div class='alert-message-container'>
-            <div class="alert-box" style="float: none; margin: 0 auto;">
-                <div class="alert alert-success">
-                    <div class="alert-icon text-center">
-                        <i class="fas fa-check-circle fa-3x text-success"></i>
-                    </div>
-                    <div class="alert-message text-center">
-                    </div>
-                </div>
+        <div class="alert-message-container">
+          <div class="alert-box" style="float: none; margin: 0 auto">
+            <div class="alert alert-success">
+              <div class="alert-icon text-center">
+                <i class="fas fa-check-circle fa-3x text-success"></i>
+              </div>
+              <div class="alert-message text-center"></div>
             </div>
+          </div>
         </div>
+      </div>
 
+      <!-- Toast -->
+      <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div
+          id="liveToast"
+          class="toast hide"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div class="toast-header">
+            <img
+              src="../static/img/alert_message.png"
+              class="rounded me-2"
+              alt="..."
+            />
+            <strong class="me-auto">Campo Requerido</strong>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="toast"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="toast-body"></div>
+        </div>
+      </div>
+
+      <!-- Alerts Message -->
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
+            </div>
+            <div class="alert-message text-center"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
     {% include 'includes/js-imports.html' %}
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
@@ -265,12 +403,9 @@
     <script src="https://unpkg.com/tableexport.jquery.plugin/tableExport.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
-    <script
-        src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
     <script src="{{ url_for('static', filename='js/rules-content.js') }}"></script>
 
     {% endblock %}
-
-</body>
-
+  </body>
 </html>

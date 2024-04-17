@@ -50,7 +50,7 @@ def validar_ingreso(username, password_hash):
 
 def obtener_reglas_ufw():
     try:
-        salida = subprocess.check_output(["sudo", "ufw", "status", "numbered"])
+        """ salida = subprocess.check_output(["sudo", "ufw", "status", "numbered"])
         reglas = salida.decode("utf-8").splitlines()
 
         # Filtrar las líneas que comienzan con '[', eliminar "(out)" y ajustar los espacios en los números
@@ -60,7 +60,7 @@ def obtener_reglas_ufw():
                 for line in reglas
                 if line.startswith("[")
             ]
-        )
+        ) """
 
         reglas_in = []
         reglas_out = []
@@ -78,38 +78,44 @@ def obtener_reglas_ufw():
                 rule_data = ""
 
                 id_regla = rule_tuple[0]
-                assigned_name = (
-                    rule_tuple[1].title().replace("_", " ").replace("-", " ")
-                )
+                assigned_name = rule_tuple[1].replace("_", " ").replace("-", " ")
                 status = rule_tuple[4]
                 created_date = rule_tuple[3].strftime("%Y-%m-%d")
-                tipo_regla = rule_tuple[2].title()
+                tipo_regla = rule_tuple[2]
 
                 detail_domain_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
 
                 for detail_domain in detail_domain_rules:
-                    rule_detail_parts = detail_domain[1].split(" comment ")
-                    rule_detail_command = rule_detail_parts[0].split()
+                    detail_status = detail_domain[2]
 
-                    count_hyphens = rule_detail_parts[1].count("-")
-
-                    if count_hyphens == 2:
-                        domain = (
-                            rule_detail_parts[1]
-                            .split("-", 2)[2]
-                            .strip()
-                            .replace("'", "")
+                    if tipo_regla == "dominio" or tipo_regla == "contenido":
+                        rule_detail_parts = detail_domain[1].split(
+                            " -m comment --comment "
                         )
+                        rule_detail_command = rule_detail_parts[0].split()
 
-                    elif count_hyphens == 1:
-                        domain = (
-                            rule_detail_parts[1]
-                            .split("-", 1)[1]
-                            .strip()
-                            .replace("'", "")
-                        )
+                        if detail_status == 1:
+                            count_hyphens = rule_detail_parts[1].count("-")
+
+                            if count_hyphens == 2:
+                                domain = (
+                                    rule_detail_parts[1]
+                                    .split("-", 2)[2]
+                                    .strip()
+                                    .replace("'", "")
+                                )
+
+                            elif count_hyphens == 1:
+                                domain = (
+                                    rule_detail_parts[1]
+                                    .split("-", 1)[1]
+                                    .strip()
+                                    .replace("'", "")
+                                )
 
                     else:
+                        rule_detail_parts = detail_domain[1].split(" comment ")
+                        rule_detail_command = rule_detail_parts[0].split()
                         for part in rule_detail_command:
                             if is_valid_ip(part):
                                 ip = part
@@ -133,9 +139,15 @@ def obtener_reglas_ufw():
                     else:
                         domains += domain
 
-                    if "allow" in rule_detail_command:
+                    if (
+                        "allow" in rule_detail_command
+                        or "ACCEPT" in rule_detail_command
+                    ):
                         permiso = "PERMITIDO"
-                    elif "reject" in rule_detail_command:
+                    elif (
+                        "reject" in rule_detail_command
+                        or "REJECT" in rule_detail_command
+                    ):
                         permiso = "DENEGADO"
 
                     if "tcp" in rule_detail_command:
@@ -145,17 +157,19 @@ def obtener_reglas_ufw():
                     else:
                         protocolo = "TCP/UDP"
 
-                    if "in" in rule_detail_command:
+                    if "in" in rule_detail_command or "INPUT" in rule_detail_command:
                         entry = "ENTRADA"
-                    elif "out" in rule_detail_command:
+                    elif (
+                        "out" in rule_detail_command or "OUTPUT" in rule_detail_command
+                    ):
                         entry = "SALIDA"
                     else:
                         entry = "ENTRADA"
 
-                    if tipo_regla == "Predefinida":
+                    if tipo_regla == "predefinida":
                         regla = {
                             "nombre": assigned_name,
-                            "tipo_regla": tipo_regla,
+                            "tipo_regla": tipo_regla.title(),
                             "rule_data": rule_data,
                             "accion": permiso,
                             "protocolo": protocolo,
@@ -164,12 +178,12 @@ def obtener_reglas_ufw():
 
                         reglas_default.append(regla)
 
-                if tipo_regla != "Predefinida":
+                if tipo_regla != "predefinida":
                     regla = {
                         "id_regla": id_regla,
                         "nombre": assigned_name,
                         "fecha_creacion": created_date,
-                        "tipo_regla": tipo_regla,
+                        "tipo_regla": tipo_regla.title(),
                         "dominio": domains if not rule_data else rule_data,
                         "accion": permiso,
                         "protocolo": protocolo,
@@ -1170,6 +1184,8 @@ def allow_connections(
                 rule += f" {entry} {port} comment '{comment}'"
 
             subprocess.run(shlex.split(f"{rule}"))
+
+        print(rule)
 
         if rulesTypeContent:
             for rulesContentPlatform in rulesTypeContent:

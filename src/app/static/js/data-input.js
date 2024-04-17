@@ -12,6 +12,9 @@ var portEnd = $("#portEnd");
 var selectEntry = $("#selectEntry");
 var selectProtocol = $("#selectProtocol");
 
+var btnCancelar = $("#btnCancelar");
+var btnCreate = $("#btncreate");
+
 /* Container */
 var domainContainer = $("#domainContainer");
 var ipContainer = $("#ipContainer");
@@ -43,13 +46,10 @@ var btnSeeRule = $("#editarReglaBtn");
 var btnConfirmDeleteRule = $("#deleteRuleConfirm");
 
 /* Campos del modal para visualizar la regla */
-var selectFromTo = $("#editFromTo");
 var ipAddrInputEdit = $("#editaripaddr");
 var netmaskInput = $("#editNetmask");
 var maskdest = $("#editMaskdest");
 var portEdit = $("#editport");
-var portStartEdit = $("#editportStart");
-var portEndEdit = $("#editportLimit");
 var selectEntryEdit = $("#editEntry");
 var selectProtocolEdit = $("#editProtocol");
 var domainEdit = $("#editDomain");
@@ -190,6 +190,7 @@ $(document).ready(function () {
 
     if (selectedPort === "yes" && selectedOption !== "port") {
       portStart.prop("disabled", false);
+      portEnd.prop("disabled", false);
     } else if (selectedPort === "yes" && selectedOption === "port") {
       portStart.prop("disabled", false);
       portEnd.prop("disabled", false);
@@ -295,13 +296,10 @@ $(document).ready(function () {
     domainContainerEdit.css("display", "none");
     ipContainerEdit.css("display", "block");
 
-    selectFromTo.prop("disabled", true).val("");
     ipAddrInputEdit.prop("disabled", true).val("");
     netmaskInput.prop("disabled", true).val("");
     maskdest.prop("disabled", true).val("");
     portEdit.prop("disabled", true).val("");
-    portStartEdit.prop("disabled", true).val("");
-    portEndEdit.prop("disabled", true).val("");
     selectEntryEdit.prop("disabled", true).val("");
     selectProtocolEdit.prop("disabled", true).val("");
     domainEdit.prop("disabled", true).val("");
@@ -316,12 +314,27 @@ $(document).ready(function () {
     var entrada = fila.find(".entrada").text();
     var data_rule = fila.find(".dominio").text();
 
-    var lista_dominios = data_rule.split("|").map(function (item) {
-      return item.trim();
-    });
-    var texto_formateado = "";
-    for (var i = 0; i < lista_dominios.length; i++) {
-      texto_formateado += " - " + lista_dominios[i] + "\n";
+    if (!/[0-9:]/.test(data_rule)) {
+      var lista_dominios = data_rule.split("|").map(function (item) {
+        return item.trim();
+      });
+      var texto_formateado = "";
+      for (var i = 0; i < lista_dominios.length; i++) {
+        texto_formateado += " - " + lista_dominios[i] + "\n";
+      }
+    } else {
+      var ip_regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+      if (/:/.test(data_rule)) {
+        data_rule_str = data_rule.split(":");
+        data_ip = data_rule_str[0];
+        data_port = data_rule_str[1];
+        ipAddrInputEdit.val(data_ip);
+        portEdit.val(data_port);
+      } else if (ip_regex.test(data_rule)) {
+        ipAddrInputEdit.val(data_rule);
+      } else {
+        portEdit.val(data_rule);
+      }
     }
 
     domainEdit.val(texto_formateado);
@@ -409,7 +422,48 @@ function limpiarFormulario() {
   domainContainer.css("display", "none");
 }
 
-// LimpiarFormulario cuando se presiona cualquier boton
-$("#btnCancelar").on("click", limpiarFormulario);
+function formatoDireccionIP(input) {
+  // Eliminar cualquier carácter que no sea un número o un punto
+  input.value = input.value.replace(/[^\d.]/g, "");
 
-$("#btncreate").on("click", limpiarFormulario);
+  // Dividir la dirección IP en partes separadas por puntos
+  var partes = input.value.split(".");
+
+  // Verificar si el usuario ha ingresado suficientes números antes de agregar puntos
+  if (partes.length === 1 && partes[0].length > 2) {
+    // Agregar un punto después de los primeros tres caracteres
+    input.value = partes[0].substring(0, 3) + "." + partes[0].substring(3);
+  } else if (partes.length === 2 && partes[1].length > 2) {
+    // Agregar un punto después del cuarto carácter
+    input.value =
+      partes[0] +
+      "." +
+      partes[1].substring(0, 3) +
+      "." +
+      partes[1].substring(3);
+  } else if (partes.length === 3 && partes[2].length > 2) {
+    // Agregar un punto después del séptimo carácter
+    input.value =
+      partes[0] +
+      "." +
+      partes[1] +
+      "." +
+      partes[2].substring(0, 3) +
+      "." +
+      partes[2].substring(3);
+  }
+}
+
+function formatoPuerto(input) {
+  // Eliminar cualquier carácter que no sea un número o un punto
+  input.value = input.value.replace(/[^\d]/g, "");
+}
+
+function formatoNombreRegla(input) {
+  input.value = input.value.replace(/-/g, "");
+}
+
+// LimpiarFormulario cuando se presiona cualquier boton
+btnCancelar.on("click", limpiarFormulario);
+
+btnCreate.on("click", limpiarFormulario);

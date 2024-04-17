@@ -688,11 +688,12 @@ $(document).ready(function () {
         "El campo de dirección MAC de destino es requerido."
       ) ||
       validarSelectOne(
+        filterOperatorMacPort,
         logicOperatorMacPort,
         filterPort,
         filterProtocolRed,
         protocol,
-        "Debe asignar un valor al siguiente filtro"
+        "Debe asignar un valor al siguiente elemento 1"
       ) ||
       mostrarAlerta(portSrc, "El campo de puerto de origen es requerido.") ||
       mostrarAlerta(portDst, "El campo de puerto de destino es requerido.") ||
@@ -710,9 +711,10 @@ $(document).ready(function () {
         "El campo de protocolo de red general es requerido."
       ) ||
       validarSelectTwo(
+        filterOperatorProtoRedProto,
         logicOperatorProtoRedProto,
         protocol,
-        "Debe asignar un valor al siguiente filtro"
+        "Debe asignar un valor al siguiente elemento 2"
       )
     ) {
       return;
@@ -720,7 +722,7 @@ $(document).ready(function () {
 
     var formData = $(this).serialize();
 
-    //btnCreateFilter.prop("disabled", true);
+    btnCreateFilter.prop("disabled", true);
 
     $.ajax({
       type: "POST",
@@ -759,6 +761,7 @@ $(document).ready(function () {
   }
 
   function validarSelectOne(
+    contenedor,
     elemento1,
     elemento2,
     elemento3,
@@ -766,10 +769,16 @@ $(document).ready(function () {
     mensaje
   ) {
     if (
-      !validarMultiselectVacio(elemento1) &&
-      validarMultiselectVacio(elemento2) &&
-      validarMultiselectVacio(elemento3) &&
-      validarMultiselectVacio(elemento4)
+      (contenedor.css("display") !== "none" &&
+        validarMultiselectVacio(elemento1) &&
+        (!validarMultiselectVacio(elemento2) ||
+          !validarMultiselectVacio(elemento3) ||
+          !validarMultiselectVacio(elemento4))) ||
+      (contenedor.css("display") !== "none" &&
+        !validarMultiselectVacio(elemento1) &&
+        validarMultiselectVacio(elemento2) &&
+        validarMultiselectVacio(elemento3) &&
+        validarMultiselectVacio(elemento4))
     ) {
       $("#liveToast .toast-body").text(mensaje);
       $("#liveToast").toast("show");
@@ -778,8 +787,14 @@ $(document).ready(function () {
     return false;
   }
 
-  function validarSelectTwo(elemento1, elemento2, mensaje) {
-    if (elemento1 !== "" && elemento2 === "") {
+  function validarSelectTwo(contenedor, elemento1, elemento2, mensaje) {
+    if (
+      contenedor.css("display") !== "none" &&
+      ((!validarMultiselectVacio(elemento1) &&
+        validarMultiselectVacio(elemento2)) ||
+        (validarMultiselectVacio(elemento1) &&
+          !validarMultiselectVacio(elemento2)))
+    ) {
       $("#liveToast .toast-body").text(mensaje);
       $("#liveToast").toast("show");
       return true;
