@@ -1,4 +1,10 @@
 $(document).ready(function () {
+  $(".ticket-type").append('<button class="show-full-response">Show</button>');
+
+  $(".show-full-response").on("click", function () {
+    $(this).closest("table").toggleClass("full-response");
+  });
+
   /* Modal eliminar regla */
   var confirmarEliminarModal = $("#confirmarEliminar");
   var btnConfirmDeleteRuleContent = $("#deleteRuleConfirm");

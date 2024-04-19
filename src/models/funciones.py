@@ -62,9 +62,6 @@ def obtener_reglas_ufw():
             ]
         ) """
 
-        iprint = verify_domain_dynamic("www.youtube.com")
-        print(iprint)
-
         reglas_in = []
         reglas_out = []
         reglas_default = []
@@ -818,7 +815,7 @@ plataformas = {
         "ec.linkedin.com",
         "linkedin.com",
         "pinterest.com",
-        # "www.pinterest.com",
+        "www.pinterest.com",
         "snapchat.com",
         "tiktok.com",
         "x.com",
@@ -1022,39 +1019,78 @@ def allow_connections(
                 if platform in plataformas:
                     platform_name = platform.lower().replace("_", " ").title()
                     rulesContent = []
+                    comment_content = f"{comment} - {platform_name}"
                     for domainPlataform in plataformas[platform]:
-                        comment_content = f"{comment} - {platform_name}"
-
                         rule = f"sudo iptables -I {entry} 1 {direction} {domainPlataform} -j {accion_regla}"
 
                         rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
                         rulesContent.append(rule)
 
                         subprocess.run(shlex.split(f"{rule}"))
-                    rulesTypeContent.append((rulesContent, comment_content))
+
                     for domainPlataform in plataformas_dinamicas[platform]:
-                        comment_content = f"{comment} - {platform_name}"
+                        ip_domain = verify_domain_dynamic(domainPlataform)
 
-                        rule = f"sudo iptables -I {entry} 1 {direction} {domainPlataform} -j {accion_regla}"
+                        if isinstance(ip_domain, list):
+                            print("iprint es una lista:", ip_domain)
+                            for ip in ip_domain:
+                                print("")
+                                rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
 
-                        rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
-                        rulesContent.append(rule)
+                                rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
+                                rulesContent.append(rule)
+                                subprocess.run(shlex.split(f"{rule}"))
 
-                        subprocess.run(shlex.split(f"{rule}"))
+                        elif isinstance(ip_domain, str):
+                            rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
+
+                            rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
+                            rulesContent.append(rule)
+
+                            subprocess.run(shlex.split(f"{rule}"))
+
                     rulesTypeContent.append((rulesContent, comment_content))
                 else:
                     print(f"Invalid platform: {platform_name}")
 
-            print(rulesTypeContent)
-
         elif domain:
+            rules_domain_dynamic = []
+
             comment_domain = f"{comment} - {domain}"
 
-            rule = f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
+            for categorias in plataformas:
+            
+                print(categorias)
 
-            rule += f" -m comment --comment '{comment_domain}'"
+                for domain in plataformas[categorias]:
+                    rule = (
+                        f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
+                    )
 
-            subprocess.run(shlex.split(f"{rule}"))
+                    rule += f" -m comment --comment '{comment_domain}'"
+
+                    subprocess.run(shlex.split(f"{rule}"))
+
+                for domain in plataformas_dinamicas[platform]:
+                    comment_content = f"{comment} - {platform_name}"
+
+                    ip_domain = verify_domain_dynamic(domainPlataform)
+
+                    if isinstance(ip_domain, list):
+                        print("iprint es una lista:", ip_domain)
+                        for ip in ip_domain:
+                            rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
+
+                            rule += f" -m comment --comment '{comment_domain}'"
+                            rules_domain_dynamic.append(rule)
+                            subprocess.run(shlex.split(f"{rule}"))
+
+                    elif isinstance(ip_domain, str):
+                        rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
+
+                        rule += f" -m comment --comment '{comment_domain}'"
+
+                        subprocess.run(shlex.split(f"{rule}"))
 
         elif (port or portStart or portLimit) and ip_addr and not domain:
             if ip_addr and netmask:
@@ -1248,9 +1284,15 @@ def allow_connections(
             firewall = modelFirewall.insertRule(firewall)
             id_rule = firewall.id
 
-            save_rule = format_rule_save(rule)
-            firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
-            modelFirewallDetail.insertRuleDetail(firewallDetail)
+            if rules_domain_dynamic:
+                for domain_rule_ip in rules_domain_dynamic:
+                    save_rule = format_rule_save(domain_rule_ip)
+                    firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+                    modelFirewallDetail.insertRuleDetail(firewallDetail)
+            else:
+                save_rule = format_rule_save(rule)
+                firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+                modelFirewallDetail.insertRuleDetail(firewallDetail)
 
         else:
             firewall = Firewall(

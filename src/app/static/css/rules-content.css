@@ -241,3 +241,39 @@ h2 {
 .alert-icon {
   padding-bottom: 20px;
 }
+
+/* Button Expand Table */
+.show-full-response {
+  float: right;
+  font-size: 100%;
+  padding: 0.4em calc(0.4em * 2);
+  border: 1px solid #6b7b8c;
+  background-color: hsl(210, 30%, 40%);
+  background-image: linear-gradient(rgba(63, 82, 92, 0.2), hsl(210, 30%, 40%));
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+}
+
+.show-full-response:hover {
+  cursor: pointer;
+  background-color: hsl(210, 30%, 40%);
+  background-image: none;
+}
+
+.show-full-response:after {
+  content: " more...";
+}
+
+.full-response .show-full-response:after {
+  content: " less...";
+}
+
+/* Hide rows */
+tr:nth-child(n+5) {
+  display: none;
+}
+
+.full-response tr:nth-child(n+3) {
+  display: table-row;
+}
