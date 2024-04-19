@@ -240,6 +240,7 @@ def configurar_rutas(app, login_manager_app):
         try:
             name_filter = request.form.get("filterName")
             type_ip = request.form.get("typeFilterIp")
+            type_domain = request.form.get("typeFilterDomain")
             type_content = request.form.get("typeFilterContent")
             type_mac = request.form.get("typeFilterMac")
             type_port = request.form.get("typeFilterPort")
@@ -256,8 +257,9 @@ def configurar_rutas(app, login_manager_app):
             packet_protocol = request.form.get("packet_protocol")
             # Datos Generales
             general_ip = request.form.get("generalIp")
-            general_content = request.form.get("generalContent")
-            general_port = request.form.getlist("generalPort")
+            general_domain = request.form.get("generalDomain")
+            general_content = request.form.getlist("generalContent")
+            general_port = request.form.get("generalPort")
             general_port_red = request.form.getlist("generalPortRed")
             # Obtener los datos de comparadores
             logic_operator_ip = request.form.get("logicOperatorIp")
@@ -270,6 +272,7 @@ def configurar_rutas(app, login_manager_app):
             response = save_filter(
                 name_filter,
                 type_ip,
+                type_domain,
                 type_content,
                 type_mac,
                 type_port,
@@ -285,6 +288,7 @@ def configurar_rutas(app, login_manager_app):
                 mac_addr,
                 mac_dest,
                 general_ip,
+                general_domain,
                 general_content,
                 general_port,
                 general_port_red,

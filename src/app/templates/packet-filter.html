@@ -1,508 +1,766 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {% include 'includes/styles-imports.html' %}
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.4.2/bootstrap-tagsinput.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/table-filter.css') }}" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.4.2/bootstrap-tagsinput.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/table-filter.css') }}"
+    />
     <title>Filtro de Trafico de Paquetes</title>
-</head>
+  </head>
 
-<body>
-
-    {% extends 'navbar.html' %}
-
-    {% block content %}
+  <body>
+    {% extends 'navbar.html' %} {% block content %}
 
     <section class="traffic-packet">
-
-        <div class="table-packets">
-
-            <div class="container-title">
-                <h2 class="title-packet">Filtro de Tráfico de paquetes</h2>
-            </div>
-
-            <div class="buttons-info">
-                <button type="button" class="btn btn-primary" id="btn-create" data-toggle="modal"
-                    data-target="#searchFilterModal" aria-label="customSearch">Crear
-                    Filtro</button>
-
-                <a href="{{ url_for('packet_monitoring_report_saved') }}" class="btn btn-primary">Revisar
-                    Reporte</a>
-            </div>
-
-            <div class='alert-message-container'>
-                <div class="alert-box" style="float: none; margin: 0 auto;">
-                    <div class="alert alert-success">
-                        <div class="alert-icon text-center">
-                            <i class="fas fa-check-circle fa-3x text-success"></i>
-                        </div>
-                        <div class="alert-message text-center">
-                            {% if request.args.get('response') %}
-                            {{ request.args.get('response') }}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-filter-data">
-                <div class="filter-data">
-                    <table id="filterPacketTable" class="table">
-                        <thead>
-                            <tr>
-                                <th data-field="number" data-sortable="true">N°</th>
-                                <th data-field="type" data-sortable="true">Tipo de Filtro</th>
-                                <th data-field="created_date" data-sortable="true">Fecha de Creacion</th>
-                                <th data-field="ips" data-sortable="true">Direcciones</th>
-                                <th data-field="protocolsRed" data-sortable="true">Protocolo de Red</th>
-                                <th data-field="ports" data-sortable="true">Puertos</th>
-                                <th data-field="protocol" data-sortable="true">Protocolo</th>
-                                <th data-field="consumos" data-sortable="true">Consumos</th>
-                                <th data-field="delete"></th>
-                                <th data-field="visualizar"></th>
-                                <th data-field="clean"></th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="filterPacketTableBody">
-                            {% for filtro in registrosFilter %}
-                            <tr>
-                                <td class="numero">{{ loop.index }}</td>
-                                <td class="type">{{ filtro['tipo_filtro'] }}</td>
-                                <td class="created_date">{{ filtro['fecha_creacion'] }}</td>
-                                <td class="ips">{{ filtro['ip'] }}</td>
-                                <td class="protocolsRed">{{ filtro['protocolo_red'] }}</td>
-                                <td class="ports">{{ filtro['puerto'] }}</td>
-                                <td class="protocol">{{ filtro['protocolo'] }}</td>
-                                <td class="consumos">{{ filtro['consumos'] }}</td>
-                                <td class="actions">
-                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal"
-                                        data-bs-target="#confirmarEliminar{{ filtro['id'] }}">
-                                        Eliminar Filtro
-                                    </button>
-                                    <!-- Modal Eliminar Filtro -->
-                                    <div class="modal fade" id="confirmarEliminar{{ filtro['id'] }}" tabindex="-1"
-                                        aria-labelledby="confirmacionModalLabel" aria-hidden="true">
-                                        <input type="hidden" name="filter_number" value="{{ filtro['id'] }}">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="confirmacionModalLabel">
-                                                        Confirmar Eliminación
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                        aria-label="Cerrar"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    ¿Estás seguro de que deseas eliminar el filtro?
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary"
-                                                        data-bs-dismiss="modal">
-                                                        Cancelar
-                                                    </button>
-                                                    <a href="{{ url_for('eliminar_filtro', id_filtro=filtro['id']) }}"
-                                                        class="btn btn-danger delete-btn">Eliminar</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="actions">
-                                    <a href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
-                                        class="btn btn-primary">Capturar Trafico</a>
-                                </td>
-                                <td class="actions">
-                                    <button type="button" class="btn btn-success cleanDataTable" id="cleanDataTab"
-                                        data-bs-toggle="modal">
-                                        Limpiar Tráfico Anterior
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+      <div class="table-packets">
+        <div class="container-title">
+          <h2 class="title-packet">Filtro de Tráfico de paquetes</h2>
         </div>
 
-        <!-- Modal Busqueda -->
-        <div class="modal fade" id="searchFilterModal" tabindex="-1" role="dialog" aria-labelledby="searchModalFilter"
-            aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" id="modal-filter" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">Crear Filtro de Paquetes</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+        <div class="buttons-info">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="btn-create"
+            data-toggle="modal"
+            data-target="#searchFilterModal"
+            aria-label="customSearch"
+          >
+            Crear Filtro
+          </button>
+
+          <a
+            href="{{ url_for('packet_monitoring_report_saved') }}"
+            class="btn btn-primary"
+            >Revisar Reporte</a
+          >
+        </div>
+
+        <div class="alert-message-container">
+          <div class="alert-box" style="float: none; margin: 0 auto">
+            <div class="alert alert-success">
+              <div class="alert-icon text-center">
+                <i class="fas fa-check-circle fa-3x text-success"></i>
+              </div>
+              <div class="alert-message text-center">
+                {% if request.args.get('response') %} {{
+                request.args.get('response') }} {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-filter-data">
+          <div class="filter-data">
+            <table id="filterPacketTable" class="table">
+              <thead>
+                <tr>
+                  <th data-field="number" data-sortable="true">N°</th>
+                  <th data-field="name" data-sortable="true">
+                    Nombre de Filtro
+                  </th>
+                  <th data-field="type" data-sortable="true">Tipo de Filtro</th>
+                  <th data-field="created_date" data-sortable="true">
+                    Fecha de Creacion
+                  </th>
+                  <th data-field="ips" data-sortable="true">Direcciones</th>
+                  <th data-field="protocolsRed" data-sortable="true">
+                    Protocolo de Red
+                  </th>
+                  <th data-field="ports" data-sortable="true">Puertos</th>
+                  <th data-field="protocol" data-sortable="true">Protocolo</th>
+                  <th data-field="consumos" data-sortable="true">Consumos</th>
+                  <th data-field="delete"></th>
+                  <th data-field="visualizar"></th>
+                  <th data-field="clean"></th>
+                </tr>
+              </thead>
+
+              <tbody id="filterPacketTableBody">
+                {% for filtro in registrosFilter %}
+                <tr>
+                  <td class="numero">{{ loop.index }}</td>
+                  <td class="name">{{ filtro['nombre_filtro'] }}</td>
+                  <td class="type">{{ filtro['tipo_filtro'] }}</td>
+                  <td class="created_date">{{ filtro['fecha_creacion'] }}</td>
+                  <td class="ips">{{ filtro['ip'] }}</td>
+                  <td class="protocolsRed">{{ filtro['protocolo_red'] }}</td>
+                  <td class="ports">{{ filtro['puerto'] }}</td>
+                  <td class="protocol">{{ filtro['protocolo'] }}</td>
+                  <td class="consumos">{{ filtro['consumos'] }}</td>
+                  <td class="actions">
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmarEliminar{{ filtro['id'] }}"
+                    >
+                      Eliminar Filtro
+                    </button>
+                    <!-- Modal Eliminar Filtro -->
+                    <div
+                      class="modal fade"
+                      id="confirmarEliminar{{ filtro['id'] }}"
+                      tabindex="-1"
+                      aria-labelledby="confirmacionModalLabel"
+                      aria-hidden="true"
+                    >
+                      <input
+                        type="hidden"
+                        name="filter_number"
+                        value="{{ filtro['id'] }}"
+                      />
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="confirmacionModalLabel">
+                              Confirmar Eliminación
+                            </h5>
+                            <button
+                              type="button"
+                              class="btn-close"
+                              data-bs-dismiss="modal"
+                              aria-label="Cerrar"
+                            ></button>
+                          </div>
+                          <div class="modal-body">
+                            ¿Estás seguro de que deseas eliminar el filtro?
+                          </div>
+                          <div class="modal-footer">
+                            <button
+                              type="button"
+                              class="btn btn-secondary"
+                              data-bs-dismiss="modal"
+                            >
+                              Cancelar
+                            </button>
+                            <a
+                              href="{{ url_for('eliminar_filtro', id_filtro=filtro['id']) }}"
+                              class="btn btn-danger delete-btn"
+                              >Eliminar</a
+                            >
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div class="modal-body">
-                        <div class="container-ssh">
-                            <div class="subtitle">
-                                <h2>Filtro de Paquetes</h2>
-                            </div>
+                  </td>
+                  <td class="actions">
+                    <a
+                      href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
+                      class="btn btn-primary"
+                      >Capturar Trafico</a
+                    >
+                  </td>
+                  <td class="actions">
+                    <button
+                      type="button"
+                      class="btn btn-success cleanDataTable"
+                      id="cleanDataTab"
+                      data-bs-toggle="modal"
+                    >
+                      Limpiar Tráfico Anterior
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-                            <div class="form-wrap">
+      <!-- Modal Busqueda -->
+      <div
+        class="modal fade"
+        id="searchFilterModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="searchModalFilter"
+        aria-hidden="true"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered"
+          id="modal-filter"
+          role="document"
+        >
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalCenterTitle">
+                Crear Filtro de Paquetes
+              </h5>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="container-ssh">
+                <div class="subtitle">
+                  <h2>Filtro de Paquetes</h2>
+                </div>
 
-                                <form class="form-content" id="formPacket">
+                <div class="form-wrap">
+                  <form class="form-content" id="formPacket">
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
 
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="data-row">
+                      <div class="form-group">
+                        <label for="filterName">Nombre del Filtro</label>
+                        <input
+                          id="filter_name"
+                          class="form-control"
+                          name="filterName"
+                          placeholder="Nombre del filtro"
+                        />
+                      </div>
 
-                                    <div class="data-row">
-                                        <div class="form-group">
-                                            <label for="filterName">Nombre del Filtro</label>
-                                            <input id="filter_name" class="form-control" name="filterName"
-                                                placeholder="Nombre del filtro" />
-                                        </div>
+                      <div class="form-group">
+                        <label for="selectFilterType">Tipo de Filtro</label>
+                        <select
+                          class="form-select ips ports"
+                          id="selectFilterType"
+                          name="typeFilter"
+                        >
+                          <option value="" selected disabled>
+                            Seleccionar...
+                          </option>
+                          <option value="content">Contenido</option>
+                          <option value="domain">Dominio</option>
+                          <option value="ipAndport">
+                            Personalizar Ip y Puerto
+                          </option>
+                        </select>
+                      </div>
+                    </div>
 
-                                        <div class="form-group">
-                                            <label for="selectFilterType">Tipo de Filtro</label>
-                                            <select class="form-select ips ports" id="selectFilterType"
-                                                name="typeFilterIp">
-                                                <option value="" selected disabled>Seleccionar...</option>
-                                                <option value="content">Contenido</option>
-                                                <option value="domain">Dominio</option>
-                                                <option value="ipAndport">Personalizar Ip y Puerto</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                    <hr />
 
-                                    <hr>
+                    <div class="top-row" id="ipsContainer">
+                      <div class="form-group">
+                        <label for="selectFilterIp">Filtro de Ips</label>
+                        <select
+                          class="form-select"
+                          id="selectFilterIp"
+                          name="typeFilterIp"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="IP de Origen">IP de Origen</option>
+                          <option value="IP de Destino">IP de Destino</option>
+                          <option value="IP de Origen y Destino">
+                            IP de Origen y Destino
+                          </option>
+                          <option value="IP General (Origen y Destino)">
+                            IP General (Origen y Destino)
+                          </option>
+                        </select>
+                      </div>
 
-                                    <div class="top-row" id="ipsContainer">
+                      <div class="form-group" id="generalIpContainer">
+                        <label for="ipaddr">Direccion IP</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="generalIp"
+                          id="generalip"
+                          placeholder="0.0.0.0"
+                        />
+                      </div>
 
-                                        <div class="form-group">
-                                            <label for="selectFilterIp">Filtro de Ips</label>
-                                            <select class="form-select" id="selectFilterIp" name="typeFilterIp">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="Solo IP de Origen">Solo IP de Origen</option>
-                                                <option value="Solo IP de Destino">Solo IP de Destino</option>
-                                                <option value="IP de Origen y Destino">IP de Origen y Destino</option>
-                                                <option value="IP General (Origen y Destino)">IP General (Origen y
-                                                    Destino)</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group" id="ipAddrContainer">
+                        <label for="ipaddr">Direccion IP de Origen</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="ip_addr"
+                          id="ipaddr"
+                          placeholder="0.0.0.0"
+                        />
+                      </div>
 
-                                        <div class="form-group" id="generalIpContainer">
-                                            <label for="ipaddr">Direccion IP</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="generalIp" id="generalip" placeholder="0.0.0.0">
-                                        </div>
+                      <div class="form-group" id="filterOperatorIp">
+                        <label for="logicOperator">¿Cómo deseas filtrar?</label>
+                        <select
+                          class="form-select"
+                          id="logicOperatorIp"
+                          name="logicOperatorIp"
+                        >
+                          <option value="" selected disabled>
+                            Seleccionar...
+                          </option>
+                          <option value="and">Cumplir ambos criterios</option>
+                          <option value="or">
+                            Cumplir uno o ambos criterios
+                          </option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group" id="ipAddrContainer">
-                                            <label for="ipaddr">Direccion IP de Origen</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="ip_addr" id="ipaddr" placeholder="0.0.0.0">
-                                        </div>
+                      <div class="form-group" id="ipDstContainer">
+                        <label for="ipdest">Direccion IP de Destino</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="ip_dest"
+                          id="ipdest"
+                          placeholder="0.0.0.0"
+                        />
+                      </div>
+                    </div>
 
-                                        <div class="form-group" id="filterOperatorIp">
-                                            <label for="logicOperator">¿Cómo deseas filtrar?</label>
-                                            <select class="form-select" id="logicOperatorIp" name="logicOperatorIp">
-                                                <option value="" selected disabled>Seleccionar...</option>
-                                                <option value="and">Cumplir ambos criterios</option>
-                                                <option value="or">Cumplir uno o ambos criterios</option>
-                                            </select>
-                                        </div>
+                    <div class="top-row" id="domainsContainer">
+                      <div class="form-group">
+                        <label for="selectFilterDomain"
+                          >Filtro de Dominio</label
+                        >
+                        <select
+                          class="form-select"
+                          id="selectFilterDomain"
+                          name="typeFilterDomain"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="Dominio de Destino">
+                            Dominio de Destino
+                          </option>
+                          <option value="Dominio General (Origen y Destino)">
+                            Dominio General (Origen y Destino)
+                          </option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group" id="ipDstContainer">
-                                            <label for="ipdest">Direccion IP de Destino</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="ip_dest" id="ipdest" placeholder="0.0.0.0">
-                                        </div>
+                      <div class="form-group" id="generaldomainContainer">
+                        <label for="generaldomain">Dominio</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="generalDomain"
+                          id="generaldomain"
+                        />
+                      </div>
 
-                                    </div>
+                      <div class="form-group" id="domainDstContainer">
+                        <label for="domaindst">Dominio de Destino</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="ip_dest"
+                          id="domaindst"
+                        />
+                      </div>
+                    </div>
 
-                                    <div class="top-row" id="domainsContainer">
+                    <div class="top-row" id="contentsContainer">
+                      <div class="form-group">
+                        <label for="selectFilterContent"
+                          >Filtro por Contenido</label
+                        >
+                        <select
+                          class="form-select"
+                          id="selectFilterContent"
+                          name="typeFilterContent"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="Contenido de Destino">
+                            Contenido de Destino
+                          </option>
+                          <option value="Contenido General (Origen y Destino)">
+                            Contenido General (Origen y Destino)
+                          </option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group">
-                                            <label for="selectFilterDomain">Filtro de Dominio</label>
-                                            <select class="form-select" id="selectFilterDomain" name="typeFilterDomain">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="Dominio de Destino">Dominio de Destino</option>
-                                                <option value="Dominio General (Origen y Destino)">Dominio General
-                                                    (Origen y
-                                                    Destino)</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group" id="generalContentContainer">
+                        <label for="generalcontent">Contenido</label>
+                        <select
+                          class="selectpicker ips"
+                          name="generalContent"
+                          id="generalcontent"
+                          aria-label="Seleccione Contenido"
+                          data-none-selected-text="Seleccione Contenido"
+                          data-live-search="true"
+                        >
+                          <option value="redes_sociales">Redes Sociales</option>
+                          <option value="videojuegos">Videojuegos</option>
+                          <option value="musica">Musica</option>
+                          <option value="streaming">Streaming</option>
+                          <option value="lectura">Lectura</option>
+                          <option value="video">Video</option>
+                          <option value="mensajeria">Mensajeria</option>
+                          <option value="podcast">Podcast</option>
+                          <option value="mailing">Mailing</option>
+                          <option value="imagenes">Imagenes</option>
+                          <option value="ecommerce">Ecommerce</option>
+                          <option value="blogging">Blogs</option>
+                          <option value="crm">CRM</option>
+                          <option value="pagos">Pagos</option>
+                          <option value="apuestas">Apuestas</option>
+                          <option value="publicidad_digital">
+                            Publicidad Digital
+                          </option>
+                          <option value="redes_profesionales">
+                            Redes Profesionales
+                          </option>
+                          <option value="videoconferencias">
+                            Videoconferencias
+                          </option>
+                          <option value="educacion">Educacion</option>
+                          <option value="trabajo_colaborativo">
+                            Trabajo colaborativo
+                          </option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group" id="generaldomainContainer">
-                                            <label for="generaldomain">Dominio</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="generaldomain" id="generaldomain">
-                                        </div>
+                      <div class="form-group" id="contentDstContainer">
+                        <label for="contentdst">Contenido de Destino</label>
+                        <select
+                          class="selectpicker ips"
+                          name="content_dst"
+                          id="contentdst"
+                          aria-label="Seleccione Contenido"
+                          data-none-selected-text="Seleccione Contenido"
+                          data-live-search="true"
+                        >
+                          <option value="redes_sociales">Redes Sociales</option>
+                          <option value="videojuegos">Videojuegos</option>
+                          <option value="musica">Musica</option>
+                          <option value="streaming">Streaming</option>
+                          <option value="lectura">Lectura</option>
+                          <option value="video">Video</option>
+                          <option value="mensajeria">Mensajeria</option>
+                          <option value="podcast">Podcast</option>
+                          <option value="mailing">Mailing</option>
+                          <option value="imagenes">Imagenes</option>
+                          <option value="ecommerce">Ecommerce</option>
+                          <option value="blogging">Blogs</option>
+                          <option value="crm">CRM</option>
+                          <option value="pagos">Pagos</option>
+                          <option value="apuestas">Apuestas</option>
+                          <option value="publicidad_digital">
+                            Publicidad Digital
+                          </option>
+                          <option value="redes_profesionales">
+                            Redes Profesionales
+                          </option>
+                          <option value="videoconferencias">
+                            Videoconferencias
+                          </option>
+                          <option value="educacion">Educacion</option>
+                          <option value="trabajo_colaborativo">
+                            Trabajo colaborativo
+                          </option>
+                        </select>
+                      </div>
+                    </div>
 
-                                        <div class="form-group" id="domainDstContainer">
-                                            <label for="domaindst">Dominio de Destino</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="ip_dest" id="domaindst">
-                                        </div>
+                    <div class="top-row" style="display: none">
+                      <div class="form-group">
+                        <label for="selectFilterMac">Filtro de Macs</label>
+                        <select
+                          class="form-select"
+                          id="selectFilterMac"
+                          name="typeFilterMac"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="Solo MAC de Origen">
+                            Solo MAC de Origen
+                          </option>
+                          <option value="Solo MAC de Destino">
+                            Solo MAC de Destino
+                          </option>
+                          <option value="MAC de Origen y Destino">
+                            MAC de Origen y Destino
+                          </option>
+                        </select>
+                      </div>
 
-                                    </div>
+                      <div class="form-group" id="macSrcContainer">
+                        <label for="macaddr">Direccion MAC de Origen</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="mac_addr"
+                          id="macaddr"
+                          placeholder="00:00:00:00:00:00"
+                        />
+                      </div>
 
-                                    <div class="top-row" id="contentsContainer">
+                      <div class="form-group" id="filterOperatorMac">
+                        <label for="logicOperator">¿Cómo deseas filtrar?</label>
+                        <select
+                          class="form-select"
+                          id="logicOperatorMac"
+                          name="logicOperatorMac"
+                        >
+                          <option value="" selected disabled>
+                            Seleccionar...
+                          </option>
+                          <option value="and">Cumplir ambos criterios</option>
+                          <option value="or">
+                            Cumplir uno o ambos criterios
+                          </option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group">
-                                            <label for="selectFilterContent">Filtro por Contenido</label>
-                                            <select class="form-select" id="selectFilterContent"
-                                                name="typeFilterContent">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="Contenido de Destino">Contenido de Destino</option>
-                                                <option value="Contenido General (Origen y Destino)">Contenido General
-                                                    (Origen y
-                                                    Destino)</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group" id="macDstContainer">
+                        <label for="macdest">Direccion MAC de Destino</label>
+                        <input
+                          type="text"
+                          class="form-control ips"
+                          data-role="tagsinput"
+                          name="mac_dest"
+                          id="macdest"
+                          placeholder="00:00:00:00:00:00"
+                        />
+                      </div>
+                    </div>
 
-                                        <div class="form-group" id="generalContentContainer">
-                                            <label for="generalcontent">Contenido</label>
-                                            <select class="selectpicker ips" name="generalContent" id="generalcontent"
-                                                aria-label="Seleccione Contenido"
-                                                data-none-selected-text="Seleccione Contenido" data-live-search="true">
-                                                <option value="redes_sociales">Redes Sociales</option>
-                                                <option value="videojuegos">Videojuegos</option>
-                                                <option value="musica">Musica</option>
-                                                <option value="streaming">Streaming</option>
-                                                <option value="lectura">Lectura</option>
-                                                <option value="video">Video</option>
-                                                <option value="mensajeria">Mensajeria</option>
-                                                <option value="podcast">Podcast</option>
-                                                <option value="mailing">Mailing</option>
-                                                <option value="imagenes">Imagenes</option>
-                                                <option value="ecommerce">Ecommerce</option>
-                                                <option value="blogging">Blogs</option>
-                                                <option value="crm">CRM</option>
-                                                <option value="pagos">Pagos</option>
-                                                <option value="apuestas">Apuestas</option>
-                                                <option value="publicidad_digital">Publicidad Digital</option>
-                                                <option value="redes_profesionales">Redes Profesionales</option>
-                                                <option value="videoconferencias">Videoconferencias</option>
-                                                <option value="educacion">Educacion</option>
-                                                <option value="trabajo_colaborativo">Trabajo colaborativo</option>
-                                            </select>
-                                        </div>
+                    <hr class="filterOperatorMacPort" />
+                    <div class="top-row filterOperator">
+                      <div class="form-group filterOperatorMacPort">
+                        <label for="logicOperator">¿Cómo deseas filtrar?</label>
+                        <select
+                          class="form-select"
+                          id="logicOperatorMacPort"
+                          name="logicOperatorMacPort"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="and">
+                            Cumplir criterio anterior y siguiente criterio
+                          </option>
+                          <option value="or">
+                            Cumplir uno o ambos criterios
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    <hr class="filterOperatorMacPort" />
 
-                                        <div class="form-group" id="contentDstContainer">
-                                            <label for="contentdst">Contenido de Destino</label>
-                                            <select class="selectpicker ips" name="content_dst" id="contentdst"
-                                                aria-label="Seleccione Contenido"
-                                                data-none-selected-text="Seleccione Contenido" data-live-search="true">
-                                                <option value="redes_sociales">Redes Sociales</option>
-                                                <option value="videojuegos">Videojuegos</option>
-                                                <option value="musica">Musica</option>
-                                                <option value="streaming">Streaming</option>
-                                                <option value="lectura">Lectura</option>
-                                                <option value="video">Video</option>
-                                                <option value="mensajeria">Mensajeria</option>
-                                                <option value="podcast">Podcast</option>
-                                                <option value="mailing">Mailing</option>
-                                                <option value="imagenes">Imagenes</option>
-                                                <option value="ecommerce">Ecommerce</option>
-                                                <option value="blogging">Blogs</option>
-                                                <option value="crm">CRM</option>
-                                                <option value="pagos">Pagos</option>
-                                                <option value="apuestas">Apuestas</option>
-                                                <option value="publicidad_digital">Publicidad Digital</option>
-                                                <option value="redes_profesionales">Redes Profesionales</option>
-                                                <option value="videoconferencias">Videoconferencias</option>
-                                                <option value="educacion">Educacion</option>
-                                                <option value="trabajo_colaborativo">Trabajo colaborativo</option>
-                                            </select>
-                                        </div>
+                    <div class="top-row" id="portsContainer">
+                      <div class="form-group">
+                        <label for="selectFilterPort">Filtro de Puertos</label>
+                        <select
+                          class="form-select"
+                          id="selectFilterPort"
+                          name="typeFilterPort"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="Puerto de Origen">
+                            Puerto de Origen
+                          </option>
+                          <option value="Puerto de Destino">
+                            Puerto de Destino
+                          </option>
+                          <option value="Puertos de Origen y Destino">
+                            Puertos de Origen y Destino
+                          </option>
+                          <option value="Puerto General (Origen y Destino)">
+                            Puerto General (Origen y Destino)
+                          </option>
+                        </select>
+                      </div>
 
-                                    </div>
+                      <div class="form-group" id="generalPortContainer">
+                        <label for="inputPort">Puerto</label>
+                        <input
+                          type="text"
+                          class="form-control ports"
+                          data-role="tagsinput"
+                          name="generalPort"
+                          id="generalport"
+                        />
+                      </div>
 
-                                    <div class="top-row" style="display: none;">
+                      <div class="form-group" id="portSrcContainer">
+                        <label for="inputPort">Puerto de Origen</label>
+                        <input
+                          type="text"
+                          class="form-control ports"
+                          data-role="tagsinput"
+                          name="portStart"
+                          id="portSrc"
+                        />
+                      </div>
 
-                                        <div class="form-group">
-                                            <label for="selectFilterMac">Filtro de Macs</label>
-                                            <select class="form-select" id="selectFilterMac" name="typeFilterMac">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="Solo MAC de Origen">Solo MAC de Origen</option>
-                                                <option value="Solo MAC de Destino">Solo MAC de Destino</option>
-                                                <option value="MAC de Origen y Destino">MAC de Origen y Destino</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group" id="portDstContainer">
+                        <label for="inputPort">Puerto de Destino</label>
+                        <input
+                          type="text"
+                          class="form-control ports"
+                          data-role="tagsinput"
+                          name="portLimit"
+                          id="portDst"
+                        />
+                      </div>
+                    </div>
 
-                                        <div class="form-group" id="macSrcContainer">
-                                            <label for="macaddr">Direccion MAC de Origen</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="mac_addr" id="macaddr" placeholder="00:00:00:00:00:00">
-                                        </div>
+                    <div class="top-row" id="protoportsContainer">
+                      <div class="form-group">
+                        <label for="selectFilterProtocolRed"
+                          >Protocolos de Red</label
+                        >
+                        <select
+                          class="form-select"
+                          id="selectFilterProtocolRed"
+                          name="typeFilterProtoRed"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="Protocolo de Red de Origen">
+                            Protocolo de Red de Origen
+                          </option>
+                          <option value="Protocolo de Red de Destino">
+                            Protocolo de Red de Destino
+                          </option>
+                          <option value="Protocolo de Red de Origen y Destino">
+                            Protocolo de Red de Origen y Destino
+                          </option>
+                          <option
+                            value="Protocolo de Red General (Origen y Destino)"
+                          >
+                            Protocolo de Red General (Origen y Destino)
+                          </option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group" id="filterOperatorMac">
-                                            <label for="logicOperator">¿Cómo deseas filtrar?</label>
-                                            <select class="form-select" id="logicOperatorMac" name="logicOperatorMac">
-                                                <option value="" selected disabled>Seleccionar...</option>
-                                                <option value="and">Cumplir ambos criterios</option>
-                                                <option value="or">Cumplir uno o ambos criterios</option>
-                                            </select>
-                                        </div>
+                      <div class="form-group" id="generalProtocolRedContainer">
+                        <label for="generalProtocolRed"
+                          >Protocolos de Red de Origen</label
+                        >
+                        <select
+                          class="selectpicker ports"
+                          name="generalPortRed"
+                          multiple
+                          id="generalProtocolRed"
+                          aria-label="Seleccione Protocolo de Red"
+                          data-none-selected-text="Seleccione Protocolo de Red"
+                          data-live-search="true"
+                        >
+                          <option value="http">HTTP</option>
+                          <option value="https">HTTPS</option>
+                          <option value="smtp">SMTP</option>
+                          <option value="ssh">SSH</option>
+                          <option value="ftp">FTP</option>
+                          <option value="telnet">TELNET</option>
+                        </select>
+                      </div>
 
-                                        <div class="form-group" id="macDstContainer">
-                                            <label for="macdest">Direccion MAC de Destino</label>
-                                            <input type="text" class="form-control ips" data-role="tagsinput"
-                                                name="mac_dest" id="macdest" placeholder="00:00:00:00:00:00">
-                                        </div>
+                      <div class="form-group" id="protocolRedSrcContainer">
+                        <label for="protocolRedSrc"
+                          >Protocolos de Red de Origen</label
+                        >
+                        <select
+                          class="selectpicker ports"
+                          name="portRedSrc"
+                          multiple
+                          id="protocolRedSrc"
+                          aria-label="Seleccione Protocolo de Red"
+                          data-none-selected-text="Seleccione Protocolo de Red"
+                          data-live-search="true"
+                        >
+                          <option value="http">HTTP</option>
+                          <option value="https">HTTPS</option>
+                          <option value="smtp">SMTP</option>
+                          <option value="ssh">SSH</option>
+                          <option value="ftp">FTP</option>
+                          <option value="telnet">TELNET</option>
+                        </select>
+                      </div>
 
-                                    </div>
+                      <div class="form-group" id="protocolRedDstContainer">
+                        <label for="protocolRedDst"
+                          >Protocolos de Red de Destino</label
+                        >
+                        <select
+                          class="selectpicker ports"
+                          name="portRedDst"
+                          multiple
+                          id="protocolRedDst"
+                          aria-label="Seleccione Protocolo de Red"
+                          data-none-selected-text="Seleccione Protocolo de Red"
+                          data-live-search="true"
+                        >
+                          <option value="http">HTTP</option>
+                          <option value="https">HTTPS</option>
+                          <option value="smtp">SMTP</option>
+                          <option value="ssh">SSH</option>
+                          <option value="ftp">FTP</option>
+                          <option value="telnet">TELNET</option>
+                        </select>
+                      </div>
+                    </div>
 
-                                    <hr class="filterOperatorMacPort">
-                                    <div class="top-row filterOperator">
-                                        <div class="form-group filterOperatorMacPort">
-                                            <label for="logicOperator">¿Cómo deseas filtrar?</label>
-                                            <select class="form-select" id="logicOperatorMacPort"
-                                                name="logicOperatorMacPort">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="and">Cumplir criterio anterior y siguiente criterio
-                                                </option>
-                                                <option value="or">Cumplir uno o ambos criterios</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <hr class="filterOperatorMacPort">
+                    <hr class="filterOperatorProtoRedProto" />
+                    <div class="top-row filterOperator">
+                      <div class="form-group filterOperatorProtoRedProto">
+                        <label for="logicOperator">¿Cómo deseas filtrar?</label>
+                        <select
+                          class="form-select"
+                          id="logicOperatorProtoRedProto"
+                          name="logicOperatorProtoRedProto"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="and">
+                            Cumplir criterio anterior y siguiente criterio
+                          </option>
+                          <option value="or">
+                            Cumplir uno o ambos criterios
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    <hr class="filterOperatorProtoRedProto" />
 
-                                    <div class="top-row" id="portsContainer">
+                    <div class="top-row" id="protocolsContainer">
+                      <div class="form-group">
+                        <label for="selectProtocol">Protocolo</label>
+                        <select
+                          class="form-select"
+                          name="packet_protocol"
+                          id="selectProtocol"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="tcp">TCP</option>
+                          <option value="udp">UDP</option>
+                          <option value="tcp/udp">TCP/UDP</option>
+                        </select>
+                      </div>
+                    </div>
 
-                                        <div class="form-group">
-                                            <label for="selectFilterPort">Filtro de Puertos</label>
-                                            <select class="form-select" id="selectFilterPort" name="typeFilterPort">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="Solo Puerto de Origen">Solo Puerto de Origen</option>
-                                                <option value="Solo Puerto de Destino">Solo Puerto de Destino</option>
-                                                <option value="Puertos de Origen y Destino">Puertos de Origen y Destino
-                                                </option>
-                                                <option value="Puerto General (Origen y Destino)">Puerto General (Origen
-                                                    y Destino)</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group" id="generalPortContainer">
-                                            <label for="inputPort">Puerto</label>
-                                            <input type="text" class="form-control ports" data-role="tagsinput"
-                                                name="generalPort" id="generalport">
-                                        </div>
-
-                                        <div class="form-group" id="portSrcContainer">
-                                            <label for="inputPort">Puerto de Origen</label>
-                                            <input type="text" class="form-control ports" data-role="tagsinput"
-                                                name="portStart" id="portSrc">
-                                        </div>
-
-                                        <div class="form-group" id="portDstContainer">
-                                            <label for="inputPort">Puerto de Destino</label>
-                                            <input type="text" class="form-control ports" data-role="tagsinput"
-                                                name="portLimit" id="portDst">
-                                        </div>
-
-                                    </div>
-
-                                    <div class="top-row" id="protoportsContainer">
-
-                                        <div class="form-group">
-                                            <label for="selectFilterProtocolRed">Protocolos de Red</label>
-                                            <select class="form-select" id="selectFilterProtocolRed"
-                                                name="typeFilterProtoRed">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="Solo Protocolo de Red de Origen">Solo Protocolo de Red de
-                                                    Origen
-                                                </option>
-                                                <option value="Solo Protocolo de Red de Destino">Solo Protocolo de Red
-                                                    de Destino
-                                                </option>
-                                                <option value="Protocolo de Red de Origen y Destino">Protocolo de Red de
-                                                    Origen y Destino</option>
-                                                <option value="Protocolo de Red General (Origen y Destino)">Protocolo de
-                                                    Red General (Origen y Destino)
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group" id="generalProtocolRedContainer">
-                                            <label for="generalProtocolRed">Protocolos de Red de
-                                                Origen</label>
-                                            <select class="selectpicker ports" name="generalPortRed" multiple
-                                                id="generalProtocolRed" aria-label="Seleccione Protocolo de Red"
-                                                data-none-selected-text="Seleccione Protocolo de Red"
-                                                data-live-search="true">
-                                                <option value="http">HTTP</option>
-                                                <option value="https">HTTPS</option>
-                                                <option value="smtp">SMTP</option>
-                                                <option value="ssh">SSH</option>
-                                                <option value="ftp">FTP</option>
-                                                <option value="telnet">TELNET</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group" id="protocolRedSrcContainer">
-                                            <label for="protocolRedSrc">Protocolos de Red de
-                                                Origen</label>
-                                            <select class="selectpicker ports" name="portRedSrc" multiple
-                                                id="protocolRedSrc" aria-label="Seleccione Protocolo de Red"
-                                                data-none-selected-text="Seleccione Protocolo de Red"
-                                                data-live-search="true">
-                                                <option value="http">HTTP</option>
-                                                <option value="https">HTTPS</option>
-                                                <option value="smtp">SMTP</option>
-                                                <option value="ssh">SSH</option>
-                                                <option value="ftp">FTP</option>
-                                                <option value="telnet">TELNET</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group" id="protocolRedDstContainer">
-                                            <label for="protocolRedDst">Protocolos de Red de Destino</label>
-                                            <select class="selectpicker ports" name="portRedDst" multiple
-                                                id="protocolRedDst" aria-label="Seleccione Protocolo de Red"
-                                                data-none-selected-text="Seleccione Protocolo de Red"
-                                                data-live-search="true">
-                                                <option value="http">HTTP</option>
-                                                <option value="https">HTTPS</option>
-                                                <option value="smtp">SMTP</option>
-                                                <option value="ssh">SSH</option>
-                                                <option value="ftp">FTP</option>
-                                                <option value="telnet">TELNET</option>
-                                            </select>
-                                        </div>
-
-                                    </div>
-
-                                    <hr class="filterOperatorProtoRedProto">
-                                    <div class="top-row filterOperator">
-                                        <div class="form-group filterOperatorProtoRedProto">
-                                            <label for="logicOperator">¿Cómo deseas filtrar?</label>
-                                            <select class="form-select" id="logicOperatorProtoRedProto"
-                                                name="logicOperatorProtoRedProto">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="and">Cumplir criterio anterior y siguiente criterio
-                                                </option>
-                                                <option value="or">Cumplir uno o ambos criterios</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <hr class="filterOperatorProtoRedProto">
-
-                                    <div class="top-row" id="protocolsContainer">
-                                        <div class="form-group">
-                                            <label for="selectProtocol">Protocolo</label>
-                                            <select class="form-select" name="packet_protocol" id="selectProtocol">
-                                                <option value="" selected>Seleccionar...</option>
-                                                <option value="tcp">TCP</option>
-                                                <option value="udp">UDP</option>
-                                                <option value="tcp/udp">TCP/UDP</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <!-- <div class="form-group">
+                    <!-- <div class="form-group">
                                             <label for="selectProtocol">Filtro de Red Local</label>
                                             <select class="form-select" name="packet_protocol" id="selectProtocol">
                                                 <option value="" selected disabled>Seleccionar...</option>
@@ -512,7 +770,7 @@
                                             </select>
                                         </div> -->
 
-                                    <!--  <div class="form-group">
+                    <!--  <div class="form-group">
                                             <label for="selectProtocol">IPs Red Local Origen</label>
                                             <select class="selectpicker" name="ipRedLocalSrc" multiple
                                                 aria-label="ipMacRed" data-none-selected-text="Seleccione Red Local"
@@ -536,68 +794,83 @@
                                             </select>
                                         </div> -->
 
-                                    <hr>
+                    <hr />
 
-                                    <div class="form-group">
-                                        <button type="submit" id="btn-create-filter" class="btn btn-primary">Capturar
-                                            Trafico</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+                    <div class="form-group">
+                      <button
+                        type="submit"
+                        id="btn-create-filter"
+                        class="btn btn-primary"
+                      >
+                        Capturar Trafico
+                      </button>
                     </div>
+                  </form>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Toast -->
-        <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
-            <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <img src="../static/img/alert_message.png" class="rounded me-2" alt="...">
-                    <strong class="me-auto">Campo Requerido</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                </div>
+      <!-- Toast -->
+      <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div
+          id="liveToast"
+          class="toast hide"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div class="toast-header">
+            <img
+              src="../static/img/alert_message.png"
+              class="rounded me-2"
+              alt="..."
+            />
+            <strong class="me-auto">Campo Requerido</strong>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="toast"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="toast-body"></div>
+        </div>
+      </div>
+
+      <!-- Alerts Message -->
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
             </div>
+            <div class="alert-message text-center"></div>
+          </div>
         </div>
-
-        <!-- Alerts Message -->
-        <div class='alert-message-container'>
-            <div class="alert-box" style="float: none; margin: 0 auto;">
-                <div class="alert alert-success">
-                    <div class="alert-icon text-center">
-                        <i class="fas fa-check-circle fa-3x text-success"></i>
-                    </div>
-                    <div class="alert-message text-center">
-                    </div>
-                </div>
-            </div>
-        </div>
-
+      </div>
     </section>
 
     <!-- Multiselect -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
-    {% include 'includes/js-imports.html' %}
     <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    {% include 'includes/js-imports.html' %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/tableexport.jquery.plugin/tableExport.min.js"></script>
     <script src="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
-    <script
-        src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
     <script src="{{ url_for('static', filename='js/table-filter.js') }}"></script>
 
     {% endblock %}
-
-</body>
-
+  </body>
 </html>

@@ -128,6 +128,7 @@ $(document).ready(function () {
 
         // Redirigir a la ruta base
         window.location.href = baseUrl + "/traffic-filter";
+        sessionStorage.removeItem("datosTabla");
       },
       error: function (xhr, status, error) {
         var errorMessage = xhr.responseText; // Obtener el mensaje de error del servidor
@@ -135,6 +136,8 @@ $(document).ready(function () {
       },
     });
   });
+
+  
 
   function validarCampo(elemento) {
     return !elemento.prop("disabled") && elemento.val().trim() === "";
@@ -367,6 +370,7 @@ function stopPlayData() {
 
 async function resetData() {
   btnPausePlayReporte.prop("disabled", true);
+  sessionStorage.removeItem("datosTabla");
   /* if (!eventSource) {
     capturaActiva = true;
     preLoadData();

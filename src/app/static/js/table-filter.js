@@ -332,11 +332,11 @@ $(document).ready(function () {
     });
 
     var selecteFilterIp = filterIp.val();
-    if (selecteFilterIp === "Solo IP de Origen") {
+    if (selecteFilterIp === "IP de Origen") {
       ipAddr.prop("disabled", false);
 
       ipSrcContainer.css("display", "block");
-    } else if (selecteFilterIp === "Solo IP de Destino") {
+    } else if (selecteFilterIp === "IP de Destino") {
       ipDest.prop("disabled", false);
 
       ipDstContainer.css("display", "block");
@@ -476,11 +476,11 @@ $(document).ready(function () {
       portDstContainer: portDstContainer,
     });
     var selecteFilterPort = filterPort.val();
-    if (selecteFilterPort === "Solo Puerto de Origen") {
+    if (selecteFilterPort === "Puerto de Origen") {
       portSrc.prop("disabled", false);
 
       portSrcContainer.css("display", "block");
-    } else if (selecteFilterPort === "Solo Puerto de Destino") {
+    } else if (selecteFilterPort === "Puerto de Destino") {
       portDst.prop("disabled", false);
 
       portDstContainer.css("display", "block");
@@ -517,14 +517,12 @@ $(document).ready(function () {
     });
     var selecteFilterProtocolRed = filterProtocolRed.val();
 
-    if (selecteFilterProtocolRed === "Solo Protocolo de Red de Origen") {
+    if (selecteFilterProtocolRed === "Protocolo de Red de Origen") {
       protocolRedSrc.prop("disabled", false);
       protocolRedSrc.selectpicker("refresh");
 
       protocolRedSrcContainer.css("display", "block");
-    } else if (
-      selecteFilterProtocolRed === "Solo Protocolo de Red de Destino"
-    ) {
+    } else if (selecteFilterProtocolRed === "Protocolo de Red de Destino") {
       protocolRedDst.prop("disabled", false);
       protocolRedDst.selectpicker("refresh");
 
@@ -595,6 +593,10 @@ $(document).ready(function () {
       {
         field: "number",
         title: "N°",
+      },
+      {
+        field: "name",
+        title: "Nombre de Filtro",
       },
       {
         field: "type",
@@ -729,7 +731,7 @@ $(document).ready(function () {
       url: "/save_filter",
       data: formData,
       success: function (response) {
-        // location.reload();
+        //location.reload();
         //$("#modal-filter").find(".close").trigger("click");
         alertMessage(response.message);
       },
@@ -752,6 +754,7 @@ $(document).ready(function () {
     $(".alert-message-container").show("medium");
     $(".alert-message").text(response);
     setTimeout(function () {
+      location.reload();
       $(".alert-message-container").hide("medium");
     }, 2000);
   }

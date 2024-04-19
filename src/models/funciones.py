@@ -62,6 +62,9 @@ def obtener_reglas_ufw():
             ]
         ) """
 
+        iprint = verify_domain_dynamic("www.youtube.com")
+        print(iprint)
+
         reglas_in = []
         reglas_out = []
         reglas_default = []
@@ -363,6 +366,8 @@ def start_capture(
         command, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
     )
 
+    packet_count = 0
+
     for line in process.stdout:
         if "ARP" in line:
             arp_info = line.strip().split(",")
@@ -427,6 +432,12 @@ def start_capture(
             dst_parts = parts[6].rsplit(".", 1)
             dst_ip_domain = dst_parts[0]
             dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
+
+            packet_count += 1
+
+            # Emitir solo un cierto número de paquetes
+            if packet_count >= 30:
+                break
 
             yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
 
@@ -791,6 +802,14 @@ def get_domain_info(domain):
     return ip_addresses
 
 
+# Plataformas con ips dinamicas
+plataformas_dinamicas = {
+    "redes_sociales": [
+        "www.tiktok.com",
+    ]
+}
+
+# Plataformas con ips estaticas
 plataformas = {
     "redes_sociales": [
         "facebook.com",
@@ -817,7 +836,7 @@ plataformas = {
     "musica": [
         "spotify.com",
         "apple.com",
-        "youtube.com",
+        "www.youtube.com",
         "googleplay.com",
         "pandora.com",
     ],
@@ -1013,6 +1032,16 @@ def allow_connections(
 
                         subprocess.run(shlex.split(f"{rule}"))
                     rulesTypeContent.append((rulesContent, comment_content))
+                    for domainPlataform in plataformas_dinamicas[platform]:
+                        comment_content = f"{comment} - {platform_name}"
+
+                        rule = f"sudo iptables -I {entry} 1 {direction} {domainPlataform} -j {accion_regla}"
+
+                        rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
+                        rulesContent.append(rule)
+
+                        subprocess.run(shlex.split(f"{rule}"))
+                    rulesTypeContent.append((rulesContent, comment_content))
                 else:
                     print(f"Invalid platform: {platform_name}")
 
@@ -1197,7 +1226,7 @@ def allow_connections(
                     1,
                     current_user.id,
                 )
-                # Insertamos el firewall y obtenemos su id
+
                 firewall = modelFirewall.insertRule(firewall)
                 id_rule = firewall.id
 
@@ -1242,6 +1271,56 @@ def allow_connections(
         return "Regla creada correctamente"
     except subprocess.CalledProcessError:
         return "Error al permitir el puerto."
+
+
+# Ejecutara unicamente dominios que las ips sean dinamicas
+def verify_domain_dynamic(domain):
+    ips_set = set()  # Conjunto para almacenar las IPs únicas
+    ips = []
+    ips_sorted = None
+
+    for _ in range(5):  # Ejecutar el comando cinco veces
+        salida = subprocess.check_output(["dig", "+short", domain])
+        ips_domain = salida.decode("utf-8").splitlines()
+
+        for ip in ips_domain:
+            match = re.match(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", ip)
+            if match:
+                ips.append(ip)
+
+        ips_set.update(ips)  # Agregar las IPs únicas al conjunto
+
+    first_octets = set(ip.split(".")[0] for ip in ips_set)
+    second_octets = set(ip.split(".")[1] for ip in ips_set)
+    third_octets = set(ip.split(".")[2] for ip in ips_set)
+    if len(first_octets) == 1:
+        common_first_octets = first_octets.pop()
+        common_second_octets = second_octets.pop()
+        common_third_octets = third_octets.pop()
+        common_ip = (
+            f"{common_first_octets}.{common_second_octets}.{common_third_octets}.0/24"
+        )
+        print(
+            "Todas las direcciones IP tienen los mismos tres primeros octetos:",
+            common_ip,
+        )
+
+        return common_ip
+    else:
+        # Convertir el conjunto a una lista y ordenarla
+        ips_sorted = sorted(list(ips_set))
+
+    # Imprimir las IPs ordenadas
+    if ips_sorted:
+        for ip in ips_sorted:
+            """ rule = f"sudo iptables -I OUTPUT 1 -d {ip} -j REJECT"
+
+            rule += " -m comment --comment 'bloqueo - prubish'"
+
+            subprocess.run(shlex.split(f"{rule}")) """
+
+            print(ip)
+        return ips_sorted
 
 
 def allow_connections_detail(
@@ -1313,6 +1392,7 @@ def generate_content_domain(content, prefix):
 def save_filter(
     name_filter,
     type_ip,
+    type_domain,
     type_content,
     type_mac,
     type_port,
@@ -1328,6 +1408,7 @@ def save_filter(
     mac_addr,
     mac_dest,
     generalIp,
+    generalDomain,
     generalContent,
     generalPort,
     generalPortRed,
@@ -1338,7 +1419,14 @@ def save_filter(
 ):
     try:
         type_filter = ""
-        filter_values = [type_ip, type_content, type_mac, type_port, type_proto_red]
+        filter_values = [
+            type_ip,
+            type_domain,
+            type_content,
+            type_mac,
+            type_port,
+            type_proto_red,
+        ]
 
         # Filtrar los valores para eliminar los vacíos
         filtered_values = [value for value in filter_values if value]
@@ -1370,6 +1458,11 @@ def save_filter(
 
             contents_filter = f"{content_domain_general}"
             plataforms = f"{plataforms_general}"
+
+        elif generalDomain:
+            domains_general = patron_coma.sub(" or ", generalDomain)
+            general_domain = f"host {domains_general}"
+            ips_custom = general_domain
 
         # Manejo de ips
         if ip_addr:
@@ -1646,7 +1739,7 @@ def load_filter_data():
                 # Crear un diccionario con los valores formateados
                 filtro_formateado = {
                     "id": filtro[0],
-                    "nombre_filtro": filtro[1],
+                    "nombre_filtro": filtro[1].title(),
                     "tipo_filtro": filtro[2],
                     "filtro": filtro[3],
                     "fecha_creacion": fecha,
@@ -1697,7 +1790,7 @@ def load_filter_data():
                 # Crear un diccionario con los valores formateados
                 filtro_formateado = {
                     "id": filtro[0],
-                    "nombre_filtro": filtro[1],
+                    "nombre_filtro": filtro[1].title(),
                     "tipo_filtro": filtro[2],
                     "filtro": filtro[3],
                     "fecha_creacion": fecha,

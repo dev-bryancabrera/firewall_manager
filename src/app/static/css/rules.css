@@ -269,3 +269,12 @@ h2 {
 .alert-icon {
   padding-bottom: 20px;
 }
+
+.dominio2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  /* Número de líneas visibles antes de los puntos suspensivos */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
