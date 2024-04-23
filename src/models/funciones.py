@@ -44,7 +44,6 @@ def validar_ingreso(username, password_hash):
             flash("Usuario no Encontrado")
             return False
     except Exception as e:
-        print("dio un error > ", {str(e)})
         return str(e)
 
 
@@ -65,6 +64,7 @@ def obtener_reglas_ufw():
         reglas_in = []
         reglas_out = []
         reglas_default = []
+        domains_duplicated = []
 
         rule_db = modelFirewall.getRules()
 
@@ -95,23 +95,23 @@ def obtener_reglas_ufw():
                         rule_detail_command = rule_detail_parts[0].split()
 
                         if detail_status == 1:
-                            count_hyphens = rule_detail_parts[1].count("-")
+                            rule_detail_domain = rule_detail_parts[1].replace("'", "")
 
-                            if count_hyphens == 2:
-                                domain = (
-                                    rule_detail_parts[1]
-                                    .split("-", 2)[2]
-                                    .strip()
-                                    .replace("'", "")
-                                )
+                            if rule_detail_domain not in domains_duplicated:
+                                count_hyphens = rule_detail_domain.count("-")
 
-                            elif count_hyphens == 1:
-                                domain = (
-                                    rule_detail_parts[1]
-                                    .split("-", 1)[1]
-                                    .strip()
-                                    .replace("'", "")
-                                )
+                                if count_hyphens == 2:
+                                    domain = rule_detail_domain.split("-", 2)[2].strip()
+
+                                elif count_hyphens == 1:
+                                    domain = rule_detail_domain.split("-", 1)[1].strip()
+
+                                if domains:
+                                    domains += " | " + domain
+                                else:
+                                    domains += domain
+
+                                domains_duplicated.append(rule_detail_domain)
 
                     else:
                         rule_detail_parts = detail_domain[1].split(" comment ")
@@ -133,11 +133,6 @@ def obtener_reglas_ufw():
                             rule_data = f"{ip}"
                         elif port:
                             rule_data = f"{port}"
-
-                    if domains:
-                        domains += " | " + domain
-                    else:
-                        domains += domain
 
                     if (
                         "allow" in rule_detail_command
@@ -212,6 +207,9 @@ def obtener_reglas_ufw_contenido():
     try:
         reglas_contenido = {}
         reglas_contenido_sorted = {}
+
+        domains_duplicated = []
+
         rule_db = modelFirewall.getRulesContent()
 
         if rule_db:
@@ -235,47 +233,54 @@ def obtener_reglas_ufw_contenido():
                     rule_parts = rule_string.split(" -m comment --comment ")
 
                     rule_command = rule_parts[0].split()
-                    domain = rule_parts[1].split("-", 2)[2].strip().replace("'", "")
+                    rule_name = rule_parts[1]
 
-                    if "ACCEPT" in rule_command:
-                        permiso = "PERMITIDO"
-                    elif "REJECT" in rule_command:
-                        permiso = "DENEGADO"
+                    if rule_name not in domains_duplicated:
+                        domain = rule_name.split("-", 2)[2].strip().replace("'", "")
 
-                    if "tcp" in rule_command:
-                        protocolo = "TCP"
-                    elif "udp" in rule_command:
-                        protocolo = "UDP"
-                    else:
-                        protocolo = "TCP/UDP"
+                        if "ACCEPT" in rule_command:
+                            permiso = "PERMITIDO"
+                        elif "REJECT" in rule_command:
+                            permiso = "DENEGADO"
 
-                    if "INPUT" in rule_command:
-                        entry = "ENTRADA"
-                    elif "OUTPUT" in rule_command:
-                        entry = "SALIDA"
-                    else:
-                        entry = "ENTRADA"
+                        if "tcp" in rule_command:
+                            protocolo = "TCP"
+                        elif "udp" in rule_command:
+                            protocolo = "UDP"
+                        else:
+                            protocolo = "TCP/UDP"
 
-                    # Crear un diccionario con los valores
-                    regla = {
-                        "id_rule": id_regla,
-                        "nombre_regla_contenido": name_rule,
-                        "id_rule_detail": rule_datail_id,
-                        "nombre": domain,
-                        "fecha_creacion": created_date,
-                        "accion": permiso,
-                        "protocolo": protocolo,
-                        "entrada": entry,
-                        "estado": rule_status,
-                    }
+                        if "INPUT" in rule_command:
+                            entry = "ENTRADA"
+                        elif "OUTPUT" in rule_command:
+                            entry = "SALIDA"
+                        else:
+                            entry = "ENTRADA"
 
-                    # Agregar el diccionario al contenido correspondiente en el diccionario reglas_contenido
-                    if (assigned_name, id_regla, name_rule) not in reglas_contenido:
-                        reglas_contenido[(assigned_name, id_regla, name_rule)] = [regla]
-                    else:
-                        reglas_contenido[(assigned_name, id_regla, name_rule)].append(
-                            regla
-                        )
+                        # Crear un diccionario con los valores
+                        regla = {
+                            "id_rule": id_regla,
+                            "nombre_regla_contenido": name_rule,
+                            "id_rule_detail": rule_datail_id,
+                            "nombre": domain,
+                            "fecha_creacion": created_date,
+                            "accion": permiso,
+                            "protocolo": protocolo,
+                            "entrada": entry,
+                            "estado": rule_status,
+                        }
+
+                        # Agregar el diccionario al contenido correspondiente en el diccionario reglas_contenido
+                        if (assigned_name, id_regla, name_rule) not in reglas_contenido:
+                            reglas_contenido[(assigned_name, id_regla, name_rule)] = [
+                                regla
+                            ]
+                        else:
+                            reglas_contenido[
+                                (assigned_name, id_regla, name_rule)
+                            ].append(regla)
+
+                        domains_duplicated.append(rule_name)
             reglas_contenido_sorted = {}
             for key, value in reglas_contenido.items():
                 sorted_value = sorted(value, key=lambda x: x["nombre"])
@@ -324,7 +329,7 @@ def scan_network():
 def start_capture(
     command_filter,
 ):
-    if command_filter == "":
+    if command_filter is None:
         custom_command = (
             "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
         )
@@ -582,6 +587,7 @@ def delete_rule(regla_content_id, id_regla):
                     ]
                 )
 
+                remove_domain_from_hosts(rule_detail_name)
                 iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
 
             modelFirewallDetail.deleteDetailById(regla_content_id)
@@ -632,7 +638,10 @@ def delete_rule(regla_content_id, id_regla):
                         ]
                     )
 
+                    print("llegind")
+
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
+                    remove_domain_from_hosts(rule_name)
 
             modelFirewallDetail.deleteRuleDetail(id_regla)
             modelFirewall.deleteRule(id_regla)
@@ -644,14 +653,31 @@ def delete_rule(regla_content_id, id_regla):
 
 def deactivate_activate_rule(id_regla, regla_content_id):
     try:
+        rule_details = {}
+        rule_details_copy = {}
+
         if regla_content_id:
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
             rule_string = rule_detail[1]
             estado_detail = rule_detail[2]
+            id_regla_detalle = rule_detail[3]
+
+            detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla_detalle)
+
+            for detail_rule in detail_rules:
+                rule_detail_id, rule_string_items, _ = detail_rule
+
+                rule_details[rule_detail_id] = rule_string_items
 
             rule_detail_name = rule_string.split(" -m comment --comment ")[1].replace(
                 "'", ""
             )
+
+            rule_details_copy = rule_details.copy()
+
+            for rule_detail_id, rule_string_items in rule_details_copy.items():
+                if rule_detail_name not in rule_string_items:
+                    del rule_details[rule_detail_id]
 
             if estado_detail == 1:
                 if "INPUT" in rule_string:
@@ -671,15 +697,18 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 )
 
                 iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
-                modelFirewallDetail.updateDetail(0, regla_content_id)
+
+                for rule_detail_id, rule_string_items in rule_details.items():
+                    modelFirewallDetail.updateDetail(0, rule_detail_id)
 
                 return "Regla Desactivada"
 
             elif estado_detail == 0:
-                rule = f"sudo {rule_string}"
-                subprocess.run(shlex.split(f"{rule}"))
+                for rule_detail_id, rule_string_items in rule_details.items():
+                    rule = f"sudo {rule_string_items}"
+                    subprocess.run(shlex.split(f"{rule}"))
 
-                modelFirewallDetail.updateDetail(1, regla_content_id)
+                    modelFirewallDetail.updateDetail(1, rule_detail_id)
 
                 return "Regla Activa"
 
@@ -689,65 +718,82 @@ def deactivate_activate_rule(id_regla, regla_content_id):
             rule_name = rule_db_filter[2]
             numero_data = int(rule_db_filter[5])
             tipo_regla = rule_db_filter[3]
+            domains_duplicated = []
 
             detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
-            if rule_db_filter:
-                if numero_data == 1:
-                    for detail_rule in detail_rules:
-                        rule_detail_id = detail_rule[0]
-                        rule_string = detail_rule[1]
-
-                        if tipo_regla == "contenido" or tipo_regla == "dominio":
-                            if "INPUT" in rule_string:
-                                direccion = "INPUT"
-                            elif "OUTPUT" in rule_string:
-                                direccion = "OUTPUT"
-
-                        else:
-                            rule_delete = (
-                                f"sudo {rule_string.replace('ufw ', 'ufw delete ')}"
-                            )
-
-                            print(rule_delete)
-
-                            subprocess.run(
-                                shlex.split(f"{rule_delete}"),
-                                input="y\n",
-                                text=True,
-                                capture_output=True,
-                            )
-
-                        modelFirewallDetail.updateDetail(0, rule_detail_id)
+            if numero_data == 1:
+                for detail_rule in detail_rules:
+                    rule_detail_id = detail_rule[0]
+                    rule_string = detail_rule[1]
 
                     if tipo_regla == "contenido" or tipo_regla == "dominio":
-                        salida_iptables = subprocess.check_output(
-                            [
-                                "sudo",
-                                "iptables",
-                                "-L",
-                                direccion,
-                                "--line-numbers",
-                                "-n",
-                            ]
+                        if "INPUT" in rule_string:
+                            direccion = "INPUT"
+                        elif "OUTPUT" in rule_string:
+                            direccion = "OUTPUT"
+
+                    else:
+                        rule_delete = (
+                            f"sudo {rule_string.replace('ufw ', 'ufw delete ')}"
                         )
 
-                        iptables_rules_matched(salida_iptables, rule_name, direccion)
+                        print(rule_delete)
 
-                    modelFirewall.updateRule(0, id_regla)
-                    return "Regla Desactivada"
-                elif numero_data == 0:
-                    for detail_rule in detail_rules:
-                        rule_detail_id = detail_rule[0]
-                        rule_string = detail_rule[1]
+                        subprocess.run(
+                            shlex.split(f"{rule_delete}"),
+                            input="y\n",
+                            text=True,
+                            capture_output=True,
+                        )
 
-                        rule = f"sudo {rule_string}"
-                        subprocess.run(shlex.split(f"{rule}"))
+                    modelFirewallDetail.updateDetail(0, rule_detail_id)
 
-                        modelFirewallDetail.updateDetail(1, rule_detail_id)
-                    modelFirewall.updateRule(1, id_regla)
-                    return "Regla Activa"
-            else:
-                return "No se encontró una regla con ese nombre"
+                if tipo_regla == "contenido" or tipo_regla == "dominio":
+                    salida_iptables = subprocess.check_output(
+                        [
+                            "sudo",
+                            "iptables",
+                            "-L",
+                            direccion,
+                            "--line-numbers",
+                            "-n",
+                        ]
+                    )
+
+                    iptables_rules_matched(salida_iptables, rule_name, direccion)
+                    remove_domain_from_hosts(rule_name)
+
+                modelFirewall.updateRule(0, id_regla)
+                return "Regla Desactivada"
+            elif numero_data == 0:
+                for detail_rule in detail_rules:
+                    rule_detail_id = detail_rule[0]
+                    rule_string = detail_rule[1]
+
+                    rule = f"sudo {rule_string}"
+                    subprocess.run(shlex.split(f"{rule}"))
+
+                    modelFirewallDetail.updateDetail(1, rule_detail_id)
+
+                    if tipo_regla == "contenido" or tipo_regla == "dominio":
+                        rule_detail_parts = rule_string.split(" -m comment --comment ")
+
+                        rule_detail_domain = rule_detail_parts[1].replace("'", "")
+
+                        if rule_detail_domain not in domains_duplicated:
+                            count_hyphens = rule_detail_domain.count("-")
+
+                            if count_hyphens == 2:
+                                domain = rule_detail_domain.split("-", 2)[2].strip()
+
+                            elif count_hyphens == 1:
+                                domain = rule_detail_domain.split("-", 1)[1].strip()
+
+                            add_domain_to_hosts(domain, rule_detail_domain)
+                            domains_duplicated.append(rule_detail_domain)
+
+                modelFirewall.updateRule(1, id_regla)
+                return "Regla Activa"
 
         return "El nombre de la regla no puede ser None o vacío"
     except subprocess.CalledProcessError as e:
@@ -755,6 +801,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
 
 def iptables_rules_matched(salida_iptables, name_iptable, direccion):
+    print("llego")
     reglas = salida_iptables.decode("utf-8").splitlines()
     id_iptable_delete = None
 
@@ -803,7 +850,8 @@ def get_domain_info(domain):
 plataformas_dinamicas = {
     "redes_sociales": [
         "www.tiktok.com",
-    ]
+    ],
+    "video": ["www.youtube.com"],
 }
 
 # Plataformas con ips estaticas
@@ -833,7 +881,6 @@ plataformas = {
     "musica": [
         "spotify.com",
         "apple.com",
-        "www.youtube.com",
         "googleplay.com",
         "pandora.com",
     ],
@@ -910,8 +957,10 @@ plataformas = {
         "stanjames.com",
         "skybet.com",
     ],
-    "video": ["youtube.com", "vimeo.com", "dailymotion.com", "twitch.tv"],
+    "video": ["vimeo.com", "dailymotion.com", "twitch.tv"],
 }
+
+plataformas_dinamicas_dominio = ["www.tiktok.com", "www.youtube.com"]
 
 
 def clean_cache():
@@ -965,6 +1014,21 @@ def enviar_orden_ssh(ip_remota, puerto, usuario, password, comando):
 
     except Exception as e:
         return "", str(e)
+
+
+def add_domain_to_hosts(domain, name_domain):
+    with open("/etc/hosts", "a") as hosts_file:
+        hosts_file.write(f"127.0.0.1\t{domain}\t# {name_domain}\n")
+
+
+def remove_domain_from_hosts(name_domain):
+    with open("/etc/hosts", "r") as hosts_file:
+        lines = hosts_file.readlines()
+
+    with open("/etc/hosts", "w") as hosts_file:
+        for line in lines:
+            if name_domain not in line:
+                hosts_file.write(line)
 
 
 def allow_connections(
@@ -1028,13 +1092,14 @@ def allow_connections(
 
                         subprocess.run(shlex.split(f"{rule}"))
 
+                        comment_with_domain = f"{comment_content} - {domainPlataform}"
+                        add_domain_to_hosts(domainPlataform, comment_with_domain)
+
                     for domainPlataform in plataformas_dinamicas[platform]:
                         ip_domain = verify_domain_dynamic(domainPlataform)
 
                         if isinstance(ip_domain, list):
-                            print("iprint es una lista:", ip_domain)
                             for ip in ip_domain:
-                                print("")
                                 rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
 
                                 rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
@@ -1049,6 +1114,8 @@ def allow_connections(
 
                             subprocess.run(shlex.split(f"{rule}"))
 
+                        comment_with_domain = f"{comment_content} - {domainPlataform}"
+                        add_domain_to_hosts(domainPlataform, comment_with_domain)
                     rulesTypeContent.append((rulesContent, comment_content))
                 else:
                     print(f"Invalid platform: {platform_name}")
@@ -1058,39 +1125,32 @@ def allow_connections(
 
             comment_domain = f"{comment} - {domain}"
 
-            for categorias in plataformas:
-            
-                print(categorias)
+            if domain in plataformas_dinamicas_dominio:
+                ip_domain = verify_domain_dynamic(domain)
 
-                for domain in plataformas[categorias]:
-                    rule = (
-                        f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
-                    )
+                if isinstance(ip_domain, list):
+                    for ip in ip_domain:
+                        rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
+
+                        rule += f" -m comment --comment '{comment_domain}'"
+                        rules_domain_dynamic.append(rule)
+                        subprocess.run(shlex.split(f"{rule}"))
+
+                elif isinstance(ip_domain, str):
+                    rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
 
                     rule += f" -m comment --comment '{comment_domain}'"
 
                     subprocess.run(shlex.split(f"{rule}"))
 
-                for domain in plataformas_dinamicas[platform]:
-                    comment_content = f"{comment} - {platform_name}"
+            else:
+                rule = (
+                    f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
+                )
+                rule += f" -m comment --comment '{comment_domain}'"
+                subprocess.run(shlex.split(f"{rule}"))
 
-                    ip_domain = verify_domain_dynamic(domainPlataform)
-
-                    if isinstance(ip_domain, list):
-                        print("iprint es una lista:", ip_domain)
-                        for ip in ip_domain:
-                            rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
-
-                            rule += f" -m comment --comment '{comment_domain}'"
-                            rules_domain_dynamic.append(rule)
-                            subprocess.run(shlex.split(f"{rule}"))
-
-                    elif isinstance(ip_domain, str):
-                        rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
-
-                        rule += f" -m comment --comment '{comment_domain}'"
-
-                        subprocess.run(shlex.split(f"{rule}"))
+            add_domain_to_hosts(domain, comment_domain)
 
         elif (port or portStart or portLimit) and ip_addr and not domain:
             if ip_addr and netmask:
@@ -1342,26 +1402,11 @@ def verify_domain_dynamic(domain):
         common_ip = (
             f"{common_first_octets}.{common_second_octets}.{common_third_octets}.0/24"
         )
-        print(
-            "Todas las direcciones IP tienen los mismos tres primeros octetos:",
-            common_ip,
-        )
 
         return common_ip
     else:
         # Convertir el conjunto a una lista y ordenarla
         ips_sorted = sorted(list(ips_set))
-
-    # Imprimir las IPs ordenadas
-    if ips_sorted:
-        for ip in ips_sorted:
-            """ rule = f"sudo iptables -I OUTPUT 1 -d {ip} -j REJECT"
-
-            rule += " -m comment --comment 'bloqueo - prubish'"
-
-            subprocess.run(shlex.split(f"{rule}")) """
-
-            print(ip)
         return ips_sorted
 
 
@@ -1885,14 +1930,11 @@ def load_reportData(id_report):
 
 def delete_report(id_reporte):
     try:
-        print(id_reporte)
         modelPaquetes.deletePacket(id_reporte)
 
         return "Reporte Eliminado"
     except subprocess.CalledProcessError as e:
-        # Maneja cualquier error que pueda ocurrir durante la ejecución del comando
-        print(f"Error al obtener el número de la regla: {e}")
-        return None
+        return f"Error al obtener el número de la regla: {e}"
 
 
 def delete_filter(id_filter):

@@ -2,7 +2,6 @@ from .db.connectDB import get_connection
 
 
 class modelFirewallDetail:
-
     @classmethod
     def insertRuleDetail(self, firewallDetail):
         try:
@@ -11,7 +10,11 @@ class modelFirewallDetail:
             sql = "INSERT INTO firewall_rules_detail(firewall_rule_id, regla, estado) VALUES (%s, %s, %s)"
             cursor.execute(
                 sql,
-                (firewallDetail.firewall_rule_id, firewallDetail.regla, firewallDetail.estado),
+                (
+                    firewallDetail.firewall_rule_id,
+                    firewallDetail.regla,
+                    firewallDetail.estado,
+                ),
             )
             db.commit()
             db.close()
@@ -44,7 +47,11 @@ class modelFirewallDetail:
         try:
             db = get_connection()
             cursor = db.cursor()
-            sql = "DELETE FROM firewall_rules_detail WHERE firewall_rule_id='{}'".format(id)
+            sql = (
+                "DELETE FROM firewall_rules_detail WHERE firewall_rule_id='{}'".format(
+                    id
+                )
+            )
             cursor.execute(sql)
             db.commit()
             db.close()
@@ -95,10 +102,8 @@ class modelFirewallDetail:
         try:
             db = get_connection()
             cursor = db.cursor()
-            sql = (
-                "SELECT id, regla FROM firewall_rules_detail WHERE firewall_rule_id='{}'".format(
-                    id
-                )
+            sql = "SELECT id, regla FROM firewall_rules_detail WHERE firewall_rule_id='{}'".format(
+                id
             )
             cursor.execute(sql)
             db.close()
@@ -111,7 +116,9 @@ class modelFirewallDetail:
         try:
             db = get_connection()
             cursor = db.cursor()
-            sql = "SELECT id, regla, estado FROM firewall_rules_detail WHERE id='{}'".format(id)
+            sql = "SELECT id, regla, estado, firewall_rule_id FROM firewall_rules_detail WHERE id='{}'".format(
+                id
+            )
             cursor.execute(sql)
             db.close()
             return cursor.fetchone()

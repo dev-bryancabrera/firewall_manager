@@ -137,8 +137,6 @@ $(document).ready(function () {
     });
   });
 
-  
-
   function validarCampo(elemento) {
     return !elemento.prop("disabled") && elemento.val().trim() === "";
   }
@@ -201,7 +199,6 @@ confirmDeleteModal.on("show.bs.modal", function (event) {
   var reporteId = button.data("reporte-id");
 
   idReport.val(reporteId);
-  console.log(idReport);
 });
 
 btnConfirmDeleteReport.on("click", function () {

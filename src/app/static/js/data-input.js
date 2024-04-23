@@ -279,7 +279,6 @@ $(document).ready(function () {
     var reglaNombre = button.data("regla-id");
 
     ruleId.val(reglaNombre);
-    console.log(ruleId.val());
   });
 
   /* Carga los datos al modal para visualizar */
