@@ -151,7 +151,6 @@ def configurar_rutas(app, login_manager_app):
     def packet_data():
         try:
             command_filter = request.args.get("command_filter")
-            print(command_filter)
 
             return Response(
                 start_capture(
@@ -188,8 +187,6 @@ def configurar_rutas(app, login_manager_app):
             entry = request.form.get("entry")
             comment = request.form.get("comment")
             content_tp = request.form.getlist("contentOption")
-
-            print(content_tp)
 
             response = allow_connections(
                 accion_regla,
@@ -248,6 +245,7 @@ def configurar_rutas(app, login_manager_app):
             ip_addr = request.form.get("ip_addr")
             ip_dest = request.form.get("ip_dest")
             content_dst = request.form.getlist("content_dst")
+            domain_dst = request.form.get("domain_dest")
             mac_addr = request.form.get("mac_addr")
             mac_dest = request.form.get("mac_dest")
             portSrc = request.form.get("portStart")
@@ -280,6 +278,7 @@ def configurar_rutas(app, login_manager_app):
                 ip_addr,
                 ip_dest,
                 content_dst,
+                domain_dst,
                 port_red_src,
                 port_red_dst,
                 portSrc,
@@ -369,8 +368,6 @@ def configurar_rutas(app, login_manager_app):
     def eliminar_filtro():
         try:
             id_reporte = request.args.get("id_filtro")
-
-            print(id_reporte)
 
             response = delete_filter(id_reporte)
 

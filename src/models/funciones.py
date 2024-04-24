@@ -7,7 +7,6 @@ from flask import flash, jsonify
 from flask_login import current_user, login_user
 import pandas as pd
 import paramiko
-from scapy.all import *
 
 import re
 
@@ -28,7 +27,6 @@ from models.entities.monitoreo import Monitoreo
 from models.entities.filterPacket import FilterPacket
 
 
-# Función para realizar una consulta a la base de datos
 def validar_ingreso(username, password_hash):
     try:
         user = User(0, username, password_hash)
@@ -49,18 +47,6 @@ def validar_ingreso(username, password_hash):
 
 def obtener_reglas_ufw():
     try:
-        """ salida = subprocess.check_output(["sudo", "ufw", "status", "numbered"])
-        reglas = salida.decode("utf-8").splitlines()
-
-        # Filtrar las líneas que comienzan con '[', eliminar "(out)" y ajustar los espacios en los números
-        consulta_formateada = "\n".join(
-            [
-                re.sub(r"\(out\)", "", re.sub(r"\[\s*(\d+)\]", r"[\1]", line.strip()))
-                for line in reglas
-                if line.startswith("[")
-            ]
-        ) """
-
         reglas_in = []
         reglas_out = []
         reglas_default = []
@@ -334,7 +320,7 @@ def start_capture(
             "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
         )
     else:
-        custom_command = command_filter
+        custom_command = command_filter.replace("-", "/")
 
     base_command = [
         "sudo",
@@ -361,7 +347,6 @@ def start_capture(
     # Concatenar las dos partes del comando
     command = base_command + custom_values + end_command
 
-    print("filtro creado >", command_filter)
     print("Comando > ", command)
 
     process = subprocess.Popen(
@@ -587,8 +572,10 @@ def delete_rule(regla_content_id, id_regla):
                     ]
                 )
 
-                remove_domain_from_hosts(rule_detail_name)
                 iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
+
+                if "REJECT" in rule_string:
+                    remove_domain_from_hosts(rule_detail_name)
 
             modelFirewallDetail.deleteDetailById(regla_content_id)
 
@@ -638,10 +625,10 @@ def delete_rule(regla_content_id, id_regla):
                         ]
                     )
 
-                    print("llegind")
-
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
-                    remove_domain_from_hosts(rule_name)
+
+                    if "REJECT" in rule_string:
+                        remove_domain_from_hosts(rule_name)
 
             modelFirewallDetail.deleteRuleDetail(id_regla)
             modelFirewall.deleteRule(id_regla)
@@ -655,6 +642,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
     try:
         rule_details = {}
         rule_details_copy = {}
+        domains_duplicated = []
 
         if regla_content_id:
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
@@ -698,6 +686,9 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
                 iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
 
+                if "REJECT" in rule_string:
+                    remove_domain_from_hosts(rule_detail_name)
+
                 for rule_detail_id, rule_string_items in rule_details.items():
                     modelFirewallDetail.updateDetail(0, rule_detail_id)
 
@@ -710,6 +701,25 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
                     modelFirewallDetail.updateDetail(1, rule_detail_id)
 
+                    if "REJECT" in rule_string_items:
+                        rule_detail_parts = rule_string_items.split(
+                            " -m comment --comment "
+                        )
+
+                        rule_detail_domain = rule_detail_parts[1].replace("'", "")
+
+                        if rule_detail_domain not in domains_duplicated:
+                            count_hyphens = rule_detail_domain.count("-")
+
+                            if count_hyphens == 2:
+                                domain = rule_detail_domain.split("-", 2)[2].strip()
+
+                            elif count_hyphens == 1:
+                                domain = rule_detail_domain.split("-", 1)[1].strip()
+
+                            add_domain_to_hosts(domain, rule_detail_domain)
+                            domains_duplicated.append(rule_detail_domain)
+
                 return "Regla Activa"
 
         elif id_regla and not regla_content_id:
@@ -718,7 +728,6 @@ def deactivate_activate_rule(id_regla, regla_content_id):
             rule_name = rule_db_filter[2]
             numero_data = int(rule_db_filter[5])
             tipo_regla = rule_db_filter[3]
-            domains_duplicated = []
 
             detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
             if numero_data == 1:
@@ -761,7 +770,8 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                     )
 
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
-                    remove_domain_from_hosts(rule_name)
+                    if "REJECT" in rule_string:
+                        remove_domain_from_hosts(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
                 return "Regla Desactivada"
@@ -776,21 +786,24 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                     modelFirewallDetail.updateDetail(1, rule_detail_id)
 
                     if tipo_regla == "contenido" or tipo_regla == "dominio":
-                        rule_detail_parts = rule_string.split(" -m comment --comment ")
+                        if "REJECT" in rule_string:
+                            rule_detail_parts = rule_string.split(
+                                " -m comment --comment "
+                            )
 
-                        rule_detail_domain = rule_detail_parts[1].replace("'", "")
+                            rule_detail_domain = rule_detail_parts[1].replace("'", "")
 
-                        if rule_detail_domain not in domains_duplicated:
-                            count_hyphens = rule_detail_domain.count("-")
+                            if rule_detail_domain not in domains_duplicated:
+                                count_hyphens = rule_detail_domain.count("-")
 
-                            if count_hyphens == 2:
-                                domain = rule_detail_domain.split("-", 2)[2].strip()
+                                if count_hyphens == 2:
+                                    domain = rule_detail_domain.split("-", 2)[2].strip()
 
-                            elif count_hyphens == 1:
-                                domain = rule_detail_domain.split("-", 1)[1].strip()
+                                elif count_hyphens == 1:
+                                    domain = rule_detail_domain.split("-", 1)[1].strip()
 
-                            add_domain_to_hosts(domain, rule_detail_domain)
-                            domains_duplicated.append(rule_detail_domain)
+                                add_domain_to_hosts(domain, rule_detail_domain)
+                                domains_duplicated.append(rule_detail_domain)
 
                 modelFirewall.updateRule(1, id_regla)
                 return "Regla Activa"
@@ -801,7 +814,6 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
 
 def iptables_rules_matched(salida_iptables, name_iptable, direccion):
-    print("llego")
     reglas = salida_iptables.decode("utf-8").splitlines()
     id_iptable_delete = None
 
@@ -1084,38 +1096,33 @@ def allow_connections(
                     platform_name = platform.lower().replace("_", " ").title()
                     rulesContent = []
                     comment_content = f"{comment} - {platform_name}"
-                    for domainPlataform in plataformas[platform]:
-                        rule = f"sudo iptables -I {entry} 1 {direction} {domainPlataform} -j {accion_regla}"
 
-                        rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
-                        rulesContent.append(rule)
-
-                        subprocess.run(shlex.split(f"{rule}"))
+                    for domainPlataform in (
+                        plataformas[platform] + plataformas_dinamicas[platform]
+                    ):
+                        ip_domain = (
+                            verify_domain_dynamic(domainPlataform)
+                            if domainPlataform in plataformas_dinamicas[platform]
+                            else domainPlataform
+                        )
 
                         comment_with_domain = f"{comment_content} - {domainPlataform}"
-                        add_domain_to_hosts(domainPlataform, comment_with_domain)
-
-                    for domainPlataform in plataformas_dinamicas[platform]:
-                        ip_domain = verify_domain_dynamic(domainPlataform)
 
                         if isinstance(ip_domain, list):
                             for ip in ip_domain:
                                 rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
-
                                 rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
                                 rulesContent.append(rule)
-                                subprocess.run(shlex.split(f"{rule}"))
-
+                                subprocess.run(shlex.split(rule))
                         elif isinstance(ip_domain, str):
                             rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
-
                             rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
                             rulesContent.append(rule)
+                            subprocess.run(shlex.split(rule))
 
-                            subprocess.run(shlex.split(f"{rule}"))
+                        if accion_regla == "REJECT":
+                            add_domain_to_hosts(domainPlataform, comment_with_domain)
 
-                        comment_with_domain = f"{comment_content} - {domainPlataform}"
-                        add_domain_to_hosts(domainPlataform, comment_with_domain)
                     rulesTypeContent.append((rulesContent, comment_content))
                 else:
                     print(f"Invalid platform: {platform_name}")
@@ -1150,7 +1157,8 @@ def allow_connections(
                 rule += f" -m comment --comment '{comment_domain}'"
                 subprocess.run(shlex.split(f"{rule}"))
 
-            add_domain_to_hosts(domain, comment_domain)
+            if accion_regla == "REJECT":
+                add_domain_to_hosts(domainPlataform, comment_domain)
 
         elif (port or portStart or portLimit) and ip_addr and not domain:
             if ip_addr and netmask:
@@ -1447,6 +1455,9 @@ def allow_connections_detail(
             firewallDetail = FirewallDetail(0, id_regla, save_rule, 1)
             modelFirewallDetail.insertRuleDetail(firewallDetail)
 
+        if accion_regla == "REJECT":
+            add_domain_to_hosts(domain, comment_domain)
+
         return "Regla creada correctamente"
     except subprocess.CalledProcessError:
         return "Error al permitir el puerto."
@@ -1460,20 +1471,67 @@ def format_rule_save(rule):
 
 def generate_content_domain(content, prefix):
     content_domain = f"{prefix}"
+    content_domain_dynamic = ""
     plataforms = ""
+    domain_string_dynamic = ""
     for platform in content:
         if platform in plataformas:
-            domains = [
-                f" {domain} or" if index >= 0 else f" {domain}"
-                for index, domain in enumerate(plataformas[platform])
-            ]
+            domains = [f" {domain} or" for domain in plataformas[platform]]
             domain_string = "".join(domains)
             content_domain += domain_string
             plataforms += f"{platform} -"
 
+        if platform in plataformas_dinamicas:
+            for domainPlataform in plataformas_dinamicas[platform]:
+                ip_domain = (
+                    verify_domain_dynamic(domainPlataform)
+                    if domainPlataform in plataformas_dinamicas[platform]
+                    else domainPlataform
+                )
+
+                if isinstance(ip_domain, list):
+                    for ip in ip_domain:
+                        domains = f" {ip} or"
+                        domain_string = "".join(domains)
+                        content_domain += domain_string
+                        plataforms += f"{platform} -"
+
+                elif isinstance(ip_domain, str):
+                    domains_dynamic = f"{ip_domain} or"
+                    domain_string_dynamic += "".join(domains_dynamic)
+
+                    plataforms += f"{platform} -"
+
     content_domain = content_domain.rstrip(" or")
     plataforms = plataforms.rstrip(" -")
-    return content_domain, plataforms
+    content_domain_dynamic = domain_string_dynamic.rstrip(" or")
+
+    return content_domain, plataforms, content_domain_dynamic
+
+
+def process_domains(domains):
+    domain_string_dynamic = ""
+    domain_string_static = ""
+    domain_list_dynamic = ""
+
+    for domain in domains:
+        domain_line = domain.strip()
+
+        if domain_line in plataformas_dinamicas_dominio:
+            ip_domain = verify_domain_dynamic(domain_line)
+
+            if isinstance(ip_domain, list):
+                domain_list_dynamic += " or ".join(ip_domain) + " or "
+            elif isinstance(ip_domain, str):
+                domain_string_dynamic += ip_domain + " or "
+        else:
+            domain_string_static += domain_line + " or "
+
+    domain_list_dynamic = domain_list_dynamic.rstrip(" or ")
+    domain_string_dynamic = domain_string_dynamic.rstrip(" or ")
+    domain_string_static = domain_string_static.rstrip(" or ")
+
+    return domain_string_dynamic, domain_string_static, domain_list_dynamic
 
 
 def save_filter(
@@ -1487,6 +1545,7 @@ def save_filter(
     ip_addr,
     ip_dest,
     content_dst,
+    domain_dst,
     port_red_src,
     port_red_dst,
     port_src,
@@ -1532,25 +1591,55 @@ def save_filter(
 
         # Manejo de Contenido
         if content_dst:
-            content_domain_dst, plataforms_dst = generate_content_domain(
-                content_dst, "dst host"
+            content_domain_dst, plataforms_dst, content_dynamic_dst = (
+                generate_content_domain(content_dst, "dst host")
             )
             contents_filter = f"{content_domain_dst}"
             plataforms = f"{plataforms_dst}"
 
+            if content_dynamic_dst != "":
+                contents_filter = f"{contents_filter} or dst net {content_dynamic_dst}"
+
         elif generalContent:
-            content_domain_general, plataforms_general = generate_content_domain(
-                generalContent, "host"
+            content_domain_general, plataforms_general, content_dynamic_dst = (
+                generate_content_domain(generalContent, "host")
             )
 
             contents_filter = f"{content_domain_general}"
             plataforms = f"{plataforms_general}"
 
-        elif generalDomain:
-            domains_general = patron_coma.sub(" or ", generalDomain)
-            general_domain = f"host {domains_general}"
-            ips_custom = general_domain
+            if content_dynamic_dst != "":
+                contents_filter = f"{contents_filter} or net {content_dynamic_dst}"
 
+        if generalDomain or domain_dst:
+            dst_prefix = "dst " if domain_dst else ""
+            domains = (
+                generalDomain.split(",") if generalDomain else domain_dst.split(",")
+            )
+            domain_string_dynamic, domain_string_static, domain_list_dynamic = (
+                process_domains(domains)
+            )
+
+            if domain_string_dynamic and domain_string_static and domain_list_dynamic:
+                general_domain = f"{dst_prefix}host {domain_string_static} or {domain_list_dynamic} or {dst_prefix}net {domain_string_dynamic}"
+            elif domain_string_static and domain_list_dynamic:
+                general_domain = (
+                    f"{dst_prefix}host {domain_string_static} or {domain_list_dynamic}"
+                )
+            elif domain_string_dynamic and domain_string_static:
+                general_domain = f"{dst_prefix}host {domain_string_static} or {dst_prefix}net {domain_string_dynamic}"
+            elif domain_string_dynamic and domain_list_dynamic:
+                general_domain = f"{dst_prefix}host {domain_list_dynamic} or {dst_prefix}net {domain_string_dynamic}"
+            elif domain_string_static:
+                general_domain = f"{dst_prefix}host {domain_string_static}"
+            elif domain_list_dynamic:
+                general_domain = f"{dst_prefix}host {domain_list_dynamic}"
+            elif domain_string_dynamic:
+                general_domain = f"{dst_prefix}net {domain_string_dynamic}"
+
+            ips_custom = general_domain.replace("/", "-")
+
+        print(contents_filter)
         # Manejo de ips
         if ip_addr:
             if patron_coma.search(ip_addr):
@@ -1631,6 +1720,7 @@ def save_filter(
 
         # filtro general de ips, dominios o contenido
         if contents_filter:
+            contents_filter = contents_filter.replace("/", "-")
             ips_custom = f"({contents_filter})"
         elif ips_custom:
             ips_custom = f"({ips_custom})"
