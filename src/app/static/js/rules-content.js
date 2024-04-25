@@ -1,5 +1,7 @@
 $(document).ready(function () {
-  $(".ticket-type").append('<button class="show-full-response">Show</button>');
+  $(".ticket-type").append(
+    '<button class="show-full-response">Mostrar</button>'
+  );
 
   $(".show-full-response").on("click", function () {
     $(this).closest("table").toggleClass("full-response");

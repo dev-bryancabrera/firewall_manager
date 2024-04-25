@@ -150,10 +150,12 @@ def configurar_rutas(app, login_manager_app):
     @app.route("/packetdata", methods=["GET"])
     def packet_data():
         try:
+            command_id = request.args.get("command_id")
             command_filter = request.args.get("command_filter")
 
             return Response(
                 start_capture(
+                    command_id,
                     command_filter,
                 ),
                 content_type="text/event-stream",

@@ -528,27 +528,26 @@
                             Seleccionar...
                           </option>
                           <option value="allow">Permitir</option>
-                          <!-- <option value="deny">Denegar</option> -->
                           <option value="reject">Denegar</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="selectEntry">Dirección de la Regla</label>
+                        <select
+                          class="form-select"
+                          name="entry"
+                          id="selectEntry"
+                        >
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="in">Entrada</option>
+                          <option value="out">Salida</option>
                         </select>
                       </div>
                     </div>
 
                     <div class="form-inputs">
                       <div class="form1">
-                        <div class="form-group">
-                          <label for="selectEntry">Dirección de la Regla</label>
-                          <select
-                            class="form-select"
-                            name="entry"
-                            id="selectEntry"
-                          >
-                            <option value="" selected>Seleccionar...</option>
-                            <option value="in">Entrada</option>
-                            <option value="out">Salida</option>
-                          </select>
-                        </div>
-
                         <div class="form-group" id="ipContainer">
                           <label for="ipaddr">Direccion IP</label>
                           <input
@@ -650,7 +649,7 @@
                         </div>
                       </div>
 
-                      <div class="form2">
+                      <div class="form2" style="display: none">
                         <div class="form-group" id="rangePortContainer">
                           <label for="rangePorts" id="puertos"
                             >Establecer Rango de Puertos</label

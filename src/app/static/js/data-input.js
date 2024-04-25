@@ -169,10 +169,14 @@ $(document).ready(function () {
       port.prop("disabled", false);
 
       domainContainer.css("display", "block");
+
+      $("#selectEntry option[value='in']").prop("disabled", true);
     } else if (selectedOption === "contenido") {
       selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);
       contentContainer.css("display", "block");
+
+      $("#selectEntry option[value='in']").prop("disabled", true);
     }
   });
 
@@ -312,9 +316,10 @@ $(document).ready(function () {
     var protocolo = fila.find(".protocolo").text();
     var entrada = fila.find(".entrada").text();
     var data_rule = fila.find(".dominio").text();
+    var tipo_regla = fila.find(".tipo_regla").text();
 
-    if (!/[0-9:]/.test(data_rule)) {
-      var lista_dominios = data_rule.split("|").map(function (item) {
+    if (tipo_regla === "Dominio" || tipo_regla === "Contenido") {
+      var lista_dominios = data_rule.split(",").map(function (item) {
         return item.trim();
       });
       var texto_formateado = "";
@@ -454,7 +459,6 @@ function formatoDireccionIP(input) {
 }
 
 function formatoPuerto(input) {
-  // Eliminar cualquier carácter que no sea un número o un punto
   input.value = input.value.replace(/[^\d]/g, "");
 }
 

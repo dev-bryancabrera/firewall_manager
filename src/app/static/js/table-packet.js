@@ -7,6 +7,7 @@ var capturaActiva = true;
 /* Boton guardar Reporte */
 var btnGuardarReporte = $("#save_report");
 var btnPausePlayReporte = $("#btn-play-pause");
+var btnSaveReportData = $("#btn_save_report");
 var nombreReporte = $("#nombreReporte");
 var btnLoadReport = $("#btnLoadReport");
 var btnBackFilter = $("#btnBackFilter");
@@ -25,6 +26,8 @@ var parts = url.split("/"); // Dividir la URL por las barras
 var baseUrl = url.split("/traffic-packets")[0];
 var commandEncoded = parts[parts.length - 1]; // Obtener el valor del parámetro de ruta "filtro"
 var commandFilter = decodeURIComponent(commandEncoded); // Decodificar el valor
+var commandEncodedId = parts[parts.length - 2]; // Obtener el valor del parámetro de ruta "id"
+var commandId = decodeURIComponent(commandEncodedId); // Decodificar el valor
 
 $(document).ready(function () {
   btnLoadReport.css("display", "none");
@@ -36,7 +39,6 @@ $(document).ready(function () {
     btnGuardarReporte.css("display", "block");
     btnPausePlayReporte.css("display", "block");
     cargarDatosTabla();
-    loadPacketFilter();
   } else {
     loadDataSaved = true;
     btnLoadReport.css("display", "block");
@@ -44,7 +46,6 @@ $(document).ready(function () {
   }
 
   btnGuardarReporte.prop("disabled", true);
-  btnPausePlayReporte.prop("disabled", true);
 
   $packetTable.bootstrapTable({
     showColumns: true,
@@ -91,7 +92,7 @@ $(document).ready(function () {
   });
 
   /* Guardar los Reportes */
-  $("#btn_save_report").on("click", function () {
+  btnSaveReportData.on("click", function () {
     console.log(nombreReporte);
     if (mostrarAlerta(nombreReporte, "Debe asignar un nombre al reporte")) {
       return;
@@ -263,15 +264,20 @@ $("#btnBackFilter").click(function () {
 });
 
 function loadPacketFilter() {
-  const urlWithFilter = `/packetdata?command_filter=${commandFilter}`;
+  const urlWithFilter = `/packetdata?command_id=${commandId}&command_filter=${commandFilter}`;
 
   load_data = true;
   eventSource = new EventSource(urlWithFilter);
+
+  btnPausePlayReporte.prop("disabled", true);
 
   eventSource.onmessage = function (event) {
     const packetData = event.data;
 
     if (packetData.length !== 0) {
+      $("#play-icon").hide();
+      $("#pause-icon").show();
+
       btnPausePlayReporte.prop("disabled", false);
     }
 
@@ -350,6 +356,8 @@ function stopPlayData() {
       $("#pause-icon").hide();
     }
   } else {
+    loadPacketFilter();
+
     btnGuardarReporte.prop("disabled", true);
     btnBackFilter.prop("disabled", true);
 
@@ -366,7 +374,7 @@ function stopPlayData() {
 }
 
 async function resetData() {
-  btnPausePlayReporte.prop("disabled", true);
+  btnPausePlayReporte.prop("disabled", false);
   sessionStorage.removeItem("datosTabla");
   /* if (!eventSource) {
     capturaActiva = true;
@@ -377,8 +385,8 @@ async function resetData() {
 }
 
 $("#btn-clean").on("click", function () {
-  $("#play-icon").hide();
-  $("#pause-icon").show();
+  $("#pause-icon").hide();
+  $("#play-icon").show();
   load_data = false;
   resetData();
 });

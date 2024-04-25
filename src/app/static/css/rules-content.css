@@ -262,18 +262,18 @@ h2 {
 }
 
 .show-full-response:after {
-  content: " more...";
+  content: " Mas...";
 }
 
 .full-response .show-full-response:after {
-  content: " less...";
+  content: " Menos...";
 }
 
 /* Hide rows */
-tr:nth-child(n+5) {
+tr:nth-child(n + 5) {
   display: none;
 }
 
-.full-response tr:nth-child(n+3) {
+.full-response tr:nth-child(n + 3) {
   display: table-row;
 }

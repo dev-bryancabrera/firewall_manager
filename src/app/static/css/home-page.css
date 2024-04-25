@@ -40,7 +40,6 @@ body {
   flex-wrap: wrap !important;
   border-radius: 24px !important;
   background-color: #fff !important;
-  cursor: pointer !important;
   overflow: hidden !important;
   max-width: clamp(320px, 70vw, 740px) !important;
   min-width: 320px !important;
@@ -96,11 +95,6 @@ body {
   background-color: var(--gray) !important;
   transition: all 0.3s !important;
   font-weight: 500 !important;
-}
-
-.action:hover {
-  background-color: var(--secondary) !important;
-  color: var(--gray) !important;
 }
 
 .action-btn {

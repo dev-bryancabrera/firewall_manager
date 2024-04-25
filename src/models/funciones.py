@@ -3,10 +3,9 @@ from datetime import datetime
 from io import BytesIO
 
 import shlex
-from flask import flash, jsonify
+from flask import flash
 from flask_login import current_user, login_user
 import pandas as pd
-import paramiko
 
 import re
 
@@ -45,11 +44,19 @@ def validar_ingreso(username, password_hash):
         return str(e)
 
 
+def is_valid_ip(ip):
+    # Expresión regular para verificar el formato de la dirección IP
+    ip_regex = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+
+    return re.match(ip_regex, ip) is not None
+
+
 def obtener_reglas_ufw():
     try:
         reglas_in = []
         reglas_out = []
         reglas_default = []
+
         domains_duplicated = []
 
         rule_db = modelFirewall.getRules()
@@ -93,7 +100,7 @@ def obtener_reglas_ufw():
                                     domain = rule_detail_domain.split("-", 1)[1].strip()
 
                                 if domains:
-                                    domains += " | " + domain
+                                    domains += ", " + domain
                                 else:
                                     domains += domain
 
@@ -180,13 +187,6 @@ def obtener_reglas_ufw():
         return reglas_in, reglas_out, reglas_default
     except subprocess.CalledProcessError as e:
         return [{"error": f"Error al obtener reglas UFW: {e}"}]
-
-
-def is_valid_ip(ip):
-    # Expresión regular para verificar el formato de la dirección IP
-    ip_regex = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-
-    return re.match(ip_regex, ip) is not None
 
 
 def obtener_reglas_ufw_contenido():
@@ -310,126 +310,6 @@ def scan_network():
 
     except Exception as e:
         return [{"error": f"Error al procesar la línea: {line}, {e}"}]
-
-
-def start_capture(
-    command_filter,
-):
-    if command_filter is None:
-        custom_command = (
-            "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
-        )
-    else:
-        custom_command = command_filter.replace("-", "/")
-
-    base_command = [
-        "sudo",
-        "tcpdump",
-        # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
-        "-l",
-        "-c",
-        "100",
-        "-i",
-        "eth0",  # Hay que sacar la info de la interfaz de red donde se instale el sistema
-    ]
-
-    # Valores personalizados que pueden concatenarse
-    custom_values = [
-        custom_command,
-    ]
-
-    end_command = [
-        "-tttt",
-        "-q",
-        "-v",
-    ]
-
-    # Concatenar las dos partes del comando
-    command = base_command + custom_values + end_command
-
-    print("Comando > ", command)
-
-    process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
-    )
-
-    packet_count = 0
-
-    for line in process.stdout:
-        if "ARP" in line:
-            arp_info = line.strip().split(",")
-            arp_parts = arp_info[0].split(" ")
-            time = " ".join(arp_parts[:2])
-            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            src_ip_domain = ""
-            src_port = ""
-            dst_ip_domain = ""
-            dst_port = ""
-            protocol = ""
-            info = " ".join(arp_info[2:])
-            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
-        else:
-            line2 = process.stdout.readline().strip()
-
-            if not line2:
-                break
-
-            combined_line = line.strip() + " " + line2.strip()
-
-        parts = []
-        parenthesis_count = 0
-        current_part = ""
-
-        for char in combined_line:
-            if char == "(":
-                parenthesis_count += 1
-            elif char == ")":
-                parenthesis_count -= 1
-
-            if parenthesis_count > 0:
-                current_part += char
-            else:
-                if char == " " and current_part:
-                    parts.append(current_part)
-                    current_part = ""
-                else:
-                    current_part += char
-
-        if current_part:
-            parts.append(current_part)
-
-        if len(parts) >= 6:
-            time = " ".join(parts[:2])
-            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-            info = parts[3]
-
-            info_parts = parts[3].rsplit(",", 6)
-            info_protocol = info_parts[5].rsplit(" ", 2)
-            protocol = info_protocol[1]
-
-            src_parts = parts[4].rsplit(".", 1)
-            src_ip_domain = src_parts[0]
-            src_port = src_parts[1] if len(src_parts) > 1 else None
-
-            dst_parts = parts[6].rsplit(".", 1)
-            dst_ip_domain = dst_parts[0]
-            dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
-
-            packet_count += 1
-
-            # Emitir solo un cierto número de paquetes
-            if packet_count >= 30:
-                break
-
-            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
-
-    # Después de salir del bucle de captura, cerrar la conexión EventSource
-    yield "event: close\n\n"
 
 
 def pre_start_capture():
@@ -770,6 +650,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                     )
 
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
+
                     if "REJECT" in rule_string:
                         remove_domain_from_hosts(rule_name)
 
@@ -858,174 +739,156 @@ def get_domain_info(domain):
     return ip_addresses
 
 
+# Plataformas con ips estaticas
+plataformas = {
+    "redes_sociales": [
+        "www.facebook.com",
+        "twitter.com",
+        "instagram.com",
+        "ec.linkedin.com",
+        "www.linkedin.com",
+        "www.pinterest.com",
+        "snapchat.com",
+        "x.com",
+    ],
+    "videojuegos": [
+        "store.steampowered.com",
+        "store.epicgames.com",
+        "origin.com",
+        "uplay.com",
+        "gog.com",
+        "ubisoftconnect.com",
+        "www.gog.com",
+        "www.ea.com",
+    ],
+    "musica": [
+        "open.spotify.com",
+        "pandora.com",
+    ],
+    "streaming": [
+        "www.hulu.com",
+        "www.primevideo.com",
+        "www.disneyplus.com",
+        "www.hbo.com",
+        "www.max.com",
+    ],
+    "lectura": [
+        "www.scribd.com",
+        "www.wattpad.com",
+        "www.goodreads.com",
+    ],
+    "video": ["vimeo.com", "www.dailymotion.com"],
+    "mensajeria": [
+        "web.whatsapp.com",
+        "facebook.com",
+        "web.telegram.org",
+        # "slack.com",
+        "discord.com",
+    ],
+    "podcast": [
+        "open.spotify.com",
+        "www.stitcher.com",
+        "www.podbean.com",
+    ],
+    "mailing": [
+        "mail.google.com",
+        "mail.aol.com",
+        "outlook.live.com",
+        "mail.yahoo.com",
+        "www.aol.com",
+        "proton.me",
+    ],
+    "imagenes": ["www.flickr.com", "unsplash.com", "imgur.com"],
+    "ecommerce": [
+        "www.amazon.com",
+        "www.ebay.com",
+        "www.walmart.com",
+        "www.target.com",
+        "www.etsy.com",
+    ],
+    "blogging": [
+        "wordpress.com",
+        "www.blogger.com",
+        "www.tumblr.com",
+        "medium.com",
+    ],
+    "pagos": [
+        "www.paypal.com",
+        "squareup.com",
+        "www.authorize.net",
+    ],
+    "apuestas": [
+        "www.bet365.com",
+        "www.bet365.es",
+        "sports.bwin.com",
+        "www.888sport.com",
+        "www.williamhill.com",
+        "www.betfair.com",
+        "www.unibet.com",
+        "sports.ladbrokes.com",
+        "sports.coral.co.uk",
+        "www.unibet.co.uk",
+    ],
+    "educacion": [
+        "www.coursera.org",
+        "www.udemy.com",
+        "www.khanacademy.org",
+        "www.edx.org",
+        "www.udacity.com",
+    ],
+    # Pendientes
+    "crm": [
+        "www.zoho.com",
+        "www.hubspot.com",
+        "business.adobe.com",
+    ],
+    "redes_profesionales": ["www.linkedin.com", "ec.indeed.com", "www.glassdoor.com"],
+    "trabajo_colaborativo": ["www.dropbox.com"],
+    "videoconferencias": ["zoom.us", "teams.microsoft.com"],
+}
+
 # Plataformas con ips dinamicas
 plataformas_dinamicas = {
     "redes_sociales": [
         "www.tiktok.com",
     ],
-    "video": ["www.youtube.com"],
-}
-
-# Plataformas con ips estaticas
-plataformas = {
-    "redes_sociales": [
-        "facebook.com",
-        "twitter.com",
-        "instagram.com",
-        "ec.linkedin.com",
-        "linkedin.com",
-        "pinterest.com",
-        "www.pinterest.com",
-        "snapchat.com",
-        "tiktok.com",
-        "x.com",
-    ],
-    "videojuegos": [
-        "steampowered.com",
-        "epicgames.com",
-        "www.epicgames.com",
-        "store.epicgames.com",
-        "origin.com",
-        "uplay.com",
-        "gog.com",
-    ],
-    # "musica": ["spotify.com", "apple.com/music", "youtube.com/music", "googleplay.com/music", "pandora.com"],
-    "musica": [
-        "spotify.com",
-        "apple.com",
-        "googleplay.com",
-        "pandora.com",
-    ],
-    # "streaming": ["netflix.com", "hulu.com", "amazon.com/prime-video", "disneyplus.com", "hbo.com"],
+    "videojuegos": [],
+    "musica": [],
     "streaming": [
-        "netflix.com",
-        "hulu.com",
-        "amazon.com",
-        "disneyplus.com",
-        "hbo.com",
+        "www.netflix.com",
     ],
-    # "lectura": ["amazon.com/kindle", "google.com/books", "scribd.com", "wattpad.com", "goodreads.com"],
-    "lectura": ["amazon.com", "scribd.com", "wattpad.com", "goodreads.com"],
-    "educacion": [
-        "coursera.org",
-        "udemy.com",
-        "khanacademy.org",
-        "edx.org",
-        "udacity.com",
+    "lectura": [],
+    "educacion": [],
+    "podcast": [],
+    "mensajeria": [],
+    "mailing": [],
+    "blogging": [],
+    "imagenes": [],
+    "ecommerce": [],
+    "pagos": [
+        "stripe.com",
     ],
-    # "podcast": ["apple.com/podcasts", "spotify.com/podcasts", "google.com/podcasts", "stitcher.com", "podbean.com"],
-    "podcast": ["apple.com", "spotify.com", "stitcher.com", "podbean.com"],
-    # "mensajeria": ["whatsapp.com", "facebook.com/messages", "telegram.org", "slack.com", "discord.com"],
-    "mensajeria": [
-        "whatsapp.com",
-        "facebook.com",
-        "telegram.org",
-        "slack.com",
-        "discord.com",
-    ],
-    "mailing": [
-        "gmail.com",
-        "outlook.com",
-        "yahoo.com",
-        "aol.com",
-        "protonmail.com",
-    ],
-    # "blogging": ["wordpress.com", "blogger.com", "tumblr.com", "medium.com", "github.com/blogs"],
-    "blogging": ["wordpress.com", "blogger.com", "tumblr.com", "medium.com"],
-    # "imagenes": ["google.com/images", "flickr.com", "instagram.com", "unsplash.com", "imgur.com"],
-    "imagenes": ["flickr.com", "unsplash.com", "imgur.com"],
-    "ecommerce": [
-        "amazon.com",
-        "ebay.com",
-        "walmart.com",
-        "target.com",
-        "etsy.com",
-    ],
-    "pago": ["paypal.com", "square.com", "stripe.com", "authorize.net"],
     "crm": [
-        "salesforce.com",
-        "zoho.com",
-        "hubspot.com",
-        "marketo.com",
+        "www.salesforce.com",
         "pardot.com",
     ],
-    # "publicidad_digital": ["google.com/ads", "facebook.com/business", "instagram.com/business", "pinterest.com/business", "twitter.com/business"],
-    "redes_profesionales": ["linkedin.com", "indeed.com", "glassdoor.com"],
-    # "trabajo_colaborativo": ["google.com/docs", "microsoft.com/office-online", "dropbox.com"],
-    "trabajo_colaborativo": ["dropbox.com"],
-    # "videoconferencias": ["zoom.us", "teams.microsoft.com", "google.com/meet"],
-    "videoconferencias": ["zoom.us", "teams.microsoft.com"],
-    "apuestas": [
-        "bet365.com",
-        # "bwin.com",
-        "www.bwin.com",
-        # "888sport.com",
-        "www.888sport.com",
-        "williamhill.com",
-        "betfair.com",
-        "unibet.com",
-        "ladbrokes.com",
-        "coral.co.uk",
-        "stanjames.com",
-        "skybet.com",
-    ],
-    "video": ["vimeo.com", "dailymotion.com", "twitch.tv"],
+    "redes_profesionales": [],
+    "trabajo_colaborativo": [],
+    "videoconferencias": [],
+    "apuestas": [],
+    "video": ["www.youtube.com", "www.twitch.tv"],
 }
 
-plataformas_dinamicas_dominio = ["www.tiktok.com", "www.youtube.com"]
-
-
-def clean_cache():
-    # Obtener los datos del cuerpo de la solicitud
-    ip_remota = "192.168.0.105"
-    puerto = 5335
-    usuario = "kali"
-    password = "kali"
-    comandos = [
-        "pkill firefox",
-        "rm -rf ~/.cache/mozilla/firefox/*.default/cache2/*",
-        "rm -rf ~/.cache/google-chrome/Default/Cache/*",
-        "firefox &",  # Se puede ejecutar como usuario normal
-    ]
-
-    # Verificar que todos los datos necesarios estén presentes
-    if ip_remota and usuario and password:
-        resultados = []
-        for comando in comandos:
-            # Enviar la orden SSH
-            salida, error = enviar_orden_ssh(
-                ip_remota, puerto, usuario, password, comando
-            )
-            resultados.append({"comando": comando, "salida": salida, "error": error})
-        return jsonify(resultados), 200
-    else:
-        return jsonify({"mensaje": "Faltan datos en la solicitud"}), 400
-
-
-def enviar_orden_ssh(ip_remota, puerto, usuario, password, comando):
-    try:
-        # Configura la conexión SSH
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        # Conéctate a la máquina remota
-        ssh_client.connect(ip_remota, port=puerto, username=usuario, password=password)
-
-        # Ejecuta el comando en la máquina remota
-        stdin, stdout, stderr = ssh_client.exec_command(comando)
-
-        # Lee la salida del comando (si es necesario)
-        salida = stdout.read().decode()
-        error = stderr.read().decode()
-
-        # Cierra la conexión SSH
-        ssh_client.close()
-
-        # Retorna la salida y el error
-        return salida, error
-
-    except Exception as e:
-        return "", str(e)
+plataformas_dinamicas_dominio = [
+    "www.tiktok.com",
+    "www.youtube.com",
+    "www.twitch.tv",
+    "www.netflix.com",
+    "www.apple.com",
+    "stripe.com",
+    "pardot.com",
+    "www.salesforce.com",
+]
 
 
 def add_domain_to_hosts(domain, name_domain):
@@ -1318,8 +1181,6 @@ def allow_connections(
 
             subprocess.run(shlex.split(f"{rule}"))
 
-        print(rule)
-
         if rulesTypeContent:
             for rulesContentPlatform in rulesTypeContent:
                 firewall = Firewall(
@@ -1472,44 +1333,51 @@ def format_rule_save(rule):
 def generate_content_domain(content, prefix):
     content_domain = f"{prefix}"
     content_domain_dynamic = ""
-    plataforms = ""
-    domain_string_dynamic = ""
+    plataforms_set = set()
+
     for platform in content:
         if platform in plataformas:
             domains = [f" {domain} or" for domain in plataformas[platform]]
-            domain_string = "".join(domains)
-            content_domain += domain_string
-            plataforms += f"{platform} -"
+            content_domain += "".join(domains)
+            plataforms_set.add(platform)
 
         if platform in plataformas_dinamicas:
             for domainPlataform in plataformas_dinamicas[platform]:
-                ip_domain = (
-                    verify_domain_dynamic(domainPlataform)
-                    if domainPlataform in plataformas_dinamicas[platform]
-                    else domainPlataform
-                )
+                ip_domain = verify_domain_dynamic(domainPlataform)
 
                 if isinstance(ip_domain, list):
                     for ip in ip_domain:
                         domains = f" {ip} or"
-                        domain_string = "".join(domains)
-                        content_domain += domain_string
-                        plataforms += f"{platform} -"
+                        content_domain += "".join(domains)
+                        plataforms_set.add(platform)
 
                 elif isinstance(ip_domain, str):
-                    domains_dynamic = f"{ip_domain} or"
-                    domain_string_dynamic += "".join(domains_dynamic)
+                    content_domain_dynamic += f" {ip_domain} or"
+                    plataforms_set.add(platform)
 
-                    plataforms += f"{platform} -"
+    plataforms = " - ".join(plataforms_set)
 
     content_domain = content_domain.rstrip(" or")
     plataforms = plataforms.rstrip(" -")
-    content_domain_dynamic = domain_string_dynamic.rstrip(" or")
+    content_domain_dynamic = content_domain_dynamic.rstrip(" or")
 
     return content_domain, plataforms, content_domain_dynamic
 
 
-def process_domains(domains):
+def process_content(content, domain_type):
+    domain_content, platforms_content, dynamic_content = generate_content_domain(
+        content, domain_type
+    )
+    content_filter = f"{domain_content}"
+    platforms = f"{platforms_content}"
+
+    if dynamic_content != "":
+        content_filter = f"{content_filter} or {'dst net' if domain_type == 'dst host' else 'net'}{dynamic_content}"
+
+    return content_filter, platforms
+
+
+def process_domains(domains, prefix):
     domain_string_dynamic = ""
     domain_string_static = ""
     domain_list_dynamic = ""
@@ -1531,7 +1399,25 @@ def process_domains(domains):
     domain_string_dynamic = domain_string_dynamic.rstrip(" or ")
     domain_string_static = domain_string_static.rstrip(" or ")
 
-    return domain_string_dynamic, domain_string_static, domain_list_dynamic
+    # Generar el valor de general_domain
+    if domain_string_dynamic and domain_string_static and domain_list_dynamic:
+        general_domain = f"{prefix}host {domain_string_static} or {domain_list_dynamic} or {prefix}net {domain_string_dynamic}"
+    elif domain_string_static and domain_list_dynamic:
+        general_domain = f"{prefix}host {domain_string_static} or {domain_list_dynamic}"
+    elif domain_string_dynamic and domain_string_static:
+        general_domain = f"{prefix}host {domain_string_static} or {prefix}net {domain_string_dynamic}"
+    elif domain_string_dynamic and domain_list_dynamic:
+        general_domain = (
+            f"{prefix}host {domain_list_dynamic} or {prefix}net {domain_string_dynamic}"
+        )
+    elif domain_string_static:
+        general_domain = f"{prefix}host {domain_string_static}"
+    elif domain_list_dynamic:
+        general_domain = f"{prefix}host {domain_list_dynamic}"
+    elif domain_string_dynamic:
+        general_domain = f"{prefix}net {domain_string_dynamic}"
+
+    return general_domain
 
 
 def save_filter(
@@ -1564,7 +1450,6 @@ def save_filter(
     logic_operator_proto_red_proto,
 ):
     try:
-        type_filter = ""
         filter_values = [
             type_ip,
             type_domain,
@@ -1590,56 +1475,27 @@ def save_filter(
         contents_filter = ""
 
         # Manejo de Contenido
+
         if content_dst:
-            content_domain_dst, plataforms_dst, content_dynamic_dst = (
-                generate_content_domain(content_dst, "dst host")
-            )
-            contents_filter = f"{content_domain_dst}"
-            plataforms = f"{plataforms_dst}"
-
-            if content_dynamic_dst != "":
-                contents_filter = f"{contents_filter} or dst net {content_dynamic_dst}"
-
+            contents_filter, plataforms = process_content(content_dst, "dst host")
         elif generalContent:
-            content_domain_general, plataforms_general, content_dynamic_dst = (
-                generate_content_domain(generalContent, "host")
-            )
-
-            contents_filter = f"{content_domain_general}"
-            plataforms = f"{plataforms_general}"
-
-            if content_dynamic_dst != "":
-                contents_filter = f"{contents_filter} or net {content_dynamic_dst}"
+            contents_filter, plataforms = process_content(generalContent, "host")
 
         if generalDomain or domain_dst:
-            dst_prefix = "dst " if domain_dst else ""
+            prefix = "dst " if domain_dst else ""
+
             domains = (
                 generalDomain.split(",") if generalDomain else domain_dst.split(",")
             )
-            domain_string_dynamic, domain_string_static, domain_list_dynamic = (
-                process_domains(domains)
-            )
+            general_domain = process_domains(domains, prefix)
 
-            if domain_string_dynamic and domain_string_static and domain_list_dynamic:
-                general_domain = f"{dst_prefix}host {domain_string_static} or {domain_list_dynamic} or {dst_prefix}net {domain_string_dynamic}"
-            elif domain_string_static and domain_list_dynamic:
-                general_domain = (
-                    f"{dst_prefix}host {domain_string_static} or {domain_list_dynamic}"
-                )
-            elif domain_string_dynamic and domain_string_static:
-                general_domain = f"{dst_prefix}host {domain_string_static} or {dst_prefix}net {domain_string_dynamic}"
-            elif domain_string_dynamic and domain_list_dynamic:
-                general_domain = f"{dst_prefix}host {domain_list_dynamic} or {dst_prefix}net {domain_string_dynamic}"
-            elif domain_string_static:
-                general_domain = f"{dst_prefix}host {domain_string_static}"
-            elif domain_list_dynamic:
-                general_domain = f"{dst_prefix}host {domain_list_dynamic}"
-            elif domain_string_dynamic:
-                general_domain = f"{dst_prefix}net {domain_string_dynamic}"
+            name_filter += " - " + (
+                generalDomain if generalDomain else (domain_dst if domain_dst else "")
+            )
+            name_filter = name_filter.replace(",", ", ")
 
             ips_custom = general_domain.replace("/", "-")
 
-        print(contents_filter)
         # Manejo de ips
         if ip_addr:
             if patron_coma.search(ip_addr):
@@ -1857,6 +1713,162 @@ def save_filter(
         return f"Error al guardar el filtro: {str(e)}"
 
 
+def start_capture(
+    command_id,
+    command_filter,
+):
+    base_command = [
+        "sudo",
+        "tcpdump",
+        # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
+        "-l",
+        "-c",
+        "100",
+        "-i",
+        "eth0",  # Hay que sacar la info de la interfaz de red donde se instale el sistema
+    ]
+
+    if command_filter is None:
+        custom_command = (
+            "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
+        )
+    else:
+        custom_command = command_filter.replace("-", "/")
+
+    filterData = modelFilterPacket.getFiltersById(command_id)
+    nombre_filtro = filterData[1]
+    tipo_filtro = filterData[2]
+    tipo_consumo = filterData[4]
+
+    if "Dominio" in tipo_filtro:
+        prefix = "dst " if "dst " in command_filter else ""
+
+        if "-" in nombre_filtro:
+            _, domain_filter = map(str.strip, nombre_filtro.split(" - "))
+
+            domains = domain_filter.split(",")
+            domain_command = process_domains(domains, prefix)
+
+            domain_command = domain_command.replace("-", "/")
+
+            custom_values = [
+                domain_command,
+            ]
+
+    elif tipo_consumo:
+        prefix = "dst " if "dst " in command_filter else ""
+
+        consumos = tipo_consumo.split()
+
+        if prefix:
+            content_command, _ = process_content(consumos, "dst host")
+
+        else:
+            content_command, _ = process_content(consumos, "host")
+
+        custom_values = [
+            content_command,
+        ]
+
+    else:
+        custom_values = [
+            custom_command,
+        ]
+
+    end_command = [
+        "-tttt",
+        "-q",
+        "-v",
+    ]
+
+    # Concatenar las dos partes del comando
+    command = base_command + custom_values + end_command
+
+    print("Comando > ", command)
+
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
+    )
+
+    packet_count = 0
+
+    for line in process.stdout:
+        if "ARP" in line:
+            arp_info = line.strip().split(",")
+            arp_parts = arp_info[0].split(" ")
+            time = " ".join(arp_parts[:2])
+            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            src_ip_domain = ""
+            src_port = ""
+            dst_ip_domain = ""
+            dst_port = ""
+            protocol = ""
+            info = " ".join(arp_info[2:])
+            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
+        else:
+            line2 = process.stdout.readline().strip()
+
+            if not line2:
+                break
+
+            combined_line = line.strip() + " " + line2.strip()
+
+        parts = []
+        parenthesis_count = 0
+        current_part = ""
+
+        for char in combined_line:
+            if char == "(":
+                parenthesis_count += 1
+            elif char == ")":
+                parenthesis_count -= 1
+
+            if parenthesis_count > 0:
+                current_part += char
+            else:
+                if char == " " and current_part:
+                    parts.append(current_part)
+                    current_part = ""
+                else:
+                    current_part += char
+
+        if current_part:
+            parts.append(current_part)
+
+        if len(parts) >= 6:
+            time = " ".join(parts[:2])
+            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            info = parts[3]
+
+            info_parts = parts[3].rsplit(",", 6)
+            info_protocol = info_parts[5].rsplit(" ", 2)
+            protocol = info_protocol[1]
+
+            src_parts = parts[4].rsplit(".", 1)
+            src_ip_domain = src_parts[0]
+            src_port = src_parts[1] if len(src_parts) > 1 else None
+
+            dst_parts = parts[6].rsplit(".", 1)
+            dst_ip_domain = dst_parts[0]
+            dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
+
+            packet_count += 1
+
+            # Emitir solo un cierto número de paquetes
+            if packet_count >= 30:
+                break
+
+            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
+
+    # Después de salir del bucle de captura, cerrar la conexión EventSource
+    yield "event: close\n\n"
+
+
 def save_report(nombre_reporte, filtro_monitoreo, table_data):
     try:
         df = pd.DataFrame(table_data)
@@ -1892,93 +1904,83 @@ def save_report(nombre_reporte, filtro_monitoreo, table_data):
 def load_filter_data():
     try:
         filtros = modelFilterPacket.getFilters()
-
         filtros_formateados = []
 
         palabras_clave = ["http", "https", "smtp", "ssh", "ftp", "telnet"]
 
         for filtro in filtros:
-            fecha = filtro[5].strftime("%d-%m-%Y")
-            filtro_creado = filtro[3]
-            contenido = filtro[4]
+            nombre_filtro, tipo_filtro, filtro_creado, contenido, fecha = filtro[1:6]
+            name_domain = ""
+            domain_filter = ""
 
-            ip = ""
-            puerto = ""
-            protocolo = ""
-            protocolo_red = ""
+            if "-" in nombre_filtro:
+                name_domain, domain_filter = map(str.strip, nombre_filtro.split(" - "))
 
-            partes_con_palabras_clave = []
-            otras_partes = []
-
+            ip, puerto, protocolo, protocolo_red = "", "", "", ""
             conjuntos_parentesis = re.findall(r"\((.*?)\)", filtro_creado)
 
             if contenido:
-                # Crear un diccionario con los valores formateados
-                filtro_formateado = {
-                    "id": filtro[0],
-                    "nombre_filtro": filtro[1].title(),
-                    "tipo_filtro": filtro[2],
-                    "filtro": filtro[3],
-                    "fecha_creacion": fecha,
-                    "ip": ip,
-                    "puerto": puerto,
-                    "protocolo_red": protocolo_red,
-                    "protocolo": protocolo,
-                    "consumos": contenido.title().replace("_", " ").replace("-", " "),
-                }
+                consumo_formateado = (
+                    contenido.title().replace("_", " ").replace("-", " ")
+                )
             else:
-                for conjunto in conjuntos_parentesis:
-                    if "host" in conjunto.lower():
-                        ip = conjunto
-                    elif "port" in conjunto.lower():
-                        # puerto = conjunto
-                        partes_puerto = re.split(r"\b(and|or)\b", conjunto.lower())
+                partes_con_palabras_clave, otras_partes = [], []
 
-                        for i, parte in enumerate(partes_puerto):
-                            # Verificar si es una parte válida (no operador)
-                            if parte not in ["and", "or"]:
-                                # Verificar si la parte contiene palabras clave
-                                if any(palabra in parte for palabra in palabras_clave):
-                                    # Agregar la parte a la lista y verificar la siguiente posición
-                                    partes_con_palabras_clave.append(parte.strip())
-                                    if i + 1 < len(partes_puerto) and partes_puerto[
-                                        i + 1
-                                    ] in ["and", "or"]:
-                                        partes_con_palabras_clave[-1] += (
-                                            " " + partes_puerto[i + 1]
+                if "Dominio" not in tipo_filtro:
+                    for conjunto in conjuntos_parentesis:
+                        if "host" in conjunto.lower():
+                            ip = conjunto
+                        elif "port" in conjunto.lower():
+                            partes_puerto = re.split(r"\b(and|or)\b", conjunto.lower())
+
+                            for parte in partes_puerto:
+                                if parte not in ["and", "or"]:
+                                    lista = (
+                                        partes_con_palabras_clave
+                                        if any(
+                                            palabra in parte
+                                            for palabra in palabras_clave
                                         )
-                                else:
-                                    # Agregar la parte a la lista y verificar la siguiente posición
-                                    otras_partes.append(parte.strip())
-                                    if i + 1 < len(partes_puerto) and partes_puerto[
-                                        i + 1
-                                    ] in ["and", "or"]:
-                                        otras_partes[-1] += " " + partes_puerto[i + 1]
+                                        else otras_partes
+                                    )
+                                    lista.append(parte.strip())
 
-                        # Unir las partes que contienen palabras clave en una sola variable
-                        protocolo_red = " ".join(partes_con_palabras_clave)
+                            protocolo_red = " ".join(partes_con_palabras_clave)
+                            puerto = " ".join(otras_partes)
+                        else:
+                            protocolo = conjunto
 
-                        # Unir las otras partes en otra variable
-                        puerto = " ".join(otras_partes)
+                consumo_formateado = ""
 
-                    else:
-                        protocolo = conjunto
+            puerto = puerto.replace("port", "").replace("src", "").replace("dst", "")
+            puertos = puerto.split()
+            puerto = ", ".join(puertos)
 
-                # Crear un diccionario con los valores formateados
-                filtro_formateado = {
-                    "id": filtro[0],
-                    "nombre_filtro": filtro[1].title(),
-                    "tipo_filtro": filtro[2],
-                    "filtro": filtro[3],
-                    "fecha_creacion": fecha,
-                    "ip": ip,
-                    "puerto": puerto,
-                    "protocolo_red": protocolo_red,
-                    "protocolo": protocolo,
-                    "consumos": "",
-                }
+            protocolo_red = (
+                protocolo_red.replace("port", "").replace("src", "").replace("dst", "")
+            )
+            protocolos_red = protocolo_red.split()
+            protocolo_red = ", ".join(protocolos_red)
 
-            # Agregar el filtro formateado a la lista
+            filtro_formateado = {
+                "id": filtro[0],
+                "nombre_filtro": name_domain.title()
+                if name_domain
+                else nombre_filtro.title(),
+                "tipo_filtro": tipo_filtro,
+                "filtro": filtro[3],
+                "fecha_creacion": fecha.strftime("%d-%m-%Y"),
+                "ip": (ip if not domain_filter else domain_filter)
+                .replace("host", "")
+                .replace("src", "")
+                .replace("dst", "")
+                .replace(" and ", ", ")
+                .replace(" or ", ", "),
+                "puerto": puerto,
+                "protocolo_red": protocolo_red,
+                "protocolo": protocolo.replace(" or ", ", "),
+                "consumos": consumo_formateado,
+            }
             filtros_formateados.append(filtro_formateado)
 
         return filtros_formateados

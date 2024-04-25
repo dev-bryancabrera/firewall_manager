@@ -888,6 +888,10 @@ async function resetData() {
   $packetTable.bootstrapTable("removeAll");
 }
 
+function formatoNombreRegla(input) {
+  input.value = input.value.replace(/-/g, "");
+}
+
 $("#btn-clean").on("click", function () {
   $("#play-icon").hide();
   $("#pause-icon").show();

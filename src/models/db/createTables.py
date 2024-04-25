@@ -9,10 +9,10 @@ class createTable:
             db = get_connection()
             cursor = db.cursor()
             cursor.execute(
-                "CREATE TABLE IF NOT EXISTS filtro_monitoreo (id INT AUTO_INCREMENT PRIMARY KEY, nombre_filtro VARCHAR(255), tipo_filtro VARCHAR(255), filtro TEXT, contenido TEXT, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INT, FOREIGN KEY (user_id) REFERENCES user(id))"
+                "CREATE TABLE IF NOT EXISTS filtro_monitoreo (id INT AUTO_INCREMENT PRIMARY KEY, nombre_filtro TEXT, tipo_filtro VARCHAR(255), filtro TEXT, contenido TEXT, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INT, FOREIGN KEY (user_id) REFERENCES user(id))"
             )
             cursor.execute(
-                "CREATE TABLE IF NOT EXISTS firewall_rules (id INT AUTO_INCREMENT PRIMARY KEY, nombre_regla VARCHAR(255), tipo_regla VARCHAR(255), fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, estado BOOLEAN, user_id INT, FOREIGN KEY (user_id) REFERENCES user(id))"
+                "CREATE TABLE IF NOT EXISTS firewall_rules (id INT AUTO_INCREMENT PRIMARY KEY, nombre_regla TEXT, tipo_regla TEXT, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, estado BOOLEAN, user_id INT, FOREIGN KEY (user_id) REFERENCES user(id))"
             )
             cursor.execute(
                 "CREATE TABLE IF NOT EXISTS firewall_rules_detail (id INT AUTO_INCREMENT PRIMARY KEY, regla VARCHAR(255), estado BOOLEAN, firewall_rule_id INT, FOREIGN KEY (firewall_rule_id) REFERENCES firewall_rules(id))"
