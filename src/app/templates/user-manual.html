@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual de Usuario</title>
+    {% include 'includes/styles-imports.html' %}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/css/copy_to_clipboard_style.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/css/theme.css"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/pygments.css"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/user-manual.css') }}"
+    />
+  </head>
+
+  <body class="wy-body-for-nav">
+    {% extends 'navbar.html' %} {% block content %}
+
+    <div class="wy-grid-for-nav">
+      <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+        <div class="wy-side-scroll">
+          <div class="wy-side-nav-search">
+            <a href="/home" class="icon icon-home"> Home </a>
+
+            <div class="manual-title">
+              SOFTWARE FIREWALL PARA LINUX DEBIAN SIGCENTER
+            </div>
+          </div>
+
+          <div
+            class="wy-menu wy-menu-vertical"
+            data-spy="affix"
+            role="navigation"
+            aria-label="main navigation"
+          >
+            <ul class="current">
+              <li class="toctree-l1 current">
+                <a class="current reference internal" href="#"
+                  >Administrador de Firewall</a
+                >
+                <ul>
+                  <li class="toctree-l2">
+                    <a class="reference internal" href="#firewall">Firewall</a>
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#que-es-un-firewall"
+                          >¿Que es un firewall?</a
+                        >
+                      </li>
+
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#funcion-firewall"
+                          >Funciones del Firewall</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a class="reference internal" href="#reglas-firewall"
+                      >Reglas de Firewall</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#crear-reglas"
+                          >1. Crear reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#desactivar-activar-reglas"
+                          >2. Desactivar o activar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#eliminar-reglas"
+                          >3. Eliminar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#visualizar-reglas"
+                          >4. Visualizar reglas</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a
+                      class="reference internal"
+                      href="#i-m-getting-lots-of-504-timeout-errors-please-help"
+                      >Reglas de Firewall por Contenido</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#slow-website"
+                          >1. Crear Reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#splash-lua-script-does-too-many-things"
+                          >2. Desactivar o activar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#splash-instance-is-overloaded"
+                          >3. Eliminar reglas</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+
+              <!-- Menu de Administrador de Paquetes -->
+              <li class="toctree-l1 current">
+                <a class="current reference internal" href="#"
+                  >Monitoreo de Trafico de Red</a
+                >
+                <ul>
+                  <li class="toctree-l2">
+                    <a
+                      class="reference internal"
+                      href="#website-is-not-rendered-correctly"
+                      >Paquetes de red</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#python-using-requests-library"
+                          >¿Que es un paquete de red?</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#python-scrapy"
+                          >¿Como funcionan los paquetes de red?</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a
+                      class="reference internal"
+                      href="#how-to-send-requests-to-splash-http-api"
+                      >Configuracion de filtros de captura</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#python-using-requests-library"
+                          >1. Crear reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#splash-lua-script-does-too-many-things"
+                          >2. Desactivar o activar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#python-scrapy"
+                          >3. Eliminar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#r-language"
+                          >4. Visualizar reglas</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a
+                      class="reference internal"
+                      href="#i-m-getting-lots-of-504-timeout-errors-please-help"
+                      >Monitoreo de paquetes</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#slow-website"
+                          >1. Crear Reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#splash-lua-script-does-too-many-things"
+                          >2. Desactivar o activar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#splash-instance-is-overloaded"
+                          >3. Eliminar reglas</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+        <nav class="wy-nav-top" aria-label="top navigation">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Home</a>
+        </nav>
+
+        <div class="wy-nav-content">
+          <div class="rst-content">
+            <div
+              role="main"
+              class="document"
+              itemscope="itemscope"
+              itemtype="http://schema.org/Article"
+            >
+              <div itemprop="articleBody">
+                <div class="section" id="firewall-manager">
+                  <h1>
+                    Administrador de Firewall<a
+                      class="headerlink"
+                      href="#firewall-manager"
+                      title="Administrador de Firewall"
+                      >¶</a
+                    >
+                  </h1>
+
+                  <div class="section" id="firewall">
+                    <span id="using-http-api"></span>
+                    <h2>
+                      Firewall
+                      <a class="headerlink" href="#firewall" title="Firewall"
+                        >¶</a
+                      >
+                    </h2>
+
+                    <p>
+                      Un firewall es una barrera de seguridad que se utiliza
+                      para proteger una red de comunicaciones, como una red de
+                      área local o un sistema informático, de accesos no
+                      autorizados y otros riesgos de seguridad.
+                    </p>
+
+                    <div class="section" id="que-es-un-firewall">
+                      <h3>
+                        ¿Que es un firewall?
+                        <a
+                          class="headerlink"
+                          href="#que-es-un-firewall"
+                          title="¿Que es un firewall?"
+                          >¶</a
+                        >
+                      </h3>
+
+                      <p>
+                        Un firewall es una medida de seguridad fundamental para
+                        proteger una red informática o un sistema de
+                        computadoras contra amenazas externas e internas.
+                        Funciona como una barrera entre una red privada y otras
+                        redes, como Internet, y controla el tráfico de datos que
+                        entra y sale de la red basándose en un conjunto de
+                        reglas predefinidas.
+                      </p>
+
+                      <p>
+                        Funciona inspeccionando y controlando el tráfico que
+                        entra y sale de la red según un conjunto de reglas
+                        predefinidas.
+                      </p>
+                    </div>
+
+                    <div class="section" id="funcion-firewall">
+                      <h3>
+                        Funcion de un Firewall<a
+                          class="headerlink"
+                          href="#funcion-firewall"
+                          title="Funciones de un Firewall"
+                          >¶</a
+                        >
+                      </h3>
+                      <ul>
+                        <li>
+                          <strong>Control del tráfico de red:</strong>
+                          Controla y filtra el tráfico de red basándose en
+                          reglas predefinidas. Esto permite bloquear o permitir
+                          el acceso a recursos específicos según las políticas
+                          de seguridad establecidas.
+                        </li>
+                        <li>
+                          <strong>Protección contra amenazas externas:</strong>
+                          Actúa como una barrera entre la red local y Internet,
+                          bloqueando intentos de acceso no autorizado desde
+                          fuentes externas como hackers, malware y virus.
+                        </li>
+                        <li>
+                          <strong>Protección contra amenazas internas:</strong>
+                          Controla el tráfico dentro de la red para prevenir
+                          amenazas internas y actividades maliciosas.
+                        </li>
+                        <li>
+                          <strong>Segmentación de red:</strong> Divide la red en
+                          segmentos más pequeños y controla el tráfico entre
+                          ellos.
+                        </li>
+                        <li>
+                          <strong>Monitoreo y registro de actividad</strong>
+                          El firewall puede monitorear y registrar la actividad
+                          de red para detectar posibles intrusiones, identificar
+                          patrones de tráfico sospechosos y generar informes de
+                          seguridad para su análisis.
+                        </li>
+                        <li>
+                          <strong>Aplicación de políticas de seguridad:</strong>
+                          Permite establecer políticas de seguridad
+                          personalizadas para controlar el acceso a recursos
+                          específicos.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="section" id="reglas-firewall">
+                    <span id="timeouts"></span>
+                    <h2>
+                      Reglas de Firewall<a
+                        class="headerlink"
+                        href="#reglas-firewall"
+                        title="Reglas de Firewall"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>
+                      Las reglas del firewall son instrucciones configurables
+                      que determinan cómo se debe manejar el tráfico de red
+                      entrante y saliente en un sistema informático o en una
+                      red. Estas reglas especifican qué tipo de tráfico se
+                      permite o se bloquea en función de diversos criterios,
+                      como direcciones IP, puertos, protocolos y otros
+                      atributos.
+                    </p>
+                    <p>
+                      Cuando el firewall recibe un paquete de datos de red, lo
+                      <code class="docutils literal notranslate"
+                        ><span class="pre">evalúa</span></code
+                      >
+                      en función de las reglas configuradas y decide si permitir
+                      o bloquear ese paquete. Las reglas del firewall
+                      generalmente se basan en criterios como la dirección IP de
+                      origen y destino, el protocolo de red, los puertos de
+                      origen y destino, y otros datos de encabezado del paquete.
+                    </p>
+                    <div class="section" id="crear-reglas">
+                      <span id="id2"></span>
+                      <h3>
+                        1. Crear Reglas<a
+                          class="headerlink"
+                          href="#crear-reglas"
+                          title="Crear Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        La creación de reglas de firewall es fundamental, ya que
+                        define las políticas que determinan qué tipo de tráfico
+                        se permite o se bloquea en el servidor. Estas reglas
+                        seran la primera línea de defensa contra amenazas
+                        externas y ayudaran a garantizar la seguridad y el
+                        rendimiento del sistema.
+                      </p>
+
+                      <div class="admonition note">
+                        <p class="first admonition-title">Nota</p>
+                        <p class="last">
+                          Al establecer reglas claras y precisas, se controla
+                          qué tipo de tráfico puede acceder al servidor, lo que
+                          ayuda a prevenir intrusiones no autorizadas y a
+                          proteger los datos sensibles. Es esencial diseñar
+                          estas reglas con cuidado, considerando tanto los
+                          requisitos de seguridad como las necesidades
+                          operativas del sistema.
+                        </p>
+                      </div>
+
+                      <p>
+                        Para crear reglas de firewall es importante seguir los
+                        pasos que se detallan a continuación:
+                      </p>
+
+                      <ol class="steps-create-rules">
+                        <li>
+                          Ingresamos al sistema y como primero tendremos este
+                          menu que nos mostrara diferentes accic
+                        </li>
+                        <li>
+                          Identificar los tipos de tráfico: Determina qué tipos
+                          de tráfico deseas permitir o bloquear, como HTTP,
+                          HTTPS, SSH, etc.
+                        </li>
+                        <li>
+                          Evaluar los requisitos de seguridad: Considera las
+                          políticas de seguridad de tu red y los requisitos
+                          específicos de tu organización.
+                        </li>
+                        <li>
+                          Definir las reglas: Crea reglas específicas que
+                          especifiquen qué tráfico se permite y qué tráfico se
+                          bloquea, utilizando direcciones IP, puertos,
+                          protocolos, y otras condiciones relevantes.
+                        </li>
+                        <li>
+                          Implementar las reglas: Aplica las reglas en el
+                          firewall, asegurándote de que estén configuradas
+                          correctamente y de que no interfieran con otras
+                          políticas de seguridad.
+                        </li>
+                        <li>
+                          Probar y ajustar: Realiza pruebas para asegurarte de
+                          que las reglas funcionen según lo esperado. Ajusta las
+                          reglas según sea necesario para garantizar un
+                          equilibrio entre seguridad y funcionalidad.
+                        </li>
+                      </ol>
+
+                      <p>
+                        To abort resource loading after a timeout and give the
+                        whole page a chance to render use resource timeouts. For
+                        render.*** endpoints use
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/api.html#arg-resource-timeout"
+                          ><span class="std std-ref"
+                            >‘resource_timeout’</span
+                          ></a
+                        >
+                        argument; for
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/api.html#execute"
+                          ><span class="std std-ref">execute</span></a
+                        >
+                        or
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/api.html#run"
+                          ><span class="std std-ref">run</span></a
+                        >
+                        use either
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-resource-timeout"
+                          ><span class="std std-ref"
+                            >splash.resource_timeout</span
+                          ></a
+                        >
+                        or
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">request:set_timeout</span></code
+                        >
+                        (see
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-on-request"
+                          ><span class="std std-ref">splash:on_request</span></a
+                        >).
+                      </p>
+                    </div>
+                    <div class="section" id="desactivar-activar-reglas">
+                      <span id="slow-script"></span>
+                      <h3>
+                        2. Desactivar o Activar reglas<a
+                          class="headerlink"
+                          href="#desactivar-activar-reglas"
+                          title="Desactivar o Activar reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        When a script fetches many pages or uses large delays
+                        then timeouts are inevitable. Sometimes you have to run
+                        such scripts; in this case increase
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">--max-timeout</span></code
+                        >
+                        Splash option and use larger
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/api.html#arg-timeout"
+                          ><span class="std std-ref">timeout</span></a
+                        >
+                        values.
+                      </p>
+                      <p>
+                        But before increasing the timeouts consider splitting
+                        your script into smaller steps and sending them to
+                        Splash individually. For example, if you need to fetch
+                        100 websites, don’t write a Splash Lua script which
+                        takes a list of 100 URLs and fetches them - write a
+                        Splash Lua script that takes 1 URL and fetches it, and
+                        send 100 requests to Splash. This approach has a number
+                        of benefits: it makes scripts more simple and robust and
+                        enables parallel processing.
+                      </p>
+                    </div>
+                    <div class="section" id="eliminar-reglas">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        3. Eliminar Reglas<a
+                          class="headerlink"
+                          href="#eliminar-reglas"
+                          title="Eliminar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        When Splash is overloaded it may start producing 504
+                        errors.
+                      </p>
+                      <p>
+                        Splash renders requests in parallel, but it doesn’t
+                        render them <em>all</em> at the same time - concurrency
+                        is limited to a value set at startup using
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">--slots</span></code
+                        >
+                        option. When all slots are used a request is put into a
+                        queue. The thing is that a timeout starts to tick once
+                        Splash receives a request, not when Splash starts to
+                        render it. If a request stays in an internal queue for a
+                        long time it can timeout even if a website is fast and
+                        splash is capable of rendering the website.
+                      </p>
+                      <p>
+                        To increase rendering speed and fix an issue with a
+                        queue it is recommended to start several Splash
+                        instances and use a load balancer capable of maintaining
+                        its own request queue.
+                        <a
+                          class="reference external"
+                          href="http://www.haproxy.org/"
+                          >HAProxy</a
+                        >
+                        has all necessary features; check an example config
+                        <a
+                          class="reference external"
+                          href="https://github.com/scrapinghub/splash/blob/master/splash/examples/splash-haproxy.conf"
+                          >here</a
+                        >. A shared request queue in a load balancer also helps
+                        with reliability: you won’t be loosing requests if a
+                        Splash instance needs to be restarted.
+                      </p>
+                      <div class="admonition note">
+                        <p class="first admonition-title">Note</p>
+                        <p class="last">
+                          <a
+                            class="reference external"
+                            href="https://www.nginx.com/"
+                            >Nginx</a
+                          >
+                          (which is another popular load balancer) provides an
+                          internal queue only in its commercial version,
+                          <a
+                            class="reference external"
+                            href="https://www.nginx.com/products/"
+                            >Nginx Plus</a
+                          >.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="section" id="visualizar-reglas">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        4. Visualizar Reglas<a
+                          class="headerlink"
+                          href="#visualizar-reglas"
+                          title="Visualizar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        When Splash is overloaded it may start producing 504
+                        errors.
+                      </p>
+                      <p>
+                        Splash renders requests in parallel, but it doesn’t
+                        render them <em>all</em> at the same time - concurrency
+                        is limited to a value set at startup using
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">--slots</span></code
+                        >
+                        option. When all slots are used a request is put into a
+                        queue. The thing is that a timeout starts to tick once
+                        Splash receives a request, not when Splash starts to
+                        render it. If a request stays in an internal queue for a
+                        long time it can timeout even if a website is fast and
+                        splash is capable of rendering the website.
+                      </p>
+                      <p>
+                        To increase rendering speed and fix an issue with a
+                        queue it is recommended to start several Splash
+                        instances and use a load balancer capable of maintaining
+                        its own request queue.
+                        <a
+                          class="reference external"
+                          href="http://www.haproxy.org/"
+                          >HAProxy</a
+                        >
+                        has all necessary features; check an example config
+                        <a
+                          class="reference external"
+                          href="https://github.com/scrapinghub/splash/blob/master/splash/examples/splash-haproxy.conf"
+                          >here</a
+                        >. A shared request queue in a load balancer also helps
+                        with reliability: you won’t be loosing requests if a
+                        Splash instance needs to be restarted.
+                      </p>
+                      <div class="admonition note">
+                        <p class="first admonition-title">Note</p>
+                        <p class="last">
+                          <a
+                            class="reference external"
+                            href="https://www.nginx.com/"
+                            >Nginx</a
+                          >
+                          (which is another popular load balancer) provides an
+                          internal queue only in its commercial version,
+                          <a
+                            class="reference external"
+                            href="https://www.nginx.com/products/"
+                            >Nginx Plus</a
+                          >.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="section" id="how-to-run-splash-in-production">
+                    <span id="splash-in-production"></span>
+                    <h2>
+                      How to run Splash in production?<a
+                        class="headerlink"
+                        href="#how-to-run-splash-in-production"
+                        title="Permalink to this headline"
+                        >¶</a
+                      >
+                    </h2>
+                    <div class="section" id="easy-way">
+                      <h3>
+                        Easy Way<a
+                          class="headerlink"
+                          href="#easy-way"
+                          title="Permalink to this headline"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        If you want to get started quickly take a look at
+                        <a
+                          class="reference external"
+                          href="https://github.com/TeamHG-Memex/aquarium"
+                          >Aquarium</a
+                        >
+                        (which is a Splash setup without many of the pitfalls)
+                        or use a hosted solution like
+                        <a
+                          class="reference external"
+                          href="http://scrapinghub.com/splash/"
+                          >ScrapingHub’s</a
+                        >.
+                      </p>
+                      <p>
+                        Don’t forget to use resource timeouts in your client
+                        code (see
+                        <a class="reference internal" href="#slow-website"
+                          ><span class="std std-ref">1. Slow website</span></a
+                        >). It also makes sense to retry a couple of times if
+                        Splash returns 5xx error response.
+                      </p>
+                    </div>
+                    <div class="section" id="hard-way">
+                      <h3>
+                        Hard Way<a
+                          class="headerlink"
+                          href="#hard-way"
+                          title="Permalink to this headline"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        If you want to create your own production setup, here is
+                        a small non-exhaustive checklist:
+                      </p>
+                      <ul class="simple">
+                        <li>
+                          Splash should be daemonized and started on boot;
+                        </li>
+                        <li>
+                          in case of failures or segfaults Splash must be
+                          restarted;
+                        </li>
+                        <li>memory usage should be limited;</li>
+                        <li>
+                          several Splash instances should be started to use all
+                          CPU cores and/or multiple servers;
+                        </li>
+                        <li>
+                          requests queue should be moved to the load balancer to
+                          make rendering more robust (see
+                          <a
+                            class="reference internal"
+                            href="#splash-overloaded"
+                            ><span class="std std-ref"
+                              >3. Splash instance is overloaded</span
+                            ></a
+                          >).
+                        </li>
+                      </ul>
+                      <p>
+                        Of course, it is also good to setup monitoring,
+                        configuration management, etc. - all the usual stuff.
+                      </p>
+                      <p>
+                        To daemonize Splash, start it on boot and restart on
+                        failures one can use Docker: since Docker 1.2 there are
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">--restart</span></code
+                        >
+                        and
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">-d</span></code
+                        >
+                        options which can be used together. Another way to do
+                        that is to use standard tools like upstart, systemd or
+                        supervisor.
+                      </p>
+                      <div class="admonition note">
+                        <p class="first admonition-title">Note</p>
+                        <p class="last">
+                          Docker
+                          <code class="docutils literal notranslate"
+                            ><span class="pre">--restart</span></code
+                          >
+                          option won’t work without
+                          <code class="docutils literal notranslate"
+                            ><span class="pre">-d</span></code
+                          >.
+                        </p>
+                      </div>
+                      <p>
+                        Splash uses an unbound in-memory cache and so it will
+                        eventually consume all RAM. A workaround is to restart
+                        the process when it uses too much memory; there is
+                        Splash
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">--maxrss</span></code
+                        >
+                        option for that. You can also add Docker
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">--memory</span></code
+                        >
+                        option to the mix.
+                      </p>
+                      <p>
+                        In production it is a good idea to pin Splash version -
+                        instead of
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">scrapinghub/splash</span></code
+                        >
+                        it is usually better to use something like
+                        <code class="docutils literal notranslate"
+                          ><span class="pre">scrapinghub/splash:2.0</span></code
+                        >.
+                      </p>
+                      <p>
+                        A command for starting a long-running Splash server
+                        which uses up to 4GB RAM and daemonizes &amp; restarts
+                        itself could look like this:
+                      </p>
+                      <div class="highlight-default notranslate">
+                        <div class="highlight"></div>
+                      </div>
+                      <p>
+                        You also need a load balancer; for example configs check
+                        <a
+                          class="reference external"
+                          href="https://github.com/TeamHG-Memex/aquarium"
+                          >Aquarium</a
+                        >
+                        or an HAProxy config in Splash
+                        <a
+                          class="reference external"
+                          href="https://github.com/scrapinghub/splash/blob/master/examples/splash-haproxy.conf"
+                          >repository</a
+                        >.
+                      </p>
+                    </div>
+                    <div class="section" id="ansible-way">
+                      <h3>
+                        Ansible Way<a
+                          class="headerlink"
+                          href="#ansible-way"
+                          title="Permalink to this headline"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        <a
+                          class="reference external"
+                          href="https://www.ansible.com/"
+                          >Ansible</a
+                        >
+                        role for Splash is available via third-party project:
+                        <a
+                          class="reference external"
+                          href="https://github.com/nabilm/ansible-splash"
+                          >https://github.com/nabilm/ansible-splash</a
+                        >.
+                      </p>
+                    </div>
+                  </div>
+                  <div class="section" id="website-is-not-rendered-correctly">
+                    <span id="rendering-problems"></span>
+                    <h2>
+                      Website is not rendered correctly<a
+                        class="headerlink"
+                        href="#website-is-not-rendered-correctly"
+                        title="Permalink to this headline"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>
+                      Sometimes websites are not rendered correctly by Splash.
+                      Common reasons:
+                    </p>
+                    <ul class="simple">
+                      <li>
+                        not enough wait time; solution - wait more (see e.g.
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-wait"
+                          ><span class="std std-ref">splash:wait</span></a
+                        >);
+                      </li>
+                      <li>
+                        non-working localStorage in Private Mode. This is a
+                        common issue e.g. for websites based on AngularJS. If
+                        rendering doesn’t work, try disabling Private mode (see
+                        <a
+                          class="reference internal"
+                          href="#disable-private-mode"
+                          ><span class="std std-ref"
+                            >How do I disable Private mode?</span
+                          ></a
+                        >).
+                      </li>
+                      <li>
+                        Sometimes content is lazy-loaded, or loaded only in a
+                        response for user actions (e.g. page scrolling). Try
+                        increasing viewport size to make everything visible, and
+                        waiting a bit after that (see
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-set-viewport-full"
+                          ><span class="std std-ref"
+                            >splash:set_viewport_full</span
+                          ></a
+                        >). You may also have to simulate mouse and keyboard
+                        events (see
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-overview.html#splash-lua-api-interacting"
+                          ><span class="std std-ref"
+                            >Interacting with a page</span
+                          ></a
+                        >).
+                      </li>
+                      <li>
+                        Missing features in WebKit used by Splash. Splash now
+                        uses
+                        <a
+                          class="reference external"
+                          href="https://github.com/annulen/webkit"
+                          >https://github.com/annulen/webkit</a
+                        >, which is much more recent than WebKit provided by Qt;
+                        we’ll be updating Splash WebKit as annulen’s webkit
+                        develops.
+                      </li>
+                      <li>
+                        Website may show a different content based on User-Agent
+                        header or based on IP address. Use
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-set-user-agent"
+                          ><span class="std std-ref"
+                            >splash:set_user_agent</span
+                          ></a
+                        >
+                        to change the default User-Agent header. If you’re
+                        running Splash in a cloud and not getting good results,
+                        try reproducing it locally as well, just in case results
+                        depend on IP address.
+                      </li>
+                      <li>
+                        Website requires Flash. You can enable it using
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-plugins-enabled"
+                          ><span class="std std-ref"
+                            >splash.plugins_enabled</span
+                          ></a
+                        >.
+                      </li>
+                      <li>
+                        Website requires
+                        <a
+                          class="reference external"
+                          href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API"
+                          >IndexedDB</a
+                        >. Enable it using
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-indexeddb-enabled"
+                          ><span class="std std-ref"
+                            >splash.indexeddb_enabled</span
+                          ></a
+                        >.
+                      </li>
+                      <li>
+                        If there is no video or other media, use
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/api.html#arg-html5-media"
+                          ><span class="std std-ref">html5_media</span></a
+                        >
+                        Splash HTTP argument or
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-html5-media-enabled"
+                          ><span class="std std-ref"
+                            >splash.html5_media_enabled</span
+                          ></a
+                        >
+                        property to enable HTML5 media, or
+                        <a
+                          class="reference internal"
+                          href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-plugins-enabled"
+                          ><span class="std std-ref"
+                            >splash.plugins_enabled</span
+                          ></a
+                        >
+                        to enable Flash.
+                      </li>
+                      <li>
+                        Website has compatibility issues with Webkit version
+                        Splash is using. A quick (though not precise) way to
+                        check it is to try opening a page in Safari.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="section" id="splash-crashes">
+                    <h2>
+                      Splash crashes<a
+                        class="headerlink"
+                        href="#splash-crashes"
+                        title="Permalink to this headline"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>Common reasons:</p>
+                    <ul>
+                      <li>
+                        <p class="first">
+                          Qt or WebKit bugs which cause Splash to hang or crash.
+                          Unfortunately, they can be hard to fix in Splash, as
+                          Splash is relying on these projects. That said, often
+                          the whole website works, but some specific .js (or
+                          other) file causes problems. In this case you can try
+                          these steps:
+                        </p>
+                        <ul>
+                          <li>
+                            <p class="first">
+                              Run Splash locally with v2 verbosity, e.g.
+                              <code class="docutils literal notranslate"
+                                ><span class="pre">docker</span>
+                                <span class="pre">run</span>
+                                <span class="pre">-it</span>
+                                <span class="pre">-p8050:8050</span>
+                                <span class="pre">scrapinghub/splash</span>
+                                <span class="pre">-v2</span></code
+                              >
+                            </p>
+                          </li>
+                          <li>
+                            <p class="first">
+                              Go to
+                              <code class="docutils literal notranslate"
+                                ><span class="pre"
+                                  >http://0.0.0.0:8050</span
+                                ></code
+                              >
+                              and paste your url (with the default Lua script),
+                              or try to reproduce the issue otherwise, using
+                              this Splash instance.
+                            </p>
+                          </li>
+                          <li>
+                            <p class="first">
+                              If Splash instance failed and stopped (you
+                              reproduced the issue), check the log in terminal.
+                              Pay special attention to network activity. For
+                              example, if the last response was for an url like
+                              <code class="docutils literal notranslate"
+                                ><span class="pre"
+                                  >https://example.com/static/myscript123.min.js</span
+                                ></code
+                              >
+                              with JS, we may suspect that this particular
+                              JavaScript file contains some code which makes
+                              Splash crash.
+                            </p>
+                          </li>
+                          <li>
+                            <p class="first">
+                              Filter out this .js file using
+                              <a
+                                class="reference internal"
+                                href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-on-request"
+                                ><span class="std std-ref"
+                                  >splash:on_request</span
+                                ></a
+                              >:
+                            </p>
+                            <div class="highlight-lua notranslate">
+                              <div class="highlight"></div>
+                            </div>
+                            <p>
+                              Alternatively, use
+                              <a
+                                class="reference internal"
+                                href="https://splash.readthedocs.io/en/stable/api.html#request-filters"
+                                ><span class="std std-ref"
+                                  >Request Filters</span
+                                ></a
+                              >
+                              to filter it out.
+                            </p>
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
+                        <p class="first">
+                          Some of the crashes can be solved by disabling HTML 5
+                          media (<a
+                            class="reference internal"
+                            href="https://splash.readthedocs.io/en/stable/scripting-ref.html#splash-html5-media-enabled"
+                            ><span class="std std-ref"
+                              >splash.html5_media_enabled</span
+                            ></a
+                          >
+                          property or
+                          <a
+                            class="reference internal"
+                            href="https://splash.readthedocs.io/en/stable/api.html#arg-html5-media"
+                            ><span class="std std-ref">html5_media</span></a
+                          >
+                          HTTP API argument) - note it is disabled by default.
+                        </p>
+                      </li>
+                      <li>
+                        <p class="first">
+                          Sometimes Splash may crash, and you get a Python
+                          traceback in the log. In this case it is likely to be
+                          a Splash bug which can be fixed in Splash. Please
+                          report it at
+                          <a
+                            class="reference external"
+                            href="https://github.com/scrapinghub/splash/issues"
+                            >https://github.com/scrapinghub/splash/issues</a
+                          >, pasting the whole traceback and parameters of the
+                          request you’re making, if possible (URL, endpoint or
+                          Lua script used).
+                        </p>
+                      </li>
+                    </ul>
+                    <p>
+                      If you have troubles making Splash work, consider asking a
+                      question at
+                      <a
+                        class="reference external"
+                        href="https://stackoverflow.com/"
+                        >https://stackoverflow.com</a
+                      >. If you think it is a Splash bug, raise an issue at
+                      <a
+                        class="reference external"
+                        href="https://github.com/scrapinghub/splash/issues"
+                        >https://github.com/scrapinghub/splash/issues</a
+                      >.
+                    </p>
+                  </div>
+
+                  <h3>References, other nice pages about AWK</h3>
+
+                  <ul class="fa-ul">
+                    <li>
+                      <i class="fa-li fa fa-check-square"></i>The GAWK manual:
+                      <a
+                        href="http://www.gnu.org/software/gawk/manual/gawk.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >GAWK Manual</a
+                      >
+                    </li>
+
+                    <li>
+                      <i class="fa-li fa fa-check-square"></i>AWK wikibooks:
+                      <a
+                        href="http://en.wikibooks.org/wiki/AWK"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >AWK Wikibooks</a
+                      >
+                    </li>
+
+                    <li>
+                      <i class="fa-li fa fa-check-square"></i>Examples with awk,
+                      a short introduction:
+                      <a
+                        href="http://www.linuxfocus.org/English/September1999/article103.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >AWK Examples</a
+                      >
+                    </li>
+
+                    <li>
+                      <i class="fa-li fa fa-check-square"></i>AWK 1 liners:
+                      <a
+                        href="http://www.pement.org/awk/awk1line.txt"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >AWK 1 liners collection</a
+                      >, see as well
+                      <a
+                        href="http://www.pement.org/awk.htm"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >Home page of Eric Pement</a
+                      >
+                    </li>
+                  </ul>
+
+                  <hr
+                    style="
+                      height: 2px;
+                      border-width: 0;
+                      color: gray;
+                      background-color: gray;
+                    "
+                  />
+
+                  A Horizontal Line Above With Style
+
+                  <br />
+                  <br />
+
+                  <a
+                    href="https://www.africau.edu/images/default/sample.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Profile Download</a
+                  >
+
+                  <a
+                    href="tel:8007686040"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Call:8007686040</a
+                  >
+
+                  <a
+                    href="http://good-sam.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Home Page</a
+                  >
+
+                  <a
+                    href="mailto:test@test.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Send Email</a
+                  >
+
+                  <br />
+                  <br />
+
+                  <b> Embedding Images, Audio or Video Files: </b>
+
+                  <br />
+                  <br />
+
+                  <img
+                    src="https://i.imgur.com/dO3g4hl.jpg"
+                    alt="beach"
+                    style="width: 100%; height: 100%"
+                  />
+
+                  <img
+                    src="https://i.imgur.com/dO3g4hl.jpg"
+                    width="50%"
+                    height="50%"
+                  />
+
+                  <br />
+                  <br />
+
+                  <audio controls>
+                    <source
+                      src="https://download.samplelib.com/mp3/sample-6s.mp3"
+                      type="audio/ogg"
+                    />
+                    Your browser does not support the audio element.
+                  </audio>
+
+                  <br />
+                  <br />
+
+                  <video width="100%" height="100%" controls>
+                    <source
+                      src="https://download.samplelib.com/mp4/sample-10s.mp4"
+                      type="video/mp4"
+                    />
+                    Your browser does not support HTML5 video.
+                  </video>
+
+                  <br />
+                  <br />
+
+                  <iframe
+                    width="100%"
+                    height="380"
+                    src="http://www.youtube.com/embed/noPuC6arhvk?wmode=transparent"
+                    frameborder="0"
+                    allowfullscreen
+                    wmode="transparent"
+                  ></iframe>
+
+                  <br />
+                  <br />
+
+                  <object
+                    data="https://www.africau.edu/images/default/sample.pdf"
+                    type="application/pdf"
+                    width="100%"
+                    height="380"
+                  >
+                    <p>
+                      You don't have a PDF plugin, but you can
+                      <a
+                        href="https://www.africau.edu/images/default/sample.pdf"
+                        target="_blank"
+                        >download the PDF file.</a
+                      >
+                    </p>
+                  </object>
+
+                  <br />
+                  <br />
+
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37995.65748333395!2d-2.273568166412784!3d53.473310471916975!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487bae6c05743d3d%3A0xf82fddd1e49fc0a1!2sThe+Lowry!5e0!3m2!1sen!2suk!4v1518171785211"
+                    width="100%"
+                    height="380"
+                    frameborder="0"
+                    style="border: 0"
+                    allowfullscreen
+                  >
+                  </iframe>
+
+                  <br />
+                  <br />
+                </div>
+              </div>
+            </div>
+            <footer>
+              <div
+                class="rst-footer-buttons"
+                role="navigation"
+                aria-label="footer navigation"
+              >
+                <a
+                  href="nextpage.html"
+                  class="btn btn-neutral float-right"
+                  title="My Next Page Title"
+                  accesskey="n"
+                  rel="next"
+                  >Next <span class="fa fa-arrow-circle-right"></span
+                ></a>
+
+                <a
+                  href="previouspage.html"
+                  class="btn btn-neutral float-left"
+                  title="My Previous Page Title"
+                  accesskey="p"
+                  rel="prev"
+                  ><span class="fa fa-arrow-circle-left"></span> Previous</a
+                >
+              </div>
+
+              <hr />
+
+              <div role="contentinfo">
+                <p>
+                  &copy; Copyright YEAR, Copyright HOLDER
+
+                  <span class="commit">
+                    Revision <code>REVISION NUMBER</code>.
+                  </span>
+                </p>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/modernizr.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/documentation_options.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/jquery.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/underscore.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/doctools.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/language_data.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/theme.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/readthedocs-data.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/clipboard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/copy_to_clipboard_style.js"></script>
+    <script src="{{ url_for('static', filename='js/user-manual.js') }}"></script>
+
+    {% endblock %}
+  </body>
+</html>

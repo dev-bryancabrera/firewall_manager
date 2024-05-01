@@ -32,7 +32,6 @@ $(document).ready(function () {
       {
         field: "number",
         title: "N° Regla",
-        sortable: true,
       },
       {
         field: "name",
@@ -91,7 +90,11 @@ $(document).ready(function () {
       url: "/add_rule_detail",
       data: formData,
       success: function (response) {
-        alertMessage(response.message);
+        if (response.error) {
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
       error: function (xhr, status, error) {
         console.error(error);
@@ -99,9 +102,84 @@ $(document).ready(function () {
     });
   });
 
-  function alertMessage(response) {
+  function sendAjaxRequest(url, method, data, successCallback, errorCallback) {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        successCallback(xhr.responseText);
+      } else {
+        errorCallback(xhr.statusText);
+      }
+    };
+    xhr.onerror = () => errorCallback("Error de red");
+    xhr.send(JSON.stringify(data));
+  }
+
+  $(".desactivar-btn").click(function () {
+    const id = $(this).attr("id").split("-")[1];
+    sendAjaxRequest(
+      `/desactivar_regla?id_regla=${id}`,
+      "GET",
+      null,
+      function (response) {
+        // Actualiza el estado de la tabla después de recibir la respuesta
+        const reglas = JSON.parse(response);
+        // Actualiza la tabla con las nuevas reglas
+      },
+      function (error) {
+        console.error(error);
+      }
+    );
+  });
+
+  $(".activar-btn").click(function () {
+    const id = $(this).attr("id").split("-")[1];
+    sendAjaxRequest(
+      `/activar_regla?id_regla=${id}`,
+      "GET",
+      null,
+      function (response) {
+        // Actualiza el estado de la tabla después de recibir la respuesta
+        const reglas = JSON.parse(response);
+        // Actualiza la tabla con las nuevas reglas
+      },
+      function (error) {
+        console.error(error);
+      }
+    );
+  });
+
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
+
+    // Muestra el contenedor de mensaje
     $(".alert-message-container").show("medium");
-    $(".alert-message").text(response);
+
+    // Oculta el mensaje después de 2 segundos y recarga la página
     setTimeout(function () {
       location.reload();
       $(".alert-message-container").hide("medium");

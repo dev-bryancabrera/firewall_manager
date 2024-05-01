@@ -16,10 +16,10 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
     />
-    <link
+    <!-- <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.4.1/css/mdb.min.css"
-    />
+    /> -->
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/rules-content.css') }}"
@@ -36,106 +36,166 @@
           <h2 class="title-content">Configurar Reglas por Contenido</h2>
         </div>
 
-        <div class="table-firewall-data">
-          <div class="firewall-rules-content">
+        <div class="container-accordion">
+          <div id="accordion" class="py-5">
             {% if reglas_contenido %} {% for contenido, reglas in
             reglas_contenido.items() %}
-
-            <div class="type_content">
-              <h3 class="type">{{ contenido[0] }}</h3>
-              <button
-                type="button"
-                class="btn btn-primary"
-                id="btn-agree-rule"
-                data-bs-toggle="modal"
-                data-bs-target="#modalDomain"
-                data-regla-id="{{ contenido[1] }}"
-                data-regla-nombre="{{ contenido[2] }}"
+            <div class="card border-0">
+              <div
+                class="card-header p-0 border-0"
+                id="heading{{ loop.index }}"
               >
-                <i class="fas fa-plus"></i> Agregar Dominio
-              </button>
-            </div>
+                <button
+                  class="btn btn-link accordion-title border-0 collapse d-flex justify-content-between align-items-center"
+                  data-toggle="collapse"
+                  data-target="#collapse{{ loop.index }}"
+                  aria-expanded="false"
+                  aria-controls="#collapse{{ loop.index }}"
+                >
+                  <span>{{ contenido[0] }}</span>
+                  <i
+                    class="fas fa-plus text-center d-flex align-items-center justify-content-center h-100"
+                  ></i>
+                </button>
+              </div>
 
-            <table id="tableFirewallContent_{{ loop.index }}" class="table">
-              <!-- El encabezado de la tabla -->
-              <caption class="ticket-type"></caption>
-              <thead class="thead-dark">
-                <tr>
-                  <th data-field="number" data-sortable="true">N° REGLA</th>
-                  <th
-                    data-field="name"
-                    data-sortable="true"
-                    style="min-width: 180px"
-                  >
-                    DOMINOS DE CONTENIDO
-                  </th>
-                  <th data-field="created_date" data-sortable="true">
-                    FECHA DE CREACION
-                  </th>
-                  <th
-                    data-field="action"
-                    data-sortable="true"
-                    style="min-width: 150px"
-                  >
-                    ACCION DE FIREWALL
-                  </th>
-                  <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
-                  <th
-                    data-field="entry"
-                    data-sortable="true"
-                    style="min-width: 150px"
-                  >
-                    DIRECCION DE REGLA
-                  </th>
-                  <th data-field="en/dis"></th>
-                  <th data-field="delete"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for regla in reglas %}
-                <!-- Filas de la tabla -->
-                <tr>
-                  <td class="numero">{{ loop.index }}</td>
-                  <td class="nombre">{{ regla['nombre'] }}</td>
-                  <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
-                  <td class="accion">{{ regla['accion'] }}</td>
-                  <td class="protocolo">{{ regla['protocolo'] }}</td>
-                  <td class="entrada">{{ regla['entrada'] }}</td>
-                  <td>
-                    {% if regla['estado'] == 1 %}
-                    <a
-                      href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
-                      class="btn btn-success"
-                      >Desactivar</a
-                    >
-                    {% elif regla['estado'] == 0 %}
-                    <a
-                      href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
-                      class="btn btn-secondary"
-                      >Activar</a
-                    >
-                    {% endif %}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-danger"
-                      id="btn-delete-rule"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmarEliminar"
-                      data-regla-detail-id="{{ regla['id_rule_detail'] }}"
-                      data-regla-nombre="{{ regla['nombre_regla_contenido'] }}"
-                    >
-                      Eliminar Regla
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+              <div
+                id="collapse{{ loop.index }}"
+                class="collapse"
+                aria-labelledby="heading{{ loop.index }}"
+                data-parent="#accordion"
+              >
+                <div class="card-body accordion-body">
+                  <div class="table-firewall-data">
+                    <div class="firewall-rules-content">
+                      <div class="type_content">
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          id="btn-agree-rule"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalDomain"
+                          data-regla-id="{{ contenido[1] }}"
+                          data-regla-nombre="{{ contenido[2] }}"
+                        >
+                          <i class="fas fa-plus"></i> Agregar Dominio
+                        </button>
+                      </div>
+
+                      <table
+                        id="tableFirewallContent_{{ loop.index }}"
+                        class="table"
+                      >
+                        <!-- El encabezado de la tabla -->
+                        <caption class="ticket-type"></caption>
+                        <thead class="thead-dark">
+                          <tr>
+                            <th data-field="number" data-sortable="true">
+                              N° REGLA
+                            </th>
+                            <th data-field="name" style="min-width: 180px">
+                              DOMINOS DE CONTENIDO
+                            </th>
+                            <th data-field="created_date" data-sortable="true">
+                              FECHA DE CREACION
+                            </th>
+                            <th
+                              data-field="action"
+                              data-sortable="true"
+                              style="min-width: 150px"
+                            >
+                              ACCION DE FIREWALL
+                            </th>
+                            <th data-field="protocol" data-sortable="true">
+                              PROTOCOLO
+                            </th>
+                            <th
+                              data-field="entry"
+                              data-sortable="true"
+                              style="min-width: 150px"
+                            >
+                              DIRECCION DE REGLA
+                            </th>
+                            <th data-field="en/dis"></th>
+                            <th data-field="delete"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for regla in reglas %}
+                          <!-- Filas de la tabla -->
+                          <tr>
+                            <td class="numero">{{ loop.index }}</td>
+                            <td class="nombre">{{ regla['nombre'] }}</td>
+                            <td class="fecha_creacion">
+                              {{ regla['fecha_creacion'] }}
+                            </td>
+                            <td class="accion">{{ regla['accion'] }}</td>
+                            <td class="protocolo">{{ regla['protocolo'] }}</td>
+                            <td class="entrada">{{ regla['entrada'] }}</td>
+                            <td>
+                              {% if regla['estado'] == 1 %}
+                              <a
+                                href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
+                                class="btn btn-success"
+                                >Desactivar</a
+                              >
+                              {% elif regla['estado'] == 0 %}
+                              <a
+                                href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
+                                class="btn btn-secondary"
+                                >Activar</a
+                              >
+                              {% endif %}
+                              <!-- {% if regla['estado'] == 1 %}
+                              <a
+                                class="btn btn-success desactivar-btn"
+                                id="id-{{ regla['id_rule_detail'] }}"
+                                >Desactivar</a
+                              >
+                              {% elif regla['estado'] == 0 %}
+                              <a
+                                class="btn btn btn-secondary activar-btn"
+                                id="id-{{ regla['id_rule_detail'] }}"
+                                >Activar</a
+                              >
+                              {% endif %} -->
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                class="btn btn-danger"
+                                id="btn-delete-rule"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmarEliminar"
+                                data-regla-detail-id="{{ regla['id_rule_detail'] }}"
+                                data-regla-nombre="{{ regla['nombre_regla_contenido'] }}"
+                              >
+                                Eliminar Regla
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {% endfor %} {% else %}
             <!-- Si no hay datos, muestra una tabla vacía o un mensaje indicando que no hay datos -->
-            <p>No hay datos disponibles.</p>
+            <h2 class="accordion-header" id="flush-heading">
+              <button
+                class="accordion-button collapsed"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#flush-collapse"
+                aria-expanded="false"
+                aria-controls="flush-collapse"
+              >
+                No hay datos disponibles.
+              </button>
+            </h2>
             {% endif %}
           </div>
         </div>
@@ -243,12 +303,6 @@
                     />
 
                     <div class="rule-name">
-                      <!-- <div class="form-group">
-                                            <label for="comment">Nombre de la Regla</label>
-                                            <input id="comment" class="form-control" name="comment"
-                                                placeholder="Ingrese el nombre de la regla" />
-                                        </div> -->
-
                       <div class="form-group">
                         <label for="regla">Accion de la regla</label>
                         <select
@@ -380,9 +434,9 @@
       <!-- Alerts Message -->
       <div class="alert-message-container">
         <div class="alert-box" style="float: none; margin: 0 auto">
-          <div class="alert alert-success">
+          <div class="alert">
             <div class="alert-icon text-center">
-              <i class="fas fa-check-circle fa-3x text-success"></i>
+              <i class="fas fa-check-circle fa-3x"></i>
             </div>
             <div class="alert-message text-center"></div>
           </div>

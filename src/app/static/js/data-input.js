@@ -251,7 +251,11 @@ $(document).ready(function () {
       url: "/add_rule",
       data: formData,
       success: function (response) {
-        alertMessage(response.message);
+        if (response.error) {
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
       error: function (xhr, status, error) {
         console.error(error);
@@ -347,9 +351,35 @@ $(document).ready(function () {
     selectEntryEdit.val(entrada);
   });
 
-  function alertMessage(response) {
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
+
+    // Muestra el contenedor de mensaje
     $(".alert-message-container").show("medium");
-    $(".alert-message").text(response);
+
+    // Oculta el mensaje después de 2 segundos y recarga la página
     setTimeout(function () {
       location.reload();
       $(".alert-message-container").hide("medium");
@@ -378,10 +408,7 @@ $(document).ready(function () {
   }
 
   function validarSelect(elemento, mensaje) {
-    if (
-      elemento.val() === null ||
-      (elemento.val().length === 0 && elemento.css("display") !== "none")
-    ) {
+    if (elemento.val() === null || elemento.val().length === 0) {
       $("#liveToast .toast-body").text(mensaje);
       $("#liveToast").toast("show");
       return true;
@@ -389,10 +416,11 @@ $(document).ready(function () {
     return false;
   }
 
-  function validarSelectContainer(elemento, select, mensaje) {
-    if (elemento.css("display") !== "none") {
-      validarSelect(select, mensaje);
+  function validarSelectContainer(contendor, select, mensaje) {
+    if (contendor.css("display") !== "none") {
+      return validarSelect(select, mensaje);
     }
+    return false;
   }
 
   function mostrarAlerta(elemento, mensaje) {

@@ -207,7 +207,7 @@ def configurar_rutas(app, login_manager_app):
                 comment,
                 content_tp,
             )
-            return jsonify({"message": response})
+            return response
         except KeyError as e:
             return f"No se proporcionó el campo {e} en la solicitud POST."
 
@@ -229,7 +229,7 @@ def configurar_rutas(app, login_manager_app):
                 entry,
                 domain,
             )
-            return jsonify({"message": response})
+            return response
         except KeyError as e:
             return f"No se proporcionó el campo {e} en la solicitud POST."
 
@@ -342,6 +342,14 @@ def configurar_rutas(app, login_manager_app):
             deactivate_activate_rule(regla_id, regla_content_id)
 
             if regla_content_id:
+                # reglas_contenido_sorted = obtener_reglas_ufw_contenido()
+
+                # reglas_para_enviar = []
+
+                # for key, value in reglas_contenido_sorted.items():
+                #     reglas_para_enviar.append({"key": key, "value": value})
+
+                # return jsonify(reglas_para_enviar)
                 return redirect(url_for("obtener_reglas_ufw_content"))
             else:
                 return redirect(url_for("obtener_reglas_ufw_route"))

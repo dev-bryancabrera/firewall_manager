@@ -1,0 +1,80 @@
+code {
+  background: linear-gradient(#eee, #fe9);
+  color: green;
+  padding: 15px;
+  border-radius: 25px;
+}
+
+pre {
+  background: linear-gradient(#eee, #fe9);
+  color: green;
+  padding: 15px;
+  border-radius: 25px;
+}
+
+.wy-nav-side {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  padding-bottom: 2em;
+  width: 350px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  min-height: 100%;
+  color: #9b9b9b;
+  background: #343131;
+  z-index: 200;
+}
+
+.wy-side-nav-search {
+  display: block;
+  width: 350px;
+  padding: 0.809em;
+  margin-bottom: 0.809em;
+  z-index: 2;
+  background-color: #b92929;
+  text-align: center;
+  display: block;
+  color: #fcfcfc;
+  margin-bottom: 0.809em;
+}
+
+.wy-nav-content {
+  padding: 1.618em 6.236em;
+  background: #ffffff;
+  max-width: 100%;
+  height: 100%;
+  margin: auto;
+}
+
+.wy-menu-vertical {
+  width: 350px;
+}
+
+.wy-side-nav-search > div.manual-title {
+  margin-bottom: 0.809em;
+  font-weight: normal;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.wy-grid-for-nav {
+  background: #000;
+}
+
+.wy-side-scroll {
+  width: 100vh;
+}
+
+ol,
+ul {
+  padding-left: 0rem !important;
+}
+
+.steps-create-rules {
+  padding-left: 20px !important;
+}
+
+a {
+  text-decoration: none !important;
+}

@@ -38,11 +38,21 @@ body {
   max-width: 100%;
 }
 
+.container-accordion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#accordion {
+  width: 80%;
+}
+
 .table {
   text-align: center;
   width: auto;
   overflow: hidden;
-  padding: 24px !important;
+  padding: 18px !important;
 }
 
 .type_content {
@@ -50,8 +60,8 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 35px;
-  padding-top: 35px !important;
-  padding-bottom: 35px;
+  padding-top: 22px !important;
+  padding-bottom: 22px;
 }
 
 th,
@@ -276,4 +286,66 @@ tr:nth-child(n + 5) {
 
 .full-response tr:nth-child(n + 3) {
   display: table-row;
+}
+
+/* Acordion */
+#accordion {
+  .card-header {
+    margin-bottom: 8px;
+  }
+  .accordion-title {
+    position: relative;
+    display: flex; /* Cambiado a flex para permitir el uso de flexbox */
+    align-items: center; /* Centra verticalmente los elementos */
+    padding: 8px 0; /* Ajusta el relleno superior e inferior */
+    padding-left: 30px;
+    background: #213744;
+    border-radius: 8px;
+    overflow: hidden;
+    text-decoration: none;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    width: 100%;
+    text-align: left;
+    transition: all 0.4s ease-in-out;
+  }
+
+  .accordion-title i {
+    margin-left: auto; /* Mueve el ícono al lado derecho */
+    margin-right: 10px; /* Ajusta el espacio entre el texto y el ícono */
+    width: 40px;
+    height: 100%;
+    color: #fff;
+    background: radial-gradient(
+      rgba(33, 55, 68, 0.8),
+      #213744
+    ); /* Corregido el color */
+    text-align: center;
+    border-right: 1px solid transparent;
+  }
+
+  .accordion-title:hover {
+    padding-left: 40px;
+    background: #213744;
+    color: #fff;
+  }
+
+  .accordion-title[aria-expanded="true"] {
+    background: #24b365;
+    color: #000;
+  }
+
+  .accordion-title[aria-expanded="true"] i {
+    color: #000;
+    background: #24b365;
+  }
+
+  .accordion-title[aria-expanded="true"] i:before {
+    content: "\f068";
+  }
+
+  .accordion-body {
+    padding: 40px 55px;
+  }
 }

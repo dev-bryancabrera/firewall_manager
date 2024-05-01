@@ -3,7 +3,7 @@ from datetime import datetime
 from io import BytesIO
 
 import shlex
-from flask import flash
+from flask import flash, jsonify
 from flask_login import current_user, login_user
 import pandas as pd
 
@@ -57,37 +57,34 @@ def obtener_reglas_ufw():
         reglas_out = []
         reglas_default = []
 
-        domains_duplicated = []
+        domains_duplicated = set()
 
         rule_db = modelFirewall.getRules()
 
         if rule_db:
             for rule_tuple in rule_db:
-                domain = ""
-                domains = ""
-
-                ip = ""
-                port = ""
-                rule_data = ""
-
                 id_regla = rule_tuple[0]
                 assigned_name = rule_tuple[1].replace("_", " ").replace("-", " ")
                 status = rule_tuple[4]
                 created_date = rule_tuple[3].strftime("%Y-%m-%d")
                 tipo_regla = rule_tuple[2]
 
+                rule_data = ""
+                ip = ""
+                port = ""
+
                 detail_domain_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
+
+                domains = []
 
                 for detail_domain in detail_domain_rules:
                     detail_status = detail_domain[2]
-
                     if tipo_regla == "dominio" or tipo_regla == "contenido":
-                        rule_detail_parts = detail_domain[1].split(
-                            " -m comment --comment "
-                        )
-                        rule_detail_command = rule_detail_parts[0].split()
-
                         if detail_status == 1:
+                            rule_detail_parts = detail_domain[1].split(
+                                " -m comment --comment "
+                            )
+
                             rule_detail_domain = rule_detail_parts[1].replace("'", "")
 
                             if rule_detail_domain not in domains_duplicated:
@@ -99,16 +96,15 @@ def obtener_reglas_ufw():
                                 elif count_hyphens == 1:
                                     domain = rule_detail_domain.split("-", 1)[1].strip()
 
-                                if domains:
-                                    domains += ", " + domain
-                                else:
-                                    domains += domain
+                                domains.append(domain)
+                                domains_duplicated.add(rule_detail_domain)
 
-                                domains_duplicated.append(rule_detail_domain)
+                            rule_data = ", ".join(domains)
 
                     else:
                         rule_detail_parts = detail_domain[1].split(" comment ")
                         rule_detail_command = rule_detail_parts[0].split()
+
                         for part in rule_detail_command:
                             if is_valid_ip(part):
                                 ip = part
@@ -229,19 +225,20 @@ def obtener_reglas_ufw_contenido():
                         elif "REJECT" in rule_command:
                             permiso = "DENEGADO"
 
-                        if "tcp" in rule_command:
-                            protocolo = "TCP"
-                        elif "udp" in rule_command:
-                            protocolo = "UDP"
-                        else:
-                            protocolo = "TCP/UDP"
-
-                        if "INPUT" in rule_command:
-                            entry = "ENTRADA"
-                        elif "OUTPUT" in rule_command:
-                            entry = "SALIDA"
-                        else:
-                            entry = "ENTRADA"
+                        protocolo = (
+                            "TCP"
+                            if "tcp" in rule_command
+                            else "UDP"
+                            if "udp" in rule_command
+                            else "TCP/UDP"
+                        )
+                        entry = (
+                            "ENTRADA"
+                            if "INPUT" in rule_command
+                            else "SALIDA"
+                            if "OUTPUT" in rule_command
+                            else "ENTRADA"
+                        )
 
                         # Crear un diccionario con los valores
                         regla = {
@@ -744,7 +741,7 @@ plataformas = {
     "redes_sociales": [
         "www.facebook.com",
         "twitter.com",
-        "instagram.com",
+        "www.instagram.com",
         "ec.linkedin.com",
         "www.linkedin.com",
         "www.pinterest.com",
@@ -907,8 +904,8 @@ def remove_domain_from_hosts(name_domain):
 
 
 def allow_connections(
-    accion_regla,
-    tipo_regla,
+    action_rule,
+    rule_type,
     ip_addr,
     domain,
     port,
@@ -924,69 +921,69 @@ def allow_connections(
     content_tp,
 ):
     try:
-        if protocol == "tcp/udp":
-            protocol = ""
-
-        ip_dest = "any"
+        protocol = "" if protocol == "tcp/udp" else protocol
+        ip_dest = "" if entry == "out" else "any"
 
         if entry == "in":
             direction = "from"
         elif entry == "out":
             direction = "to"
-            ip_dest = ""
 
-        rule = f"sudo ufw {accion_regla}"
+        rule = f"sudo ufw {action_rule} "
         fecha_creacion = datetime.now()
 
         rulesTypeContent = []
 
-        if tipo_regla == "dominio" or tipo_regla == "contenido":
-            if accion_regla == "allow":
-                accion_regla = "ACCEPT"
-            elif accion_regla == "reject":
-                accion_regla = "REJECT"
+        if rule_type in ("dominio", "contenido"):
+            action_rule = "ACCEPT" if action_rule == "allow" else "REJECT"
+            entry = "INPUT" if entry == "in" else "OUTPUT"
+            direction = "-s" if entry == "INPUT" else "-d"
 
-            if entry == "in":
-                entry = "INPUT"
-                direction = "-s"
-            elif entry == "out":
-                entry = "OUTPUT"
-                direction = "-d"
+        if content_tp:
+            reglas_contenido = modelFirewall.getRulesContent()
 
-        if content_tp and not domain:
             for platform in content_tp:
+                plataforma_contenido = platform.replace("_", " ").lower().title()
+
+                if any(
+                    plataforma_contenido in rule_tuple[1]
+                    for rule_tuple in reglas_contenido
+                ):
+                    return jsonify(
+                        {"error": "Ya existe una regla con ese tipo de contenido"}
+                    )
+
                 if platform in plataformas:
-                    platform_name = platform.lower().replace("_", " ").title()
-                    rulesContent = []
+                    platform_name = platform.replace("_", " ").title()
+                    rules_content = []
                     comment_content = f"{comment} - {platform_name}"
 
-                    for domainPlataform in (
-                        plataformas[platform] + plataformas_dinamicas[platform]
-                    ):
+                    domains = plataformas[platform] + plataformas_dinamicas[platform]
+
+                    for domain_platform in domains:
                         ip_domain = (
-                            verify_domain_dynamic(domainPlataform)
-                            if domainPlataform in plataformas_dinamicas[platform]
-                            else domainPlataform
+                            verify_domain_dynamic(domain_platform)
+                            if domain_platform in plataformas_dinamicas[platform]
+                            else domain_platform
                         )
 
-                        comment_with_domain = f"{comment_content} - {domainPlataform}"
+                        comment_with_domain = f"{comment_content} - {domain_platform}"
 
                         if isinstance(ip_domain, list):
                             for ip in ip_domain:
-                                rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
-                                rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
-                                rulesContent.append(rule)
+                                rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
+                                rules_content.append(rule)
                                 subprocess.run(shlex.split(rule))
+
                         elif isinstance(ip_domain, str):
-                            rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
-                            rule += f" -m comment --comment '{comment_content} - {domainPlataform}'"
-                            rulesContent.append(rule)
+                            rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
+                            rules_content.append(rule)
                             subprocess.run(shlex.split(rule))
 
-                        if accion_regla == "REJECT":
-                            add_domain_to_hosts(domainPlataform, comment_with_domain)
+                        if action_rule == "REJECT":
+                            add_domain_to_hosts(domain_platform, comment_with_domain)
 
-                    rulesTypeContent.append((rulesContent, comment_content))
+                    rulesTypeContent.append((rules_content, comment_content))
                 else:
                     print(f"Invalid platform: {platform_name}")
 
@@ -999,112 +996,36 @@ def allow_connections(
                 ip_domain = verify_domain_dynamic(domain)
 
                 if isinstance(ip_domain, list):
-                    for ip in ip_domain:
-                        rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {accion_regla}"
-
-                        rule += f" -m comment --comment '{comment_domain}'"
-                        rules_domain_dynamic.append(rule)
-                        subprocess.run(shlex.split(f"{rule}"))
-
+                    rules_domain_dynamic = [
+                        f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                        for ip in ip_domain
+                    ]
                 elif isinstance(ip_domain, str):
-                    rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {accion_regla}"
-
-                    rule += f" -m comment --comment '{comment_domain}'"
-
-                    subprocess.run(shlex.split(f"{rule}"))
-
+                    rules_domain_dynamic = [
+                        f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    ]
             else:
-                rule = (
-                    f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
-                )
-                rule += f" -m comment --comment '{comment_domain}'"
-                subprocess.run(shlex.split(f"{rule}"))
+                rules_domain_dynamic = [
+                    f"sudo iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                ]
 
-            if accion_regla == "REJECT":
-                add_domain_to_hosts(domainPlataform, comment_domain)
+            for rule in rules_domain_dynamic:
+                subprocess.run(shlex.split(rule))
 
-        elif (port or portStart or portLimit) and ip_addr and not domain:
+            if action_rule == "REJECT":
+                add_domain_to_hosts(domain, comment_domain)
+
+        elif port and ip_addr:
             if ip_addr and netmask:
                 ip_addr += f"/{netmask}"
             if ip_dest and dest_netmask:
                 ip_dest += f"/{dest_netmask}"
 
-            if entry and direction and ip_addr and portStart and portLimit and protocol:
-                rule += f" {entry} {direction} {ip_addr} port {portStart}:{portLimit} proto {protocol}"
-                rule += f" comment '{comment}'"
-
-            elif (
-                entry
-                and direction
-                and ip_addr
-                and portStart
-                and ip_dest
-                and portLimit
-                and protocol
-            ):
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to {ip_dest} port {portLimit} proto {protocol} comment '{comment}'"
-
-            elif (
-                entry and direction and ip_addr and portStart and ip_dest and portLimit
-            ):
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to {ip_dest} port {portLimit} comment '{comment}'"
-
             elif entry and direction and ip_addr and ip_dest and port and protocol:
                 rule += f" {entry} {direction} {ip_addr} to {ip_dest} port {port} proto {protocol} comment '{comment}'"
 
-            elif (
-                entry and direction and ip_addr and portStart and portLimit and protocol
-            ):
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to any port {portLimit} proto {protocol} comment '{comment}'"
-
-            elif (
-                entry and direction and portStart and ip_dest and portLimit and protocol
-            ):
-                rule += f" {entry} {direction} any port {portStart} to {ip_dest} port {portLimit} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and portStart and ip_dest and portLimit:
-                rule += f" {entry} {direction} any port {portStart} to {ip_dest} port {portLimit} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portStart and portLimit:
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to any port {portLimit} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portLimit and protocol:
-                rule += f" {entry} {direction} {ip_addr} to any port {portLimit} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portStart and ip_dest and protocol:
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to {ip_dest} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portStart and protocol:
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to any proto {protocol} comment '{comment}'"
-
-            elif (
-                entry and direction and ip_dest and portStart and portLimit and protocol
-            ):
-                rule += f" {entry} {direction} any port {portStart} to {ip_dest} port {portLimit} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and ip_dest and portLimit and protocol:
-                rule += f" {entry} {direction} any to {ip_dest} port {portLimit} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and portStart and ip_dest and portLimit:
-                rule += f" {entry} {direction} any port {portStart} to {ip_dest} port {portLimit} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portStart and ip_dest:
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to {ip_dest} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portStart:
-                rule += f" {entry} {direction} {ip_addr} port {portStart} to any comment '{comment}'"
-
-            elif entry and direction and ip_addr and portLimit:
-                rule += f" {entry} {direction} {ip_addr} to any port {portLimit} comment '{comment}'"
-
-            elif entry and direction and ip_dest and portLimit:
-                rule += f" {entry} {direction} any to {ip_dest} port {portLimit} comment '{comment}'"
-
             elif entry and direction and ip_addr and port and protocol:
                 rule += f" {entry} {direction} {ip_addr} port {port} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and ip_addr and portStart and portLimit:
-                rule += f" {entry} {direction} {ip_addr} port {portStart}:{portLimit} comment '{comment}'"
 
             elif entry and direction and ip_addr and ip_dest and port:
                 rule += f" {entry} {direction} {ip_addr} to {ip_dest} port {port} comment '{comment}'"
@@ -1129,7 +1050,7 @@ def allow_connections(
             subprocess.run(shlex.split(f"{rule}"))
 
         # IPs
-        elif ip_addr and not domain:
+        elif ip_addr:
             if ip_addr and netmask:
                 ip_addr += f"/{netmask}"
             if ip_dest and dest_netmask:
@@ -1158,17 +1079,9 @@ def allow_connections(
             subprocess.run(shlex.split(f"{rule}"))
 
         # Port
-        elif port or portStart or portLimit and not domain:
-            if entry and direction and portStart and portLimit and protocol:
-                rule += f" {entry} {direction} any port {portStart}:{portLimit} proto {protocol} comment '{comment}'"
-
-            elif entry and direction and port and protocol:
+        elif port:
+            if entry and direction and port and protocol:
                 rule += f" {entry} {direction} any port {port} proto {protocol} comment '{comment}'"
-
-            elif entry and portStart and portLimit and protocol:
-                rule += (
-                    f" {entry} {portStart}:{portLimit}/{protocol} comment '{comment}'"
-                )
 
             elif entry and port and protocol:
                 rule += f" {entry} {port}/{protocol} comment '{comment}'"
@@ -1186,7 +1099,7 @@ def allow_connections(
                 firewall = Firewall(
                     0,
                     rulesContentPlatform[1],
-                    tipo_regla,
+                    rule_type,
                     fecha_creacion,
                     1,
                     current_user.id,
@@ -1205,7 +1118,7 @@ def allow_connections(
             firewall = Firewall(
                 0,
                 comment_domain,
-                tipo_regla,
+                rule_type,
                 fecha_creacion,
                 1,
                 current_user.id,
@@ -1227,7 +1140,7 @@ def allow_connections(
             firewall = Firewall(
                 0,
                 comment,
-                tipo_regla,
+                rule_type,
                 fecha_creacion,
                 1,
                 current_user.id,
@@ -1239,9 +1152,9 @@ def allow_connections(
             firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
             modelFirewallDetail.insertRuleDetail(firewallDetail)
 
-        return "Regla creada correctamente"
+        return jsonify({"message": "Regla creada correctamente"})
     except subprocess.CalledProcessError:
-        return "Error al permitir el puerto."
+        return jsonify({"error": "Error al permitir el puerto."})
 
 
 # Ejecutara unicamente dominios que las ips sean dinamicas
@@ -1282,46 +1195,80 @@ def verify_domain_dynamic(domain):
 def allow_connections_detail(
     id_regla,
     regla_name,
-    accion_regla,
+    action_rule,
     entry,
     domain,
 ):
     try:
-        if entry == "INPUT":
-            direction = "-s"
-        elif entry == "OUTPUT":
-            direction = "-d"
+        saved_domains = []
 
-        rulesSavedDomain = []
-
-        detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
-
-        for detail_rule in detail_rules:
-            rule_save_string = detail_rule[1]
-            rule_saved_parts = rule_save_string.split(" -m comment --comment ")
-            rule_save_command = rule_saved_parts[0]
-            rulesSavedDomain.append(rule_save_command)
+        direction = "-s" if entry == "INPUT" else "-d"
 
         comment_domain = f"{regla_name} - {domain}"
-        rule = f"sudo iptables -I {entry} 1 {direction} {domain} -j {accion_regla}"
 
-        rule += f" -m comment --comment '{comment_domain}'"
+        if domain in plataformas_dinamicas_dominio:
+            ip_domain = verify_domain_dynamic(domain)
+
+            if isinstance(ip_domain, list):
+                rules_domain_dynamic = [
+                    f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    for ip in ip_domain
+                ]
+            elif isinstance(ip_domain, str):
+                rules_domain_dynamic = [
+                    f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                ]
+        else:
+            rules_domain_dynamic = [
+                f"sudo iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+            ]
+
+        for rule in rules_domain_dynamic:
+            subprocess.run(shlex.split(rule))
 
         save_rule = format_rule_save(rule)
-        rule_parts = save_rule.split(" -m comment --comment ")
-        rule_command = rule_parts[0]
 
-        if not any(rule_command in detail_rule for detail_rule in rulesSavedDomain):
+        rule_details = modelFirewallDetail.getRulesDetailsById(id_regla)
+
+        for detail_rule in rule_details:
+            detail_domain = (
+                detail_rule[1].split(" -m comment --comment ")[1].replace("'", "")
+            )
+
+            count_hyphens = detail_domain.count("-")
+
+            if count_hyphens == 2:
+                processed_domain = detail_domain.split("-", 2)[2].strip()
+
+            elif count_hyphens == 1:
+                processed_domain = detail_domain.split("-", 1)[1].strip()
+
+            if "www" in processed_domain:
+                processed_domain_no_www = processed_domain.split("www.")[1]
+                saved_domains.append(processed_domain_no_www)
+            else:
+                saved_domains.append(processed_domain)
+
+        if "www" in domain:
+            domain_no_www = domain.split("www.")[1]
+        else:
+            domain_no_www = domain
+
+        if domain_no_www not in saved_domains:
             subprocess.run(shlex.split(f"{rule}"))
-            firewallDetail = FirewallDetail(0, id_regla, save_rule, 1)
-            modelFirewallDetail.insertRuleDetail(firewallDetail)
+            firewall_detail = FirewallDetail(0, id_regla, save_rule, 1)
+            modelFirewallDetail.insertRuleDetail(firewall_detail)
+        else:
+            return jsonify(
+                {"error": "El dominio ya esta presente en este tipo de contenido"}
+            )
 
-        if accion_regla == "REJECT":
+        if action_rule == "REJECT":
             add_domain_to_hosts(domain, comment_domain)
 
-        return "Regla creada correctamente"
+        return jsonify({"message": "Regla creada correctamente"})
     except subprocess.CalledProcessError:
-        return "Error al permitir el puerto."
+        return "Error al crear la regla."
 
 
 def format_rule_save(rule):

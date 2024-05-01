@@ -180,7 +180,7 @@ function loadDataReport(registro_id) {
       const jsonData = data.data;
       const parsedData = JSON.parse(jsonData);
       parsedData.forEach((row) => {
-        $("#packetTable").bootstrapTable("append", row);
+        $packetTable.bootstrapTable("append", row);
       });
       btnGuardarReporte.prop("disabled", true);
       btnPausePlayReporte.prop("disabled", true);
@@ -300,7 +300,7 @@ function loadPacketFilter() {
       info: info,
     };
 
-    $("#packetTable").bootstrapTable("append", row);
+    $packetTable.bootstrapTable("append", row);
   };
 }
 
@@ -336,7 +336,7 @@ function preLoadData() {
         info: info,
       };
 
-      $("#packetTable").bootstrapTable("append", row);
+      $packetTable.bootstrapTable("append", row);
     };
   }
 }
