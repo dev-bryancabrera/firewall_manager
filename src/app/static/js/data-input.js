@@ -252,13 +252,42 @@ $(document).ready(function () {
       data: formData,
       success: function (response) {
         if (response.error) {
+          btnSaveRule.prop("disabled", false);
           alertMessage(response.error, "danger");
         } else {
           alertMessage(response.message, "success");
         }
       },
-      error: function (xhr, status, error) {
-        console.error(error);
+      error: function (error) {
+        btnSaveRule.prop("disabled", false);
+        alertMessage(error, "danger");
+      },
+    });
+  });
+
+  $('button[id^="btn-regla"]').click(function (event) {
+    event.preventDefault();
+
+    var reglaId = $(this).attr("id").split("-", 3)[2];
+
+    var btn_status = $(this);
+    btn_status.prop("disabled", true);
+
+    $.ajax({
+      type: "GET",
+      url: "/desactivar_regla",
+      data: { id_regla: reglaId },
+      success: function (response) {
+        if (response.error) {
+          btn_status.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
       },
     });
   });
@@ -268,16 +297,22 @@ $(document).ready(function () {
       id_regla: ruleId.val(),
     };
     btnConfirmDeleteRule.prop("disabled", true);
+    console.log("hata qui llegue");
     $.ajax({
       type: "GET",
       url: "/eliminar_regla",
       data: params,
       success: function (response) {
-        //alertMessage(response.message);
-        location.reload();
+        if (response.error) {
+          btnConfirmDeleteRule.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
-      error: function (xhr, status, error) {
-        console.error(error);
+      error: function (error) {
+        btnConfirmDeleteRule.prop("disabled", false);
+        alertMessage(error, "danger");
       },
     });
   });
@@ -361,13 +396,13 @@ $(document).ready(function () {
 
     // Cambia el tipo de alerta
     if (alertType === "success") {
-      alertBox.addClass("alert-success");
+      alertBox.removeClass("alert-danger").addClass("alert-success");
       alertIcon
         .removeClass("text-danger")
         .addClass("text-success")
         .addClass("fa-check-circle");
     } else if (alertType === "danger") {
-      alertBox.addClass("alert-danger");
+      alertBox.removeClass("alert-success").addClass("alert-danger");
       alertIcon
         .removeClass("text-success")
         .addClass("text-danger")
@@ -375,15 +410,13 @@ $(document).ready(function () {
     }
 
     alertMessage.text(response);
-
-    // Muestra el contenedor de mensaje
     $(".alert-message-container").show("medium");
-
-    // Oculta el mensaje después de 2 segundos y recarga la página
     setTimeout(function () {
-      location.reload();
+      if (alertType === "success") {
+        location.reload();
+      }
       $(".alert-message-container").hide("medium");
-    }, 2000);
+    }, 1500);
   }
 
   function validarCampo(elemento) {
@@ -431,6 +464,8 @@ $(document).ready(function () {
     }
     return false;
   }
+
+  scrollPos();
 });
 
 // Función para limpiar el formulario
@@ -496,5 +531,16 @@ function formatoNombreRegla(input) {
 
 // LimpiarFormulario cuando se presiona cualquier boton
 btnCancelar.on("click", limpiarFormulario);
-
 btnCreate.on("click", limpiarFormulario);
+
+window.addEventListener("beforeunload", function () {
+  sessionStorage.setItem("scrollPositionFirewall", window.scrollY);
+});
+
+// Restaurar la posición del scroll al cargar la página
+function scrollPos() {
+  var scrollPosition = sessionStorage.getItem("scrollPositionFirewall");
+  if (scrollPosition !== null) {
+    window.scrollTo(0, scrollPosition);
+  }
+}

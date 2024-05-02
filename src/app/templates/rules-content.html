@@ -47,6 +47,7 @@
               >
                 <button
                   class="btn btn-link accordion-title border-0 collapse d-flex justify-content-between align-items-center"
+                  id="btn-collapse{{ loop.index }}"
                   data-toggle="collapse"
                   data-target="#collapse{{ loop.index }}"
                   aria-expanded="false"
@@ -133,32 +134,13 @@
                             <td class="protocolo">{{ regla['protocolo'] }}</td>
                             <td class="entrada">{{ regla['entrada'] }}</td>
                             <td>
-                              {% if regla['estado'] == 1 %}
-                              <a
-                                href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
-                                class="btn btn-success"
-                                >Desactivar</a
+                              <button
+                                id="btn-regla-{{ regla['id_rule_detail'] }}"
+                                class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
                               >
-                              {% elif regla['estado'] == 0 %}
-                              <a
-                                href="{{ url_for('desactivar_regla', nombre=regla['nombre_regla_contenido'], id=regla['id_rule_detail']) }}"
-                                class="btn btn-secondary"
-                                >Activar</a
-                              >
-                              {% endif %}
-                              <!-- {% if regla['estado'] == 1 %}
-                              <a
-                                class="btn btn-success desactivar-btn"
-                                id="id-{{ regla['id_rule_detail'] }}"
-                                >Desactivar</a
-                              >
-                              {% elif regla['estado'] == 0 %}
-                              <a
-                                class="btn btn btn-secondary activar-btn"
-                                id="id-{{ regla['id_rule_detail'] }}"
-                                >Activar</a
-                              >
-                              {% endif %} -->
+                                {{ 'Desactivar' if regla['estado'] == 1 else
+                                'Activar' }}
+                              </button>
                             </td>
                             <td>
                               <button
@@ -185,16 +167,7 @@
             {% endfor %} {% else %}
             <!-- Si no hay datos, muestra una tabla vacía o un mensaje indicando que no hay datos -->
             <h2 class="accordion-header" id="flush-heading">
-              <button
-                class="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#flush-collapse"
-                aria-expanded="false"
-                aria-controls="flush-collapse"
-              >
-                No hay datos disponibles.
-              </button>
+              <span> No hay datos disponibles. </span>
             </h2>
             {% endif %}
           </div>
@@ -308,7 +281,7 @@
                         <select
                           class="form-select"
                           name="action_rule"
-                          id="formSelectAction"
+                          id="selectAction"
                         >
                           <option value="" selected disabled>
                             Seleccionar...
@@ -362,43 +335,6 @@
                   </form>
                 </div>
               </div>
-              <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
-                <div
-                  id="liveToast"
-                  class="toast hide"
-                  role="alert"
-                  aria-live="assertive"
-                  aria-atomic="true"
-                >
-                  <div class="toast-header">
-                    <img
-                      src="../static/img/alert_message.png"
-                      class="rounded me-2"
-                      alt="..."
-                    />
-                    <strong class="me-auto">Campo Requerido</strong>
-                    <button
-                      type="button"
-                      class="btn-close"
-                      data-bs-dismiss="toast"
-                      aria-label="Close"
-                    ></button>
-                  </div>
-                  <div class="toast-body"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Alerts Message -->
-        <div class="alert-message-container">
-          <div class="alert-box" style="float: none; margin: 0 auto">
-            <div class="alert alert-success">
-              <div class="alert-icon text-center">
-                <i class="fas fa-check-circle fa-3x text-success"></i>
-              </div>
-              <div class="alert-message text-center"></div>
             </div>
           </div>
         </div>

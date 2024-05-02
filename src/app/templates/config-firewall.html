@@ -109,19 +109,13 @@
                   <td class="protocolo">{{ regla['protocolo'] }}</td>
                   <td class="entrada">{{ regla['entrada'] }}</td>
                   <td>
-                    {% if regla['estado'] == 1 %}
                     <a
-                      href="{{ url_for('desactivar_regla', id_regla=regla['id_regla']) }}"
-                      class="btn btn-success"
-                      >Desactivar</a
+                      id="btn-{{ regla['id_regla'] }}"
+                      href="#"
+                      class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
                     >
-                    {% elif regla['estado'] == 0 %}
-                    <a
-                      href="{{ url_for('desactivar_regla', id_regla=regla['id_regla']) }}"
-                      class="btn btn-secondary"
-                      >Activar</a
-                    >
-                    {% endif %}
+                      {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
+                    </a>
                   </td>
                   <td>
                     <button
@@ -216,19 +210,12 @@
                   <td class="protocolo">{{ regla['protocolo'] }}</td>
                   <td class="entrada">{{ regla['entrada'] }}</td>
                   <td>
-                    {% if regla['estado'] == 1 %}
-                    <a
-                      href="{{ url_for('desactivar_regla', id_regla=regla['id_regla']) }}"
-                      class="btn btn-success"
-                      >Desactivar</a
+                    <button
+                      id="btn-regla-{{ regla['id_regla'] }}"
+                      class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
                     >
-                    {% elif regla['estado'] == 0 %}
-                    <a
-                      href="{{ url_for('desactivar_regla', id_regla=regla['id_regla']) }}"
-                      class="btn btn-secondary"
-                      >Activar</a
-                    >
-                    {% endif %}
+                      {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
+                    </button>
                   </td>
                   <td>
                     <button
@@ -577,10 +564,10 @@
                           <label for="selectProtocolRed"
                             >Contenido de red</label
                           >
+                          <!-- En caso de querer seleccionar varios incluir multiple en el select -->
                           <select
                             class="selectpicker"
                             name="contentOption"
-                            multiple
                             id="content"
                             aria-label="Seleccione Contenido"
                             data-none-selected-text="Seleccione Contenido"
@@ -747,15 +734,15 @@
             </div>
           </div>
         </div>
-        <!-- Alerts Message -->
-        <div class="alert-message-container">
-          <div class="alert-box" style="float: none; margin: 0 auto">
-            <div class="alert">
-              <div class="alert-icon text-center">
-                <i class="fas fa-check-circle fa-3x"></i>
-              </div>
-              <div class="alert-message text-center"></div>
+      </div>
+      <!-- Alerts Message -->
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x"></i>
             </div>
+            <div class="alert-message text-center"></div>
           </div>
         </div>
       </div>

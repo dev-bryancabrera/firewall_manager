@@ -3,9 +3,9 @@ $(document).ready(function () {
     '<button class="show-full-response">Mostrar</button>'
   );
 
-  $(".show-full-response").on("click", function () {
-    $(this).closest("table").toggleClass("full-response");
-  });
+  var selectAction = $("#selectAction");
+  var selectEntry = $("#selectEntry");
+  var domain = $("#domain");
 
   /* Modal eliminar regla */
   var confirmarEliminarModal = $("#confirmarEliminar");
@@ -82,6 +82,14 @@ $(document).ready(function () {
   $("#formFirewall").submit(function (event) {
     event.preventDefault();
 
+    if (
+      validarSelect(selectAction, "Se debe asignar una accion para la Regla") ||
+      mostrarAlerta(selectEntry, "El campo de entrada es requerido.") ||
+      mostrarAlerta(domain, "El campo de dominio es requerido")
+    ) {
+      return;
+    }
+
     var formData = $(this).serialize();
     btnSaveDomain.prop("disabled", true);
 
@@ -91,100 +99,71 @@ $(document).ready(function () {
       data: formData,
       success: function (response) {
         if (response.error) {
+          btnSaveDomain.prop("disabled", false);
           alertMessage(response.error, "danger");
         } else {
           alertMessage(response.message, "success");
         }
       },
-      error: function (xhr, status, error) {
-        console.error(error);
+      error: function (error) {
+        btnSaveDomain.prop("disabled", false);
+        alertMessage(error, "danger");
       },
     });
   });
 
-  function sendAjaxRequest(url, method, data, successCallback, errorCallback) {
-    const xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        successCallback(xhr.responseText);
-      } else {
-        errorCallback(xhr.statusText);
-      }
-    };
-    xhr.onerror = () => errorCallback("Error de red");
-    xhr.send(JSON.stringify(data));
-  }
-
-  $(".desactivar-btn").click(function () {
-    const id = $(this).attr("id").split("-")[1];
-    sendAjaxRequest(
-      `/desactivar_regla?id_regla=${id}`,
-      "GET",
-      null,
-      function (response) {
-        // Actualiza el estado de la tabla después de recibir la respuesta
-        const reglas = JSON.parse(response);
-        // Actualiza la tabla con las nuevas reglas
-      },
-      function (error) {
-        console.error(error);
-      }
-    );
-  });
-
-  $(".activar-btn").click(function () {
-    const id = $(this).attr("id").split("-")[1];
-    sendAjaxRequest(
-      `/activar_regla?id_regla=${id}`,
-      "GET",
-      null,
-      function (response) {
-        // Actualiza el estado de la tabla después de recibir la respuesta
-        const reglas = JSON.parse(response);
-        // Actualiza la tabla con las nuevas reglas
-      },
-      function (error) {
-        console.error(error);
-      }
-    );
-  });
-
-  function alertMessage(response, alertType) {
-    var alertBox = $(".alert");
-    var alertIcon = $(".alert-icon i");
-    var alertMessage = $(".alert-message");
-
-    // Oculta el contenedor de mensaje
-    $(".alert-message-container").hide("medium");
-
-    // Cambia el tipo de alerta
-    if (alertType === "success") {
-      alertBox.addClass("alert-success");
-      alertIcon
-        .removeClass("text-danger")
-        .addClass("text-success")
-        .addClass("fa-check-circle");
-    } else if (alertType === "danger") {
-      alertBox.addClass("alert-danger");
-      alertIcon
-        .removeClass("text-success")
-        .addClass("text-danger")
-        .addClass("fa-exclamation-circle");
+  function validarSelect(elemento, mensaje) {
+    if (elemento.val() === null || elemento.val().length === 0) {
+      $("#liveToast .toast-body").text(mensaje);
+      $("#liveToast").toast("show");
+      return true;
     }
-
-    alertMessage.text(response);
-
-    // Muestra el contenedor de mensaje
-    $(".alert-message-container").show("medium");
-
-    // Oculta el mensaje después de 2 segundos y recarga la página
-    setTimeout(function () {
-      location.reload();
-      $(".alert-message-container").hide("medium");
-    }, 2000);
+    return false;
   }
+
+  function mostrarAlerta(elemento, mensaje) {
+    if (validarCampo(elemento)) {
+      $("#liveToast .toast-body").text(mensaje);
+      $("#liveToast").toast("show");
+      return true;
+    }
+    return false;
+  }
+
+  function validarCampo(elemento) {
+    return (
+      !elemento.prop("disabled") &&
+      elemento.val().trim() === "" &&
+      elemento.css("display") !== "none"
+    );
+  }
+
+  $('button[id^="btn-regla"]').on("click", function (event) {
+    event.preventDefault();
+
+    var reglaId = $(this).attr("id").split("-", 3)[2];
+
+    var btn_status = $(this);
+    btn_status.prop("disabled", true);
+
+    $.ajax({
+      type: "GET",
+      url: "/desactivar_regla",
+      data: { id: reglaId },
+      success: function (response) {
+        if (response.error) {
+          btn_status.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
+      },
+    });
+  });
 
   confirmarEliminarModal.on("show.bs.modal", function (event) {
     var button = $(event.relatedTarget);
@@ -206,12 +185,115 @@ $(document).ready(function () {
       url: "/eliminar_regla",
       data: params,
       success: function (response) {
-        //alertMessage(response.message);
-        location.reload();
+        if (response.error) {
+          btnConfirmDeleteRuleContent.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
-      error: function (xhr, status, error) {
-        console.error(error);
+      error: function (error) {
+        btnConfirmDeleteRuleContent.prop("disabled", false);
+        alertMessage(error, "danger");
       },
     });
   });
+
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.removeClass("alert-danger").addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.removeClass("alert-success").addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
+    $(".alert-message-container").show("medium");
+    setTimeout(function () {
+      if (alertType === "success") {
+        location.reload();
+      }
+      $(".alert-message-container").hide("medium");
+    }, 1500);
+  }
+
+  $(".show-full-response").on("click", function () {
+    $(this).closest("table").toggleClass("full-response");
+    guardarEstadoBoton();
+  });
+
+  abrirUltimoPanelAbierto();
+  restaurarEstadoBoton();
+  scrollPos();
 });
+
+// Obtener el ID del último panel abierto
+function obtenerUltimoPanelAbierto() {
+  return sessionStorage.getItem("ultimoPanelAbierto");
+}
+
+// Función para abrir el último panel abierto al cargar la página
+function abrirUltimoPanelAbierto() {
+  var ultimoPanelId = obtenerUltimoPanelAbierto();
+  if (ultimoPanelId) {
+    $("#" + ultimoPanelId).collapse("show");
+    $("#btn-" + ultimoPanelId).attr("aria-expanded", "true");
+  }
+}
+
+// Guardar el ID del panel abierto al mostrar un panel del acordeón
+$("#accordion").on("shown.bs.collapse", function (e) {
+  var idPanel = $(e.target).attr("id");
+  sessionStorage.setItem("ultimoPanelAbierto", idPanel);
+});
+
+// Eliminar el ID del panel abierto al ocultar todos los paneles del acordeón
+$("#accordion").on("hidden.bs.collapse", function () {
+  if ($("#accordion .collapse.show").length === 0) {
+    sessionStorage.removeItem("ultimoPanelAbierto");
+  }
+});
+
+// Toma y Restaurar el estado del botón de expansion de la tabla
+function guardarEstadoBoton() {
+  var id_table = obtenerUltimoPanelAbierto().replace("collapse", "");
+  var mostrarTodos = $("#tableFirewallContent_" + id_table).hasClass(
+    "full-response"
+  );
+  sessionStorage.setItem("estadoBotonMostrarTodos", mostrarTodos);
+}
+
+function restaurarEstadoBoton() {
+  var mostrarTodos = sessionStorage.getItem("estadoBotonMostrarTodos");
+  if (mostrarTodos === "true") {
+    var id_table = obtenerUltimoPanelAbierto().replace("collapse", "");
+    $("#tableFirewallContent_" + id_table).addClass("full-response");
+  }
+}
+
+// Tomar y Restaurar la posición del scroll
+window.addEventListener("beforeunload", function () {
+  sessionStorage.setItem("scrollPosition", window.scrollY);
+});
+
+function scrollPos() {
+  var scrollPosition = sessionStorage.getItem("scrollPosition");
+  if (scrollPosition !== null) {
+    window.scrollTo(0, scrollPosition);
+  }
+}

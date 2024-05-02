@@ -424,9 +424,20 @@ def pre_start_capture():
 def delete_rule(regla_content_id, id_regla):
     try:
         if regla_content_id:
+            rule_details = {}
+            rule_details_copy = {}
+
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
             rule_string = rule_detail[1]
             estado_detail = rule_detail[2]
+            id_regla_detalle = rule_detail[3]
+
+            detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla_detalle)
+
+            for detail_rule in detail_rules:
+                rule_detail_id, rule_string_items, _ = detail_rule
+
+                rule_details[rule_detail_id] = rule_string_items
 
             rule_detail_name = rule_string.split(" -m comment --comment ")[1].replace(
                 "'", ""
@@ -454,7 +465,14 @@ def delete_rule(regla_content_id, id_regla):
                 if "REJECT" in rule_string:
                     remove_domain_from_hosts(rule_detail_name)
 
-            modelFirewallDetail.deleteDetailById(regla_content_id)
+            rule_details_copy = rule_details.copy()
+
+            for rule_detail_id, rule_string_items in rule_details_copy.items():
+                if rule_detail_name not in rule_string_items:
+                    del rule_details[rule_detail_id]
+
+            for rule_detail_id, _ in rule_details.items():
+                modelFirewallDetail.deleteDetailById(rule_detail_id)
 
         else:
             rule_db_filter = modelFirewall.getRuleById(id_regla)
@@ -510,9 +528,9 @@ def delete_rule(regla_content_id, id_regla):
             modelFirewallDetail.deleteRuleDetail(id_regla)
             modelFirewall.deleteRule(id_regla)
 
-        return "Regla Eliminada Correctamente"
+        return jsonify({"message": "Regla Eliminada Correctamente"})
     except subprocess.CalledProcessError as e:
-        return f"Error al obtener el número de la regla: {e}"
+        return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
 
 
 def deactivate_activate_rule(id_regla, regla_content_id):
@@ -566,40 +584,78 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 if "REJECT" in rule_string:
                     remove_domain_from_hosts(rule_detail_name)
 
-                for rule_detail_id, rule_string_items in rule_details.items():
+                for rule_detail_id, _ in rule_details.items():
                     modelFirewallDetail.updateDetail(0, rule_detail_id)
 
-                return "Regla Desactivada"
+                return jsonify({"message": "Regla Desactivada Correctamente"})
 
             elif estado_detail == 0:
-                for rule_detail_id, rule_string_items in rule_details.items():
-                    rule = f"sudo {rule_string_items}"
-                    subprocess.run(shlex.split(f"{rule}"))
+                domain_dynamic = rule_detail_name.split("-", 2)[2].strip()
 
-                    modelFirewallDetail.updateDetail(1, rule_detail_id)
+                if domain_dynamic in plataformas_dinamicas_dominio:
+                    entry = "OUTPUT" if "OUTPUT" in rule_string_items else "INPUT"
+                    action_rule = (
+                        "REJECT" if "REJECT" in rule_string_items else "ACCEPT"
+                    )
+                    direction = "-s" if entry == "INPUT" else "-d"
 
-                    if "REJECT" in rule_string_items:
-                        rule_detail_parts = rule_string_items.split(
-                            " -m comment --comment "
+                    comment_domain = rule_detail_name
+
+                    ip_domain = verify_domain_dynamic(domain_dynamic)
+
+                    for rule_detail_id, _ in rule_details.items():
+                        modelFirewallDetail.deleteDetailById(rule_detail_id)
+
+                    if isinstance(ip_domain, list):
+                        rules_domain_dynamic = [
+                            f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                            for ip in ip_domain
+                        ]
+                    elif isinstance(ip_domain, str):
+                        rules_domain_dynamic = [
+                            f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                        ]
+
+                    for rule in rules_domain_dynamic:
+                        subprocess.run(shlex.split(rule))
+
+                        save_rule = format_rule_save(rule)
+
+                        firewall_detail = FirewallDetail(
+                            0, id_regla_detalle, save_rule, 1
                         )
+                        modelFirewallDetail.insertRuleDetail(firewall_detail)
 
-                        rule_detail_domain = rule_detail_parts[1].replace("'", "")
+                    if action_rule == "REJECT":
+                        add_domain_to_hosts(domain_dynamic, comment_domain)
 
-                        if rule_detail_domain not in domains_duplicated:
-                            count_hyphens = rule_detail_domain.count("-")
+                else:
+                    for rule_detail_id, rule_string_items in rule_details.items():
+                        rule_detail_domain = rule_string_items.split(
+                            " -m comment --comment "
+                        )[1].replace("'", "")
 
-                            if count_hyphens == 2:
-                                domain = rule_detail_domain.split("-", 2)[2].strip()
+                        rule = f"sudo {rule_string_items}"
+                        subprocess.run(shlex.split(f"{rule}"))
 
-                            elif count_hyphens == 1:
-                                domain = rule_detail_domain.split("-", 1)[1].strip()
+                        modelFirewallDetail.updateDetail(1, rule_detail_id)
 
-                            add_domain_to_hosts(domain, rule_detail_domain)
-                            domains_duplicated.append(rule_detail_domain)
+                        if "REJECT" in rule_string_items:
+                            if rule_detail_domain not in domains_duplicated:
+                                count_hyphens = rule_detail_domain.count("-")
 
-                return "Regla Activa"
+                                if count_hyphens == 2:
+                                    domain = rule_detail_domain.split("-", 2)[2].strip()
 
-        elif id_regla and not regla_content_id:
+                                elif count_hyphens == 1:
+                                    domain = rule_detail_domain.split("-", 1)[1].strip()
+
+                                add_domain_to_hosts(domain, rule_detail_domain)
+                                domains_duplicated.append(rule_detail_domain)
+
+                return jsonify({"message": "Regla Activada Correctamente"})
+
+        elif id_regla:
             rule_db_filter = modelFirewall.getRuleById(id_regla)
 
             rule_name = rule_db_filter[2]
@@ -652,7 +708,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                         remove_domain_from_hosts(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
-                return "Regla Desactivada"
+                return jsonify({"message": "Regla Desactivada Correctamente"})
             elif numero_data == 0:
                 for detail_rule in detail_rules:
                     rule_detail_id = detail_rule[0]
@@ -684,11 +740,10 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                                 domains_duplicated.append(rule_detail_domain)
 
                 modelFirewall.updateRule(1, id_regla)
-                return "Regla Activa"
+                return jsonify({"message": "Regla Activa Correctamente"})
 
-        return "El nombre de la regla no puede ser None o vacío"
     except subprocess.CalledProcessError as e:
-        return f"Error al obtener el número de la regla: {e}"
+        return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
 
 
 def iptables_rules_matched(salida_iptables, name_iptable, direccion):
@@ -946,7 +1001,7 @@ def allow_connections(
                 plataforma_contenido = platform.replace("_", " ").lower().title()
 
                 if any(
-                    plataforma_contenido in rule_tuple[1]
+                    plataforma_contenido == rule_tuple[1].split(" - ")[1].strip()
                     for rule_tuple in reglas_contenido
                 ):
                     return jsonify(
@@ -1223,11 +1278,6 @@ def allow_connections_detail(
                 f"sudo iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
             ]
 
-        for rule in rules_domain_dynamic:
-            subprocess.run(shlex.split(rule))
-
-        save_rule = format_rule_save(rule)
-
         rule_details = modelFirewallDetail.getRulesDetailsById(id_regla)
 
         for detail_rule in rule_details:
@@ -1255,9 +1305,13 @@ def allow_connections_detail(
             domain_no_www = domain
 
         if domain_no_www not in saved_domains:
-            subprocess.run(shlex.split(f"{rule}"))
-            firewall_detail = FirewallDetail(0, id_regla, save_rule, 1)
-            modelFirewallDetail.insertRuleDetail(firewall_detail)
+            for rule in rules_domain_dynamic:
+                subprocess.run(shlex.split(rule))
+
+                save_rule = format_rule_save(rule)
+
+                firewall_detail = FirewallDetail(0, id_regla, save_rule, 1)
+                modelFirewallDetail.insertRuleDetail(firewall_detail)
         else:
             return jsonify(
                 {"error": "El dominio ya esta presente en este tipo de contenido"}

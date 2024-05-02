@@ -131,8 +131,8 @@ $(document).ready(function () {
         window.location.href = baseUrl + "/traffic-filter";
         sessionStorage.removeItem("datosTabla");
       },
-      error: function (xhr, status, error) {
-        var errorMessage = xhr.responseText; // Obtener el mensaje de error del servidor
+      error: function (xhr) {
+        var errorMessage = xhr.responseText;
         console.error("Error al guardar el reporte:", errorMessage);
       },
     });

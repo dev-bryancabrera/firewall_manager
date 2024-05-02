@@ -339,20 +339,9 @@ def configurar_rutas(app, login_manager_app):
             regla_id = request.args.get("id_regla")
             regla_content_id = request.args.get("id")
 
-            deactivate_activate_rule(regla_id, regla_content_id)
+            response = deactivate_activate_rule(regla_id, regla_content_id)
 
-            if regla_content_id:
-                # reglas_contenido_sorted = obtener_reglas_ufw_contenido()
-
-                # reglas_para_enviar = []
-
-                # for key, value in reglas_contenido_sorted.items():
-                #     reglas_para_enviar.append({"key": key, "value": value})
-
-                # return jsonify(reglas_para_enviar)
-                return redirect(url_for("obtener_reglas_ufw_content"))
-            else:
-                return redirect(url_for("obtener_reglas_ufw_route"))
+            return response
 
         except Exception as e:
             error_message = (
@@ -397,7 +386,7 @@ def configurar_rutas(app, login_manager_app):
             # Obtén el número de la regla utilizando el nuevo método
             response = delete_rule(regla, id_regla)
 
-            return jsonify({"message": response})
+            return response
 
         except Exception as e:
             # Manejar cualquier error que pueda ocurrir durante la eliminación

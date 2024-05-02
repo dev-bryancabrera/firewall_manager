@@ -279,6 +279,9 @@ h2 {
   content: " Menos...";
 }
 
+.desactivar-activar {
+  color: #fff !important;
+}
 /* Hide rows */
 tr:nth-child(n + 5) {
   display: none;
