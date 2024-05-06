@@ -109,13 +109,12 @@
                   <td class="protocolo">{{ regla['protocolo'] }}</td>
                   <td class="entrada">{{ regla['entrada'] }}</td>
                   <td>
-                    <a
-                      id="btn-{{ regla['id_regla'] }}"
-                      href="#"
+                    <button
+                      id="btn-regla-{{ regla['id_regla'] }}"
                       class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
                     >
                       {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
-                    </a>
+                    </button>
                   </td>
                   <td>
                     <button

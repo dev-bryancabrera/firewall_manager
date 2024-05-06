@@ -383,11 +383,9 @@ def configurar_rutas(app, login_manager_app):
             regla = request.args.get("regla")
             id_regla = request.args.get("id_regla")
 
-            # Obtén el número de la regla utilizando el nuevo método
             response = delete_rule(regla, id_regla)
 
             return response
 
         except Exception as e:
-            # Manejar cualquier error que pueda ocurrir durante la eliminación
             return f"Error al eliminar la regla: {e}"

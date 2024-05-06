@@ -538,6 +538,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
         rule_details = {}
         rule_details_copy = {}
         domains_duplicated = []
+        dynamic_domains = []
 
         if regla_content_id:
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
@@ -593,41 +594,25 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 domain_dynamic = rule_detail_name.split("-", 2)[2].strip()
 
                 if domain_dynamic in plataformas_dinamicas_dominio:
+                    rule_name_content = " - ".join(
+                        [part.strip() for part in rule_detail_name.split("-", 2)[:2]]
+                    )
+
                     entry = "OUTPUT" if "OUTPUT" in rule_string_items else "INPUT"
                     action_rule = (
                         "REJECT" if "REJECT" in rule_string_items else "ACCEPT"
                     )
-                    direction = "-s" if entry == "INPUT" else "-d"
-
-                    comment_domain = rule_detail_name
-
-                    ip_domain = verify_domain_dynamic(domain_dynamic)
 
                     for rule_detail_id, _ in rule_details.items():
                         modelFirewallDetail.deleteDetailById(rule_detail_id)
 
-                    if isinstance(ip_domain, list):
-                        rules_domain_dynamic = [
-                            f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
-                            for ip in ip_domain
-                        ]
-                    elif isinstance(ip_domain, str):
-                        rules_domain_dynamic = [
-                            f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
-                        ]
-
-                    for rule in rules_domain_dynamic:
-                        subprocess.run(shlex.split(rule))
-
-                        save_rule = format_rule_save(rule)
-
-                        firewall_detail = FirewallDetail(
-                            0, id_regla_detalle, save_rule, 1
-                        )
-                        modelFirewallDetail.insertRuleDetail(firewall_detail)
-
-                    if action_rule == "REJECT":
-                        add_domain_to_hosts(domain_dynamic, comment_domain)
+                    allow_connections_detail(
+                        id_regla_detalle,
+                        rule_name_content,
+                        action_rule,
+                        entry,
+                        domain_dynamic,
+                    )
 
                 else:
                     for rule_detail_id, rule_string_items in rule_details.items():
@@ -644,11 +629,9 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                             if rule_detail_domain not in domains_duplicated:
                                 count_hyphens = rule_detail_domain.count("-")
 
-                                if count_hyphens == 2:
-                                    domain = rule_detail_domain.split("-", 2)[2].strip()
-
-                                elif count_hyphens == 1:
-                                    domain = rule_detail_domain.split("-", 1)[1].strip()
+                                domain = rule_detail_domain.split("-", count_hyphens)[
+                                    count_hyphens
+                                ].strip()
 
                                 add_domain_to_hosts(domain, rule_detail_domain)
                                 domains_duplicated.append(rule_detail_domain)
@@ -663,12 +646,11 @@ def deactivate_activate_rule(id_regla, regla_content_id):
             tipo_regla = rule_db_filter[3]
 
             detail_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
-            if numero_data == 1:
-                for detail_rule in detail_rules:
-                    rule_detail_id = detail_rule[0]
-                    rule_string = detail_rule[1]
+            for detail_rule in detail_rules:
+                rule_detail_id, rule_string, _ = detail_rule
 
-                    if tipo_regla == "contenido" or tipo_regla == "dominio":
+                if numero_data == 1:
+                    if tipo_regla in ["contenido", "dominio"]:
                         if "INPUT" in rule_string:
                             direccion = "INPUT"
                         elif "OUTPUT" in rule_string:
@@ -690,55 +672,88 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
                     modelFirewallDetail.updateDetail(0, rule_detail_id)
 
-                if tipo_regla == "contenido" or tipo_regla == "dominio":
-                    salida_iptables = subprocess.check_output(
+                elif numero_data == 0:
+                    if (
+                        tipo_regla in ["contenido", "dominio"]
+                        and "REJECT" in rule_string
+                    ):
+                        rule_detail_parts = rule_string.split(" -m comment --comment ")
+                        rule_detail_domain = rule_detail_parts[1].replace("'", "")
+
+                        count_hyphens = rule_detail_domain.count("-")
+
+                        domain = rule_detail_domain.split("-", count_hyphens)[
+                            count_hyphens
+                        ].strip()
+
+                        if domain in plataformas_dinamicas_dominio:
+                            if rule_detail_domain not in domains_duplicated:
+                                dynamic_domains.append(
+                                    (rule_detail_id, domain, rule_string, tipo_regla)
+                                )
+                                domains_duplicated.append(rule_detail_domain)
+                            modelFirewallDetail.deleteDetailById(rule_detail_id)
+                            continue
+                        else:
+                            rule = f"sudo {rule_string}"
+                            subprocess.run(shlex.split(f"{rule}"))
+
+                        if rule_detail_domain not in domains_duplicated:
+                            add_domain_to_hosts(domain, rule_detail_domain)
+                            domains_duplicated.append(rule_detail_domain)
+
+                    else:
+                        rule = f"sudo {rule_string}"
+                        subprocess.run(shlex.split(f"{rule}"))
+
+                    modelFirewallDetail.updateDetail(1, rule_detail_id)
+
+            if dynamic_domains:
+                for dynamic_domain in dynamic_domains:
+                    rule_detail_id, domain, rule_string, tipo_regla = dynamic_domain
+
+                    rule_detail_name = rule_string.split(" -m comment --comment ")[
+                        1
+                    ].replace("'", "")
+
+                    count_hyphens = rule_detail_domain.count("-")
+                    domain_dynamic = rule_detail_domain.split("-", count_hyphens)[
+                        count_hyphens
+                    ].strip()
+
+                    rule_name_content = " - ".join(
                         [
-                            "sudo",
-                            "iptables",
-                            "-L",
-                            direccion,
-                            "--line-numbers",
-                            "-n",
+                            part.strip()
+                            for part in rule_detail_name.split("-", count_hyphens)[
+                                :count_hyphens
+                            ]
                         ]
                     )
 
-                    iptables_rules_matched(salida_iptables, rule_name, direccion)
+                    entry = "OUTPUT" if "OUTPUT" in rule_string else "INPUT"
+                    action_rule = "REJECT" if "REJECT" in rule_string else "ACCEPT"
 
+                    allow_connections_detail(
+                        id_regla,
+                        rule_name_content,
+                        action_rule,
+                        entry,
+                        domain_dynamic,
+                    )
+
+            if numero_data == 1:
+                if tipo_regla in ["contenido", "dominio"]:
+                    salida_iptables = subprocess.check_output(
+                        ["sudo", "iptables", "-L", direccion, "--line-numbers", "-n"]
+                    )
+                    iptables_rules_matched(salida_iptables, rule_name, direccion)
                     if "REJECT" in rule_string:
                         remove_domain_from_hosts(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
                 return jsonify({"message": "Regla Desactivada Correctamente"})
+
             elif numero_data == 0:
-                for detail_rule in detail_rules:
-                    rule_detail_id = detail_rule[0]
-                    rule_string = detail_rule[1]
-
-                    rule = f"sudo {rule_string}"
-                    subprocess.run(shlex.split(f"{rule}"))
-
-                    modelFirewallDetail.updateDetail(1, rule_detail_id)
-
-                    if tipo_regla == "contenido" or tipo_regla == "dominio":
-                        if "REJECT" in rule_string:
-                            rule_detail_parts = rule_string.split(
-                                " -m comment --comment "
-                            )
-
-                            rule_detail_domain = rule_detail_parts[1].replace("'", "")
-
-                            if rule_detail_domain not in domains_duplicated:
-                                count_hyphens = rule_detail_domain.count("-")
-
-                                if count_hyphens == 2:
-                                    domain = rule_detail_domain.split("-", 2)[2].strip()
-
-                                elif count_hyphens == 1:
-                                    domain = rule_detail_domain.split("-", 1)[1].strip()
-
-                                add_domain_to_hosts(domain, rule_detail_domain)
-                                domains_duplicated.append(rule_detail_domain)
-
                 modelFirewall.updateRule(1, id_regla)
                 return jsonify({"message": "Regla Activa Correctamente"})
 
