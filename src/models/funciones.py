@@ -79,7 +79,7 @@ def obtener_reglas_ufw():
 
                 for detail_domain in detail_domain_rules:
                     detail_status = detail_domain[2]
-                    if tipo_regla == "dominio" or tipo_regla == "contenido":
+                    if tipo_regla in ["contenido", "dominio"]:
                         if detail_status == 1:
                             rule_detail_parts = detail_domain[1].split(
                                 " -m comment --comment "
@@ -104,6 +104,7 @@ def obtener_reglas_ufw():
                     else:
                         rule_detail_parts = detail_domain[1].split(" comment ")
                         rule_detail_command = rule_detail_parts[0].split()
+                        name_rule = rule_detail_parts[1].replace("'", "")
 
                         for part in rule_detail_command:
                             if is_valid_ip(part):
@@ -152,7 +153,7 @@ def obtener_reglas_ufw():
 
                     if tipo_regla == "predefinida":
                         regla = {
-                            "nombre": assigned_name,
+                            "nombre": name_rule,
                             "tipo_regla": tipo_regla.title(),
                             "rule_data": rule_data,
                             "accion": permiso,
@@ -277,12 +278,12 @@ def obtener_reglas_ufw_contenido():
 def scan_network():
     try:
         # Comando arp-scan para escanear la red
-        command = "sudo arp-scan -l"
+        command = "/sbin/arp-scan -l"
         process = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
-        stdout, stderr = process.communicate()
+        stdout, _ = process.communicate()
 
         # Decodificar la salida del comando arp-scan de bytes a texto
         output = stdout.decode()
@@ -307,118 +308,6 @@ def scan_network():
 
     except Exception as e:
         return [{"error": f"Error al procesar la línea: {line}, {e}"}]
-
-
-def pre_start_capture():
-    custom_command = (
-        "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
-    )
-
-    base_command = [
-        "sudo",
-        "tcpdump",
-        # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
-        "-l",
-        "-c",
-        "100",
-        "-i",
-        "eth0",  # Sacar la info de la interfaz de red donde se instale el sistema
-    ]
-
-    custom_values = [
-        custom_command,
-    ]
-
-    end_command = [
-        "-tttt",
-        "-q",
-        "-v",
-    ]
-
-    # Concatenar las dos partes del comando
-    command = base_command + custom_values + end_command
-
-    process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
-    )
-
-    packet_count = 0
-
-    for line in process.stdout:
-        if "ARP" in line:
-            arp_info = line.strip().split(",")
-            arp_parts = arp_info[0].split(" ")
-            time = " ".join(arp_parts[:2])
-            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            src_ip_domain = ""
-            src_port = ""
-            dst_ip_domain = ""
-            dst_port = ""
-            protocol = ""
-            info = " ".join(arp_info[2:])
-            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
-        else:
-            line2 = process.stdout.readline().strip()
-
-            if not line2:
-                break
-
-            combined_line = line.strip() + " " + line2.strip()
-
-        parts = []
-        parenthesis_count = 0
-        current_part = ""
-
-        for char in combined_line:
-            if char == "(":
-                parenthesis_count += 1
-            elif char == ")":
-                parenthesis_count -= 1
-
-            if parenthesis_count > 0:
-                current_part += char
-            else:
-                if char == " " and current_part:
-                    parts.append(current_part)
-                    current_part = ""
-                else:
-                    current_part += char
-
-        if current_part:
-            parts.append(current_part)
-
-        if len(parts) >= 6:
-            time = " ".join(parts[:2])
-            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-            info = parts[3]
-
-            info_parts = parts[3].rsplit(",", 6)
-            info_protocol = info_parts[5].rsplit(" ", 2)
-            protocol = info_protocol[1]
-
-            src_parts = parts[4].rsplit(".", 1)
-            src_ip_domain = src_parts[0]
-            src_port = src_parts[1] if len(src_parts) > 1 else None
-
-            dst_parts = parts[6].rsplit(".", 1)
-            dst_ip_domain = dst_parts[0]
-            dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
-
-            packet_count += 1
-
-            # Emitir solo un cierto número de paquetes
-            if packet_count >= 100:
-                break
-
-            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
-
-    # Después de salir del bucle de captura, cerrar la conexión EventSource
-    yield "event: close\n\n"
 
 
 def delete_rule(regla_content_id, id_regla):
@@ -451,8 +340,7 @@ def delete_rule(regla_content_id, id_regla):
 
                 salida_iptables = subprocess.check_output(
                     [
-                        "sudo",
-                        "iptables",
+                        "/sbin/iptables",
                         "-L",
                         direccion,
                         "--line-numbers",
@@ -488,7 +376,7 @@ def delete_rule(regla_content_id, id_regla):
                 for detail_rule in detail_rules:
                     rule_string = detail_rule[1]
 
-                    if tipo_regla == "contenido" or tipo_regla == "dominio":
+                    if tipo_regla in ["contenido", "dominio"]:
                         if "INPUT" in rule_string:
                             direccion = "INPUT"
                         elif "OUTPUT" in rule_string:
@@ -496,7 +384,7 @@ def delete_rule(regla_content_id, id_regla):
 
                     else:
                         rule_delete = (
-                            f"sudo {rule_string.replace('ufw ', 'ufw delete ')}"
+                            f"{rule_string.replace('/sbin/ufw ', '/sbin/ufw delete ')}"
                         )
 
                         print(rule_delete)
@@ -508,11 +396,10 @@ def delete_rule(regla_content_id, id_regla):
                             capture_output=True,
                         )
 
-                if tipo_regla == "contenido" or tipo_regla == "dominio":
+                if tipo_regla in ["contenido", "dominio"]:
                     salida_iptables = subprocess.check_output(
                         [
-                            "sudo",
-                            "iptables",
+                            "/sbin/iptables",
                             "-L",
                             direccion,
                             "--line-numbers",
@@ -571,8 +458,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
                 salida_iptables = subprocess.check_output(
                     [
-                        "sudo",
-                        "iptables",
+                        "/sbin/iptables",
                         "-L",
                         direccion,
                         "--line-numbers",
@@ -620,7 +506,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                             " -m comment --comment "
                         )[1].replace("'", "")
 
-                        rule = f"sudo {rule_string_items}"
+                        rule = f"{rule_string_items}"
                         subprocess.run(shlex.split(f"{rule}"))
 
                         modelFirewallDetail.updateDetail(1, rule_detail_id)
@@ -658,7 +544,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
                     else:
                         rule_delete = (
-                            f"sudo {rule_string.replace('ufw ', 'ufw delete ')}"
+                            f"{rule_string.replace('/sbin/ufw ', '/sbin/ufw delete ')}"
                         )
 
                         print(rule_delete)
@@ -695,7 +581,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                             modelFirewallDetail.deleteDetailById(rule_detail_id)
                             continue
                         else:
-                            rule = f"sudo {rule_string}"
+                            rule = f"{rule_string}"
                             subprocess.run(shlex.split(f"{rule}"))
 
                         if rule_detail_domain not in domains_duplicated:
@@ -703,7 +589,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                             domains_duplicated.append(rule_detail_domain)
 
                     else:
-                        rule = f"sudo {rule_string}"
+                        rule = f"{rule_string}"
                         subprocess.run(shlex.split(f"{rule}"))
 
                     modelFirewallDetail.updateDetail(1, rule_detail_id)
@@ -744,7 +630,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
             if numero_data == 1:
                 if tipo_regla in ["contenido", "dominio"]:
                     salida_iptables = subprocess.check_output(
-                        ["sudo", "iptables", "-L", direccion, "--line-numbers", "-n"]
+                        ["/sbin/iptables", "-L", direccion, "--line-numbers", "-n"]
                     )
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
                     if "REJECT" in rule_string:
@@ -773,7 +659,7 @@ def iptables_rules_matched(salida_iptables, name_iptable, direccion):
             if id_iptable_delete is None:
                 id_iptable_delete = id_iptable_rule
 
-            rule_delete = f"sudo iptables -D {direccion} {id_iptable_delete}"
+            rule_delete = f"/sbin/iptables -D {direccion} {id_iptable_delete}"
 
             subprocess.run(
                 shlex.split(f"{rule_delete}"),
@@ -999,7 +885,7 @@ def allow_connections(
         elif entry == "out":
             direction = "to"
 
-        rule = f"sudo ufw {action_rule} "
+        rule = f"/sbin/ufw {action_rule} "
         fecha_creacion = datetime.now()
 
         rulesTypeContent = []
@@ -1041,12 +927,12 @@ def allow_connections(
 
                         if isinstance(ip_domain, list):
                             for ip in ip_domain:
-                                rule = f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
+                                rule = f"/sbin/iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
                                 rules_content.append(rule)
                                 subprocess.run(shlex.split(rule))
 
                         elif isinstance(ip_domain, str):
-                            rule = f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
+                            rule = f"/sbin/iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
                             rules_content.append(rule)
                             subprocess.run(shlex.split(rule))
 
@@ -1067,16 +953,16 @@ def allow_connections(
 
                 if isinstance(ip_domain, list):
                     rules_domain_dynamic = [
-                        f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                        f"/sbin/iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
                         for ip in ip_domain
                     ]
                 elif isinstance(ip_domain, str):
                     rules_domain_dynamic = [
-                        f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                        f"/sbin/iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
                     ]
             else:
                 rules_domain_dynamic = [
-                    f"sudo iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    f"/sbin/iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
                 ]
 
             for rule in rules_domain_dynamic:
@@ -1180,8 +1066,8 @@ def allow_connections(
 
                 # Iteramos sobre las reglas de la plataforma actual
                 for rule in rulesContentPlatform[0]:
-                    save_rule = format_rule_save(rule)
-                    firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+                    # save_rule = format_rule_save(rule)
+                    firewallDetail = FirewallDetail(0, id_rule, rule, 1)
                     modelFirewallDetail.insertRuleDetail(firewallDetail)
 
         elif domain:
@@ -1198,12 +1084,12 @@ def allow_connections(
 
             if rules_domain_dynamic:
                 for domain_rule_ip in rules_domain_dynamic:
-                    save_rule = format_rule_save(domain_rule_ip)
-                    firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+                    # save_rule = format_rule_save(domain_rule_ip)
+                    firewallDetail = FirewallDetail(0, id_rule, domain_rule_ip, 1)
                     modelFirewallDetail.insertRuleDetail(firewallDetail)
             else:
-                save_rule = format_rule_save(rule)
-                firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+                # save_rule = format_rule_save(rule)
+                firewallDetail = FirewallDetail(0, id_rule, rule, 1)
                 modelFirewallDetail.insertRuleDetail(firewallDetail)
 
         else:
@@ -1218,8 +1104,8 @@ def allow_connections(
             firewall = modelFirewall.insertRule(firewall)
             id_rule = firewall.id
 
-            save_rule = format_rule_save(rule)
-            firewallDetail = FirewallDetail(0, id_rule, save_rule, 1)
+            # save_rule = format_rule_save(rule)
+            firewallDetail = FirewallDetail(0, id_rule, rule, 1)
             modelFirewallDetail.insertRuleDetail(firewallDetail)
 
         return jsonify({"message": "Regla creada correctamente"})
@@ -1281,16 +1167,16 @@ def allow_connections_detail(
 
             if isinstance(ip_domain, list):
                 rules_domain_dynamic = [
-                    f"sudo iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    f"/sbin/iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
                     for ip in ip_domain
                 ]
             elif isinstance(ip_domain, str):
                 rules_domain_dynamic = [
-                    f"sudo iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    f"/sbin/iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
                 ]
         else:
             rules_domain_dynamic = [
-                f"sudo iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                f"/sbin/iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
             ]
 
         rule_details = modelFirewallDetail.getRulesDetailsById(id_regla)
@@ -1323,9 +1209,9 @@ def allow_connections_detail(
             for rule in rules_domain_dynamic:
                 subprocess.run(shlex.split(rule))
 
-                save_rule = format_rule_save(rule)
+                # save_rule = format_rule_save(rule)
 
-                firewall_detail = FirewallDetail(0, id_regla, save_rule, 1)
+                firewall_detail = FirewallDetail(0, id_regla, rule, 1)
                 modelFirewallDetail.insertRuleDetail(firewall_detail)
         else:
             return jsonify(
@@ -1729,19 +1615,159 @@ def save_filter(
         return f"Error al guardar el filtro: {str(e)}"
 
 
-def start_capture(
-    command_id,
-    command_filter,
-):
+def pre_start_capture():
+    # Comando arp-scan para escanear la red
+    command = "/sbin/arp-scan -l"
+    process = subprocess.Popen(
+        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
+    stdout, _ = process.communicate()
+
+    # Decodificar la salida del comando arp-scan de bytes a texto
+    output = stdout.decode()
+
+    interface = (
+        output.strip().split("\n")[0].split(",")[0].split("Interface:")[1].strip()
+    )
+
+    custom_command = (
+        "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
+    )
+
     base_command = [
-        "sudo",
-        "tcpdump",
+        "/sbin/tcpdump",
         # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
         "-l",
         "-c",
         "100",
         "-i",
-        "eth0",  # Hay que sacar la info de la interfaz de red donde se instale el sistema
+        interface,
+    ]
+
+    custom_values = [
+        custom_command,
+    ]
+
+    end_command = [
+        "-tttt",
+        "-q",
+        "-v",
+    ]
+
+    # Concatenar las dos partes del comando
+    command = base_command + custom_values + end_command
+
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
+    )
+
+    packet_count = 0
+
+    for line in process.stdout:
+        if "ARP" in line:
+            arp_info = line.strip().split(",")
+            arp_parts = arp_info[0].split(" ")
+            time = " ".join(arp_parts[:2])
+            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            src_ip_domain = ""
+            src_port = ""
+            dst_ip_domain = ""
+            dst_port = ""
+            protocol = ""
+            info = " ".join(arp_info[2:])
+            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
+        else:
+            line2 = process.stdout.readline().strip()
+
+            if not line2:
+                break
+
+            combined_line = line.strip() + " " + line2.strip()
+
+        parts = []
+        parenthesis_count = 0
+        current_part = ""
+
+        for char in combined_line:
+            if char == "(":
+                parenthesis_count += 1
+            elif char == ")":
+                parenthesis_count -= 1
+
+            if parenthesis_count > 0:
+                current_part += char
+            else:
+                if char == " " and current_part:
+                    parts.append(current_part)
+                    current_part = ""
+                else:
+                    current_part += char
+
+        if current_part:
+            parts.append(current_part)
+
+        if len(parts) >= 6:
+            time = " ".join(parts[:2])
+            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            info = parts[3]
+
+            info_parts = parts[3].rsplit(",", 6)
+            info_protocol = info_parts[5].rsplit(" ", 2)
+            protocol = info_protocol[1]
+
+            src_parts = parts[4].rsplit(".", 1)
+            src_ip_domain = src_parts[0]
+            src_port = src_parts[1] if len(src_parts) > 1 else None
+
+            dst_parts = parts[6].rsplit(".", 1)
+            dst_ip_domain = dst_parts[0]
+            dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
+
+            packet_count += 1
+
+            # Emitir solo un cierto número de paquetes
+            if packet_count >= 100:
+                break
+
+            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
+
+    # Después de salir del bucle de captura, cerrar la conexión EventSource
+    yield "event: close\n\n"
+
+
+def start_capture(
+    command_id,
+    command_filter,
+):
+    # Comando arp-scan para escanear la red
+    command = "/sbin/arp-scan -l"
+    process = subprocess.Popen(
+        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
+    stdout, _ = process.communicate()
+
+    # Decodificar la salida del comando arp-scan de bytes a texto
+    output = stdout.decode()
+
+    interface = (
+        output.strip().split("\n")[0].split(",")[0].split("Interface:")[1].strip()
+    )
+
+    base_command = [
+        "/bin/tcpdump",
+        # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
+        "-l",
+        "-c",
+        "100",
+        "-i",
+        interface,
     ]
 
     if command_filter is None:

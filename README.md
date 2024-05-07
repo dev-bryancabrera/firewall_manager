@@ -4,11 +4,11 @@ Tutorial para autenticación de usuarios utilizando Python, Flask, flask-login y
 
 <hr/>
 
-Primero, crear un entorno virtual:
-### `python -m virtualenv env`
-
 Para instalar los paquetes necesarios:
 ### `pip install -r requirements.txt`
+
+Para instalar los paquetes necesarios:
+### `sudo python ./init-script.py`
 
 <hr/>
 

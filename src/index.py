@@ -1,10 +1,8 @@
 from flask import Flask, redirect, url_for
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
-# import subprocess
+import subprocess
 
-# Crear tablas
-# from models.db.createTables import createTable
 
 from config import config
 from router.routes import configurar_rutas
@@ -17,19 +15,9 @@ login_manager_app = LoginManager(app)
 
 configurar_rutas(app, login_manager_app)
 
-# Bloquear todo con iptables
-# block_incoming_command = ["/sbin/iptables", "-P", "INPUT", "DROP"]
-# block_outgoing_command = ["/sbin/iptables", "-P", "OUTPUT", "DROP"]
-# subprocess.run(block_incoming_command)
-# subprocess.run(block_outgoing_command)
-
-# Bloquear todo con UFW
-# block_all_command = ["/usr/sbin/ufw", "default", "deny", "incoming"]
-# block_all_command = ["/usr/sbin/ufw", "default", "deny", "outgoing"]
-# subprocess.run(block_all_command)
-# subprocess.run(block_all_command)
-
-# crearTablas = createTable.createTables()
+# Habilitar ufw
+enable_ufw_command = ["/sbin/ufw", "enable"]
+subprocess.run(enable_ufw_command)
 
 
 def status_401(error):
