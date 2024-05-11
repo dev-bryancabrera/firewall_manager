@@ -13,21 +13,16 @@ from models.modelFirewallDetail import modelFirewallDetail
 
 
 # INSTALAR UFW
-def instalar_ufw():
+def instalar_paquetes():
     try:
         subprocess.run(["sudo", "apt-get", "install", "ufw", "-y"])
-        print("UFW instalado correctamente.")
-    except Exception as e:
-        print(f"Error al instalar UFW: {e}")
-
-
-# INSTALAR TCPDUMP
-def instalar_tcpdump():
-    try:
+        subprocess.run(["sudo", "apt-get", "install", "dnsutils", "-y"])
         subprocess.run(["sudo", "apt-get", "install", "tcpdump", "-y"])
-        print("tcpdump instalado correctamente.")
+        # subprocess.run(["sudo", "apt-get", "install", "iptables-persistent", "-y"])
+
+        print("Paquetes instalados correctamente.")
     except Exception as e:
-        print(f"Error al instalar UFW: {e}")
+        print(f"Error al instalar los paquetes: {e}")
 
 
 def configurar_reglas_basicas():
@@ -39,6 +34,8 @@ def configurar_reglas_basicas():
             "allow 4845 comment 'Permitido puerto del firewall'",
             "allow out 8085 comment 'Permitido sistema sigcenter'",
             "allow out 8092 comment 'Permitido facturacion'",
+            "allow out to any port 18087 comment 'Puerto API wsp'",
+            "allow out to any port 4080 comment 'Puerto firma electronica'",
             "allow 'Nginx Full' comment 'Permitido sistema por nginx'",
             "allow out to 192.168.0.115 port 3306 comment 'Permitido acceso a base de datos'",
             "allow from 186.101.189.104 to any port 3030 comment 'Permitido acceso mediante ssh a la ip 186.101.189.104'",
@@ -58,7 +55,7 @@ def configurar_reglas_basicas():
         subprocess.run(["/sbin/ufw", "default", "deny", "outgoing"])
 
         # Habilitar ufw
-        subprocess.run(["/sbin/ufw", "enable"])
+        subprocess.run(["/sbin/ufw", "enable"], input="y\n", universal_newlines=True)
 
         print("Reglas básicas de UFW configuradas correctamente.")
 
@@ -94,8 +91,7 @@ def guardar_reglas_basicas():
 
 if __name__ == "__main__":
     # Instalar paquetes necesarios
-    instalar_ufw()
-    instalar_tcpdump()
+    instalar_paquetes()
 
     # Crear tablas y guardar datos
     guardar_reglas_basicas()

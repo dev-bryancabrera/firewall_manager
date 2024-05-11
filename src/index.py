@@ -15,9 +15,11 @@ login_manager_app = LoginManager(app)
 
 configurar_rutas(app, login_manager_app)
 
+
 # Habilitar ufw
-enable_ufw_command = ["/sbin/ufw", "enable"]
-subprocess.run(enable_ufw_command)
+with open("/home/firewall/iptables/rules.v4", "r") as restore:
+    subprocess.run(["iptables-restore"], stdin=restore)
+subprocess.run(["/sbin/ufw", "enable"], input="y\n", universal_newlines=True)
 
 
 def status_401(error):

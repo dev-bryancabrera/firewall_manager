@@ -28,6 +28,7 @@ from models.entities.filterPacket import FilterPacket
 
 def validar_ingreso(username, password_hash):
     try:
+        # if "firewall" in username:
         user = User(0, username, password_hash)
         logged_user = modelUser.login(user)
         if logged_user is not None:
@@ -40,6 +41,9 @@ def validar_ingreso(username, password_hash):
         else:
             flash("Usuario no Encontrado")
             return False
+    # else:
+    #     flash("Usuario no permitido")
+    #     return False
     except Exception as e:
         return str(e)
 
@@ -79,31 +83,30 @@ def obtener_reglas_ufw():
 
                 for detail_domain in detail_domain_rules:
                     detail_status = detail_domain[2]
-                    if tipo_regla in ["contenido", "dominio"]:
-                        if detail_status == 1:
-                            rule_detail_parts = detail_domain[1].split(
-                                " -m comment --comment "
-                            )
-
-                            rule_detail_domain = rule_detail_parts[1].replace("'", "")
-
-                            if rule_detail_domain not in domains_duplicated:
-                                count_hyphens = rule_detail_domain.count("-")
-
-                                if count_hyphens == 2:
-                                    domain = rule_detail_domain.split("-", 2)[2].strip()
-
-                                elif count_hyphens == 1:
-                                    domain = rule_detail_domain.split("-", 1)[1].strip()
-
-                                domains.append(domain)
-                                domains_duplicated.add(rule_detail_domain)
-
-                            rule_data = ", ".join(domains)
-
-                    else:
-                        rule_detail_parts = detail_domain[1].split(" comment ")
+                    if tipo_regla in ["contenido", "dominio"] and detail_status == 1:
+                        rule_detail_parts = detail_domain[1].split(
+                            " -m comment --comment "
+                        )
                         rule_detail_command = rule_detail_parts[0].split()
+                        rule_detail_domain = rule_detail_parts[1].replace("'", "")
+
+                        if rule_detail_domain not in domains_duplicated:
+                            count_hyphens = rule_detail_domain.count("-")
+
+                            domain = rule_detail_domain.split("-", count_hyphens)[
+                                count_hyphens
+                            ].strip()
+
+                            domains.append(domain)
+                            domains_duplicated.add(rule_detail_domain)
+
+                        rule_data = ", ".join(domains)
+
+                    elif tipo_regla not in ["contenido", "dominio"]:
+                        rule_detail_parts = detail_domain[1].split(" comment ")
+                        rule_detail_command = (
+                            rule_detail_parts[0].replace("/", " ").split()
+                        )
                         name_rule = rule_detail_parts[1].replace("'", "")
 
                         for part in rule_detail_command:
@@ -169,7 +172,9 @@ def obtener_reglas_ufw():
                         "nombre": assigned_name,
                         "fecha_creacion": created_date,
                         "tipo_regla": tipo_regla.title(),
-                        "dominio": domains if not rule_data else rule_data,
+                        "dominio": "No hay dominios habilitados"
+                        if not rule_data
+                        else rule_data,
                         "accion": permiso,
                         "protocolo": protocolo,
                         "entrada": entry,
@@ -415,6 +420,8 @@ def delete_rule(regla_content_id, id_regla):
             modelFirewallDetail.deleteRuleDetail(id_regla)
             modelFirewall.deleteRule(id_regla)
 
+        save_iptables_rules()
+
         return jsonify({"message": "Regla Eliminada Correctamente"})
     except subprocess.CalledProcessError as e:
         return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
@@ -426,6 +433,8 @@ def deactivate_activate_rule(id_regla, regla_content_id):
         rule_details_copy = {}
         domains_duplicated = []
         dynamic_domains = []
+
+        message = ""
 
         if regla_content_id:
             rule_detail = modelFirewallDetail.getDetailById(regla_content_id)
@@ -474,7 +483,22 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 for rule_detail_id, _ in rule_details.items():
                     modelFirewallDetail.updateDetail(0, rule_detail_id)
 
-                return jsonify({"message": "Regla Desactivada Correctamente"})
+                all_rules_disabled = True
+
+                detail_rules_status = modelFirewallDetail.getRulesDetailsById(
+                    id_regla_detalle
+                )
+
+                for detail_rule in detail_rules_status:
+                    _, _, status_rule = detail_rule
+
+                    if status_rule == 1:
+                        all_rules_disabled = False
+
+                if all_rules_disabled:
+                    modelFirewall.updateRule(0, id_regla_detalle)
+
+                message = "Regla Desactivada Correctamente"
 
             elif estado_detail == 0:
                 domain_dynamic = rule_detail_name.split("-", 2)[2].strip()
@@ -522,7 +546,22 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                                 add_domain_to_hosts(domain, rule_detail_domain)
                                 domains_duplicated.append(rule_detail_domain)
 
-                return jsonify({"message": "Regla Activada Correctamente"})
+                detail_rules_status = modelFirewallDetail.getRulesDetailsById(
+                    id_regla_detalle
+                )
+
+                all_rules_disabled = all(
+                    status_rule == 1 for _, _, status_rule in detail_rules_status
+                )
+
+                if not all_rules_disabled:
+                    modelFirewall.updateRule(1, id_regla_detalle)
+
+                message = "Regla Activada Correctamente"
+
+            save_iptables_rules()
+
+            return jsonify({"message": message})
 
         elif id_regla:
             rule_db_filter = modelFirewall.getRuleById(id_regla)
@@ -637,11 +676,15 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                         remove_domain_from_hosts(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
-                return jsonify({"message": "Regla Desactivada Correctamente"})
+                message = "Regla Desactivada Correctamente"
 
             elif numero_data == 0:
                 modelFirewall.updateRule(1, id_regla)
-                return jsonify({"message": "Regla Activa Correctamente"})
+                message = "Regla Activa Correctamente"
+
+            save_iptables_rules()
+
+            return jsonify({"message": message})
 
     except subprocess.CalledProcessError as e:
         return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
@@ -668,28 +711,15 @@ def iptables_rules_matched(salida_iptables, name_iptable, direccion):
     return "Regla Eliminada"
 
 
+def save_iptables_rules():
+    with open("/home/firewall/iptables/rules.v4", "w") as save:
+        subprocess.run(["iptables-save"], stdout=save)
+
+
 def execute_command(command):
     # Ejecutar el comando y capturar la salida
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     return result.stdout
-
-
-def get_domain_info(domain):
-    command = f"nslookup {domain}"
-
-    output = execute_command(command)
-    # Dividir las líneas de salida
-    lines = output.split("\n")
-
-    ip_addresses = []
-
-    for line in lines[2:]:
-        if "Address:" in line:
-            parts = line.split(":")
-            if len(parts) == 2:
-                ip_addresses.append(parts[1].strip())
-
-    return ip_addresses
 
 
 # Plataformas con ips estaticas
@@ -885,7 +915,7 @@ def allow_connections(
         elif entry == "out":
             direction = "to"
 
-        rule = f"/sbin/ufw {action_rule} "
+        rule = f"/sbin/ufw {action_rule}"
         fecha_creacion = datetime.now()
 
         rulesTypeContent = []
@@ -1036,17 +1066,17 @@ def allow_connections(
 
         # Port
         elif port:
-            if entry and direction and port and protocol:
-                rule += f" {entry} {direction} any port {port} proto {protocol} comment '{comment}'"
-
-            elif entry and port and protocol:
+            if entry == "in" and port and protocol:
                 rule += f" {entry} {port}/{protocol} comment '{comment}'"
+
+            elif entry == "in" and port:
+                rule += f" {entry} {port} comment '{comment}'"
+
+            elif entry and direction and port and protocol:
+                rule += f" {entry} {direction} any port {port} proto {protocol} comment '{comment}'"
 
             elif entry and direction and port:
                 rule += f" {entry} {direction} any port {port} comment '{comment}'"
-
-            elif entry and port:
-                rule += f" {entry} {port} comment '{comment}'"
 
             subprocess.run(shlex.split(f"{rule}"))
 
@@ -1066,7 +1096,6 @@ def allow_connections(
 
                 # Iteramos sobre las reglas de la plataforma actual
                 for rule in rulesContentPlatform[0]:
-                    # save_rule = format_rule_save(rule)
                     firewallDetail = FirewallDetail(0, id_rule, rule, 1)
                     modelFirewallDetail.insertRuleDetail(firewallDetail)
 
@@ -1084,11 +1113,9 @@ def allow_connections(
 
             if rules_domain_dynamic:
                 for domain_rule_ip in rules_domain_dynamic:
-                    # save_rule = format_rule_save(domain_rule_ip)
                     firewallDetail = FirewallDetail(0, id_rule, domain_rule_ip, 1)
                     modelFirewallDetail.insertRuleDetail(firewallDetail)
             else:
-                # save_rule = format_rule_save(rule)
                 firewallDetail = FirewallDetail(0, id_rule, rule, 1)
                 modelFirewallDetail.insertRuleDetail(firewallDetail)
 
@@ -1104,9 +1131,10 @@ def allow_connections(
             firewall = modelFirewall.insertRule(firewall)
             id_rule = firewall.id
 
-            # save_rule = format_rule_save(rule)
             firewallDetail = FirewallDetail(0, id_rule, rule, 1)
             modelFirewallDetail.insertRuleDetail(firewallDetail)
+
+        save_iptables_rules()
 
         return jsonify({"message": "Regla creada correctamente"})
     except subprocess.CalledProcessError:
@@ -1120,7 +1148,7 @@ def verify_domain_dynamic(domain):
     ips_sorted = None
 
     for _ in range(5):  # Ejecutar el comando cinco veces
-        salida = subprocess.check_output(["dig", "+short", domain])
+        salida = subprocess.check_output(["/bin/dig", "+short", domain])
         ips_domain = salida.decode("utf-8").splitlines()
 
         for ip in ips_domain:
@@ -1209,8 +1237,6 @@ def allow_connections_detail(
             for rule in rules_domain_dynamic:
                 subprocess.run(shlex.split(rule))
 
-                # save_rule = format_rule_save(rule)
-
                 firewall_detail = FirewallDetail(0, id_regla, rule, 1)
                 modelFirewallDetail.insertRuleDetail(firewall_detail)
         else:
@@ -1221,15 +1247,11 @@ def allow_connections_detail(
         if action_rule == "REJECT":
             add_domain_to_hosts(domain, comment_domain)
 
+        save_iptables_rules()
+
         return jsonify({"message": "Regla creada correctamente"})
     except subprocess.CalledProcessError:
         return "Error al crear la regla."
-
-
-def format_rule_save(rule):
-    formatted_rule = rule.replace("sudo ", "")
-
-    return formatted_rule
 
 
 def generate_content_domain(content, prefix):
@@ -1640,7 +1662,7 @@ def pre_start_capture():
         # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
         "-l",
         "-c",
-        "100",
+        "80",
         "-i",
         interface,
     ]
@@ -1665,6 +1687,9 @@ def pre_start_capture():
     packet_count = 0
 
     for line in process.stdout:
+        if packet_count >= 80:
+            break
+
         if "ARP" in line:
             arp_info = line.strip().split(",")
             arp_parts = arp_info[0].split(" ")
@@ -1731,10 +1756,6 @@ def pre_start_capture():
 
             packet_count += 1
 
-            # Emitir solo un cierto número de paquetes
-            if packet_count >= 100:
-                break
-
             yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
 
     # Después de salir del bucle de captura, cerrar la conexión EventSource
@@ -1765,17 +1786,17 @@ def start_capture(
         # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
         "-l",
         "-c",
-        "100",
+        "80",
         "-i",
         interface,
     ]
 
-    if command_filter is None:
-        custom_command = (
-            "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
-        )
-    else:
-        custom_command = command_filter.replace("-", "/")
+    default_filter = (
+        "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
+    )
+    custom_command = (
+        command_filter.replace("-", "/") if command_filter else default_filter
+    )
 
     filterData = modelFilterPacket.getFiltersById(command_id)
     nombre_filtro = filterData[1]
@@ -1835,6 +1856,9 @@ def start_capture(
     packet_count = 0
 
     for line in process.stdout:
+        if packet_count >= 80:
+            break
+
         if "ARP" in line:
             arp_info = line.strip().split(",")
             arp_parts = arp_info[0].split(" ")
@@ -1900,10 +1924,6 @@ def start_capture(
             dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
 
             packet_count += 1
-
-            # Emitir solo un cierto número de paquetes
-            if packet_count >= 30:
-                break
 
             yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
 
