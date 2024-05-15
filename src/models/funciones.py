@@ -28,22 +28,22 @@ from models.entities.filterPacket import FilterPacket
 
 def validar_ingreso(username, password_hash):
     try:
-        # if "firewall" in username:
-        user = User(0, username, password_hash)
-        logged_user = modelUser.login(user)
-        if logged_user is not None:
-            if logged_user.password_hash:
-                login_user(logged_user)
-                return True
+        if "firewall" in username:
+            user = User(0, username, password_hash)
+            logged_user = modelUser.login(user)
+            if logged_user is not None:
+                if logged_user.password_hash:
+                    login_user(logged_user)
+                    return True
+                else:
+                    flash("Credenciales Erroneas")
+                    return False
             else:
-                flash("Credenciales Erroneas")
+                flash("Usuario no Encontrado")
                 return False
         else:
-            flash("Usuario no Encontrado")
-            return False
-        # else:
-        #     flash("Usuario no permitido")
-        # return False
+            flash("Usuario no permitido")
+        return False
     except Exception as e:
         return str(e)
 
