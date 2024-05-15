@@ -41,9 +41,9 @@ def validar_ingreso(username, password_hash):
         else:
             flash("Usuario no Encontrado")
             return False
-    # else:
-    #     flash("Usuario no permitido")
-    #     return False
+        # else:
+        #     flash("Usuario no permitido")
+        # return False
     except Exception as e:
         return str(e)
 
@@ -73,15 +73,15 @@ def obtener_reglas_ufw():
                 created_date = rule_tuple[3].strftime("%Y-%m-%d")
                 tipo_regla = rule_tuple[2]
 
-                rule_data = ""
-                ip = ""
-                port = ""
-
                 detail_domain_rules = modelFirewallDetail.getRulesDetailsById(id_regla)
 
                 domains = []
 
                 for detail_domain in detail_domain_rules:
+                    rule_data = ""
+                    ip = ""
+                    port = ""
+
                     detail_status = detail_domain[2]
                     if tipo_regla in ["contenido", "dominio"] and detail_status == 1:
                         rule_detail_parts = detail_domain[1].split(
@@ -712,8 +712,8 @@ def iptables_rules_matched(salida_iptables, name_iptable, direccion):
 
 
 def save_iptables_rules():
-    with open("/home/firewall/iptables/rules.v4", "w") as save:
-        subprocess.run(["iptables-save"], stdout=save)
+    with open("/home/kali/iptables/rules.v4", "w") as save:
+        subprocess.run(["/sbin/iptables-save"], stdout=save)
 
 
 def execute_command(command):

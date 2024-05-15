@@ -27,35 +27,40 @@ def instalar_paquetes():
 
 def configurar_reglas_basicas():
     try:
+        # Base de datos
+        subprocess.run(
+            shlex.split(
+                "/sbin/ufw allow out to 192.168.0.115 port 3306 comment 'Acceso a base de datos'"
+            )
+        )
+
         reglas = [
-            "allow out 80 comment 'Permitido dns'",
-            "allow out 443 comment 'Permitido https'",
-            "allow out 53 comment 'Permitido dns'",
-            "allow 4845 comment 'Permitido puerto del firewall'",
-            "allow out 8085 comment 'Permitido sistema sigcenter'",
-            "allow out 8092 comment 'Permitido facturacion'",
-            "allow out to any port 18087 comment 'Puerto API wsp'",
-            "allow out to any port 4080 comment 'Puerto firma electronica'",
-            "allow 'Nginx Full' comment 'Permitido sistema por nginx'",
-            "allow out to 192.168.0.115 port 3306 comment 'Permitido acceso a base de datos'",
-            "allow from 186.101.189.104 to any port 3030 comment 'Permitido acceso mediante ssh a la ip 186.101.189.104'",
-            "allow from 45.164.64.138 to any port 3030 comment 'Permitido acceso mediante ssh a la ip 45.164.64.138'",
-            "allow from 157.100.89.95 to any port 3030 comment 'Permitido acceso mediante ssh a la ip 157.100.89.95'",
+            "allow 4845 comment 'Puerto del sistema firewall'",
+            "allow 8085 comment 'Puerto del sistema SIGCENTER'",
+            "allow out 80 comment 'Puerto de comunicacion HTTP'",
+            "allow out 443 comment 'Puerto de comunicacion HTTPS'",
+            "allow out 53 comment 'Puerto de comunicacion DNS'",
+            "allow out 8092 comment 'Puerto para facturacion'",
+            "allow out to any port 8085 comment 'Puerto para recibir respuesta de SIGCENTER'",
+            "allow out to any port 18087 comment 'Puerto para uso de API WhatsApp'",
+            "allow out to any port 4080 comment 'Puerto para uso de firma electronica'",
+            # Conexion ssh
+            "allow from 186.101.189.104 to any port 3000 comment 'Acceso mediante ssh a Intelho'",
+            "allow from 179.49.52.49 to any port 3000 comment 'Acceso mediante ssh a John'",
+            "allow from 45.164.64.138 to any port 3000 comment 'Acceso mediante ssh a Bryan'",
+            "allow from 157.100.89.95 to any port 3000 comment 'Acceso mediante ssh a Michael'",
+            # Conexion base de datos
+            "allow from 157.100.89.95 to any port 3306 comment 'Acceso a base de datos a Michael'",
+            "allow from 186.101.189.104 to any port 3306 comment 'Acceso a base de datos a Intelho'",
+            "allow from 45.164.64.138 to any port 3306 comment 'Acceso a base de datos a Bryan'",
         ]
 
         for regla in reglas:
             subprocess.run(shlex.split(f"/sbin/ufw {regla}"))
 
-        # Bloquear todo con iptables
-        subprocess.run(["/sbin/iptables", "-P", "INPUT", "DROP"])
-        subprocess.run(["/sbin/iptables", "-P", "OUTPUT", "DROP"])
-
         # Bloquear todo con UFW
         subprocess.run(["/sbin/ufw", "default", "deny", "incoming"])
         subprocess.run(["/sbin/ufw", "default", "deny", "outgoing"])
-
-        # Habilitar ufw
-        subprocess.run(["/sbin/ufw", "enable"], input="y\n", universal_newlines=True)
 
         print("Reglas básicas de UFW configuradas correctamente.")
 

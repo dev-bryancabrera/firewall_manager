@@ -1,3 +1,4 @@
+import os
 from flask import Flask, redirect, url_for
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -15,11 +16,20 @@ login_manager_app = LoginManager(app)
 
 configurar_rutas(app, login_manager_app)
 
+file_path = "/var/fi/iptables/rules.v4"
+
+# Verificar si el archivo existe
+if os.path.exists(file_path):
+    with open("/home/kali/iptables/rules.v4", "r") as restore:
+        subprocess.run(["/sbin/iptables-restore"], stdin=restore)
+
 
 # Habilitar ufw
-with open("/home/firewall/iptables/rules.v4", "r") as restore:
-    subprocess.run(["iptables-restore"], stdin=restore)
 subprocess.run(["/sbin/ufw", "enable"], input="y\n", universal_newlines=True)
+
+# Bloquear todo con iptables
+subprocess.run(["/sbin/iptables", "-P", "INPUT", "DROP"])
+subprocess.run(["/sbin/iptables", "-P", "OUTPUT", "DROP"])
 
 
 def status_401(error):

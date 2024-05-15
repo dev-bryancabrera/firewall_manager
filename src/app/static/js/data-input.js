@@ -297,7 +297,7 @@ $(document).ready(function () {
       id_regla: ruleId.val(),
     };
     btnConfirmDeleteRule.prop("disabled", true);
-    console.log("hata qui llegue");
+
     $.ajax({
       type: "GET",
       url: "/eliminar_regla",
