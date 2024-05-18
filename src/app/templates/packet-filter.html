@@ -93,8 +93,8 @@
                   <th data-field="ports" data-sortable="true">Puertos</th>
                   <th data-field="protocol" data-sortable="true">Protocolo</th>
                   <th data-field="consumos" data-sortable="true">Consumos</th>
-                  <th data-field="delete"></th>
                   <th data-field="visualizar"></th>
+                  <th data-field="delete"></th>
                   <th data-field="clean"></th>
                 </tr>
               </thead>
@@ -111,6 +111,13 @@
                   <td class="ports">{{ filtro['puerto'] }}</td>
                   <td class="protocol">{{ filtro['protocolo'] }}</td>
                   <td class="consumos">{{ filtro['consumos'] }}</td>
+                  <td class="actions">
+                    <a
+                      href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
+                      class="btn btn-primary"
+                      >Capturar Trafico</a
+                    >
+                  </td>
                   <td class="actions">
                     <button
                       type="button"
@@ -166,13 +173,6 @@
                         </div>
                       </div>
                     </div>
-                  </td>
-                  <td class="actions">
-                    <a
-                      href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
-                      class="btn btn-primary"
-                      >Capturar Trafico</a
-                    >
                   </td>
                   <td class="actions">
                     <button
@@ -387,7 +387,7 @@
                     <div class="top-row" id="contentsContainer">
                       <div class="form-group">
                         <label for="selectFilterContent"
-                          >Filtro por Contenido</label
+                          >Filtro de Contenido</label
                         >
                         <select
                           class="form-select"

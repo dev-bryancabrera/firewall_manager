@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual de Usuario</title>
+    {% include 'includes/styles-imports.html' %}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/css/copy_to_clipboard_style.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/css/theme.css"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/pygments.css"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/user-manual.css') }}"
+    />
+  </head>
+
+  <body class="wy-body-for-nav">
+    {% extends 'navbar.html' %} {% block content %}
+
+    <div class="wy-grid-for-nav">
+      <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+        <div class="wy-side-scroll">
+          <div class="wy-side-nav-search">
+            <a href="/home" class="icon icon-home"> Home </a>
+
+            <div class="manual-title">
+              SOFTWARE FIREWALL PARA LINUX DEBIAN SIGCENTER
+            </div>
+          </div>
+
+          <div
+            class="wy-menu wy-menu-vertical"
+            data-spy="affix"
+            role="navigation"
+            aria-label="main navigation"
+          >
+            <ul class="current">
+              <li class="toctree-l1 current">
+                <a class="current reference internal" href="#"
+                  >Administrador de Firewall</a
+                >
+                <ul>
+                  <li class="toctree-l2">
+                    <a class="reference internal" href="#firewall">Firewall</a>
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#que-es-un-firewall"
+                          >¿Que es un firewall?</a
+                        >
+                      </li>
+
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#funcion-firewall"
+                          >Funciones del Firewall</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a class="reference internal" href="#reglas-firewall"
+                      >Reglas de Firewall</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#crear-reglas"
+                          >1. Crear reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#desactivar-activar-reglas"
+                          >2. Desactivar o activar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#eliminar-reglas"
+                          >3. Eliminar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#visualizar-reglas"
+                          >4. Visualizar reglas</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a
+                      class="reference internal"
+                      href="#reglas-firewall-contenido"
+                      >Reglas de Firewall por Contenido</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#crear-regla-contenido"
+                          >1. Crear Reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#desactivar-activar-regla-contenido"
+                          >2. Desactivar o activar reglas</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#eliminar-regla-contenido"
+                          >3. Eliminar reglas</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+
+              <!-- Menu de Administrador de Paquetes -->
+              <li class="toctree-l1 current">
+                <a
+                  class="current reference internal"
+                  href="/user-manual-monitoreo"
+                  >Monitoreo de Trafico de Red</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+        <nav class="wy-nav-top" aria-label="top navigation">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="/home">Home</a>
+        </nav>
+
+        <div class="wy-nav-content">
+          <div class="rst-content">
+            <div
+              role="main"
+              class="document"
+              itemscope="itemscope"
+              itemtype="http://schema.org/Article"
+            >
+              <div itemprop="articleBody">
+                <div class="section" id="firewall-manager">
+                  <h1>
+                    Administrador de Firewall<a
+                      class="headerlink"
+                      href="#firewall-manager"
+                      title="Administrador de Firewall"
+                      >¶</a
+                    >
+                  </h1>
+
+                  <div class="section" id="firewall">
+                    <span id="using-http-api"></span>
+                    <h2>
+                      Firewall
+                      <a class="headerlink" href="#firewall" title="Firewall"
+                        >¶</a
+                      >
+                    </h2>
+
+                    <p>
+                      Un firewall es una barrera de seguridad utilizada para
+                      proteger una red de comunicaciones, como una red de área
+                      local o un sistema informático, contra accesos no
+                      autorizados y otros riesgos de seguridad.
+                    </p>
+
+                    <div class="section" id="que-es-un-firewall">
+                      <h3>
+                        ¿Qué es un firewall?
+                        <a
+                          class="headerlink"
+                          href="#que-es-un-firewall"
+                          title="¿Qué es un firewall?"
+                          >¶</a
+                        >
+                      </h3>
+
+                      <p>
+                        Un firewall es una medida de seguridad fundamental para
+                        proteger una red informática o un sistema de
+                        computadoras contra amenazas externas e internas.
+                        Funciona como una barrera entre una red privada y otras
+                        redes, como Internet, controlando el tráfico de datos
+                        que entra y sale de la red basándose en un conjunto de
+                        reglas predefinidas.
+                      </p>
+
+                      <p>
+                        Inspecciona y controla el tráfico que entra y sale de la
+                        red según estas reglas.
+                      </p>
+                    </div>
+
+                    <div class="section" id="funcion-firewall">
+                      <h3>
+                        Funciones de un Firewall
+                        <a
+                          class="headerlink"
+                          href="#funcion-firewall"
+                          title="Funciones de un Firewall"
+                          >¶</a
+                        >
+                      </h3>
+                      <ul>
+                        <li>
+                          <strong>Control del tráfico de red:</strong> Controla
+                          y filtra el tráfico de red basándose en reglas
+                          predefinidas, permitiendo bloquear o permitir el
+                          acceso a recursos específicos según las políticas de
+                          seguridad establecidas.
+                        </li>
+                        <li>
+                          <strong>Protección contra amenazas externas:</strong>
+                          Actúa como una barrera entre la red local y Internet,
+                          bloqueando intentos de acceso no autorizado desde
+                          fuentes externas como hackers, malware y virus.
+                        </li>
+                        <li>
+                          <strong>Protección contra amenazas internas:</strong>
+                          Controla el tráfico dentro de la red para prevenir
+                          amenazas internas y actividades maliciosas.
+                        </li>
+                        <li>
+                          <strong>Segmentación de red:</strong> Divide la red en
+                          segmentos más pequeños y controla el tráfico entre
+                          ellos.
+                        </li>
+                        <li>
+                          <strong>Monitoreo y registro de actividad:</strong> El
+                          firewall puede monitorear y registrar la actividad de
+                          red para detectar posibles intrusiones, identificar
+                          patrones de tráfico sospechosos y generar informes de
+                          seguridad para su análisis.
+                        </li>
+                        <li>
+                          <strong>Aplicación de políticas de seguridad:</strong>
+                          Permite establecer políticas de seguridad
+                          personalizadas para controlar el acceso a recursos
+                          específicos.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="section" id="reglas-firewall">
+                    <span id="timeouts"></span>
+                    <h2>
+                      Reglas de Firewall<a
+                        class="headerlink"
+                        href="#reglas-firewall"
+                        title="Reglas de Firewall"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>
+                      Las reglas del firewall son instrucciones configurables
+                      que determinan cómo debe gestionarse el tráfico de red
+                      entrante y saliente en un sistema informático o en una
+                      red. Estas reglas especifican qué tipo de tráfico se
+                      permite o se bloquea según diversos criterios, como
+                      direcciones IP, puertos, protocolos y otros atributos.
+                    </p>
+                    <p>
+                      Cuando el firewall recibe un paquete de datos de red, lo
+                      evalúa según las reglas configuradas y decide si
+                      permitirlo o bloquearlo. Las reglas del firewall suelen
+                      basarse en criterios como la dirección IP de origen y
+                      destino, el protocolo de red, los puertos de origen y
+                      destino, y otros datos del encabezado del paquete.
+                    </p>
+                    <p>
+                      Después de iniciar sesión en el sistema con las
+                      credenciales proporcionadas, accedemos a la opción marcada
+                      en rojo, como se muestra en la imagen.
+                    </p>
+                    <div class="img-container">
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/home_system.jpg"
+                        alt="Menu principal"
+                      />
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/firewall_menu_system.jpg"
+                        alt="Firewall"
+                      />
+                    </div>
+                    <p>
+                      En la sección de firewall, nos encontraremos con tres
+                      tablas que están divididas en reglas de entrada, reglas de
+                      salida y reglas predefinidas. Estas últimas son reglas que
+                      no se pueden eliminar ni desactivar.
+                    </p>
+                    <div class="img-container">
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/tables_firewall.jpg"
+                        alt="Tablas firewall"
+                      />
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div class="section" id="crear-reglas">
+                      <span id="id2"></span>
+                      <h3>
+                        1. Crear Reglas<a
+                          class="headerlink"
+                          href="#crear-reglas"
+                          title="Crear Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        La creación de reglas de firewall es fundamental, ya que
+                        define las políticas que determinan qué tipo de tráfico
+                        se permite o se bloquea en el servidor. Estas reglas
+                        constituyen la primera línea de defensa contra amenazas
+                        externas y contribuyen a garantizar la seguridad y el
+                        rendimiento del sistema.
+                      </p>
+
+                      <div class="admonition note">
+                        <p class="first admonition-title">Nota</p>
+                        <p class="last">
+                          Al establecer reglas claras y precisas, se controla
+                          qué tipo de tráfico puede acceder al servidor, lo que
+                          ayuda a prevenir intrusiones no autorizadas y a
+                          proteger los datos sensibles. Es esencial diseñar
+                          estas reglas con cuidado, considerando tanto los
+                          requisitos de seguridad como las necesidades
+                          operativas del sistema.
+                        </p>
+                      </div>
+
+                      <p>
+                        Para crear reglas de firewall es importante seguir los
+                        pasos que se detallan a continuación:
+                      </p>
+                      <ol class="steps-create-rules">
+                        <li>
+                          Dentro de la interfaz de la opción de firewall,
+                          presionamos el botón
+                          <strong>Crear Nueva Regla</strong>. Se nos desplegará
+                          un formulario como se muestra en las imágenes a
+                          continuación:
+                          <div class="img-container">
+                            <img
+                              class="img-system"
+                              src="../static/img/imgs_manual/crear_regla.jpg"
+                              alt="Crear Reglas"
+                            />
+                            <img
+                              class="img-system"
+                              src="../static/img/imgs_manual/crear_regla_form.jpg"
+                              alt="Crear Reglas"
+                            />
+                          </div>
+                        </li>
+                        <li>
+                          En el formulario que se abre, debemos configurar las
+                          reglas teniendo en cuenta los siguientes puntos:
+
+                          <ul>
+                            <li>
+                              <strong>Nombre de la regla:</strong> Definiremos
+                              el nombre de la regla que vamos a configurar, como
+                              un identificador de lo que queremos lograr al
+                              crear la regla.
+                            </li>
+                            <li>
+                              <strong>Tipo de regla:</strong> En esta parte,
+                              debemos elegir entre las diferentes opciones de
+                              tipos de reglas que queremos crear. Puede ser
+                              configurar una dirección IP, un puerto, una
+                              dirección IP y un puerto específico, dominios o
+                              tipos de contenido.
+                            </li>
+                            <li>
+                              <strong>Acción de la regla:</strong> Esta opción
+                              nos permitirá seleccionar si queremos permitir o
+                              denegar/rechazar la comunicación desde o hacia el
+                              servidor.
+                            </li>
+                            <li>
+                              <strong>Dirección de la Regla:</strong> Esta
+                              opción nos permite elegir si queremos que la
+                              comunicación entre o salga del servidor.
+                              <div class="admonition note">
+                                <p class="first admonition-title">Nota</p>
+                                <p class="last">
+                                  Al crear una regla de entrada o salida y
+                                  establecer un valor de IP y puerto, debemos
+                                  interpretar lo siguiente para que la regla
+                                  funcione como queremos. Si la regla es de
+                                  <strong>entrada</strong>, debemos especificar
+                                  la dirección IP pública desde donde queremos
+                                  acceder al servidor y el puerto por el cual
+                                  vamos a ingresar al servidor. En caso de
+                                  establecer una regla de
+                                  <strong>salida</strong>, debemos especificar
+                                  la dirección IP pública de la red del
+                                  dispositivo al que queremos tener una
+                                  comunicación de salida y especificar el puerto
+                                  del servidor al cual nos conectaremos.
+                                </p>
+                              </div>
+                            </li>
+                          </ul>
+
+                          Otros campos adicionales que pueden variar dependiendo
+                          del tipo de regla que queremos crear son los
+                          siguientes:
+
+                          <ul>
+                            <li>
+                              <strong>Dirección IP:</strong> En este campo,
+                              debemos ingresar el valor de la IP a la cual
+                              queremos dar o denegar el permiso de entrada o
+                              salida del servidor.
+                            </li>
+                            <li>
+                              <strong>Puerto:</strong> En este campo, debemos
+                              ingresar el valor del puerto mediante el cual el
+                              servidor aceptará o denegará los intentos de
+                              acceso o salida del servidor.
+                            </li>
+                            <li>
+                              <strong>Nombre de Dominio:</strong> En este campo,
+                              debemos ingresar el valor del dominio al cual
+                              queremos que el usuario tenga o no tenga acceso
+                              mediante la web.
+                            </li>
+                            <li>
+                              <strong>Contenido de Red:</strong> En este campo,
+                              se nos mostrará una lista completa de los tipos de
+                              contenido que podemos encontrar en la web y que
+                              podemos bloquear o permitir directamente, sin
+                              tener que ingresar dominio por dominio.
+                            </li>
+                            <li>
+                              <strong>Protocolo:</strong> En este campo, debemos
+                              ingresar el protocolo mediante el cual
+                              estableceremos la comunicación, ya sea TCP o UDP.
+                            </li>
+                          </ul>
+
+                          <div class="img-container type-rule">
+                            <img
+                              class="img-type"
+                              src="../static/img/imgs_manual/opciones_generales.jpg"
+                              alt="Crear regla opcion general"
+                            />
+                            <img
+                              class="img-type"
+                              src="../static/img/imgs_manual/opcion_direccion_ip.jpg"
+                              alt="Crear regla opcion direccion ip"
+                            />
+                            <img
+                              class="img-type"
+                              src="../static/img/imgs_manual/opcion_puerto.jpg"
+                              alt="Crear regla opcion puerto"
+                            />
+                            <img
+                              class="img-type"
+                              src="../static/img/imgs_manual/opcion_ip_puerto.jpg"
+                              alt="Crear regla opcion ip y puerto"
+                            />
+                            <img
+                              class="img-type"
+                              src="../static/img/imgs_manual/opcion_dominio.jpg"
+                              alt="Crear regla opcion dominio"
+                            />
+                            <img
+                              class="img-type"
+                              src="../static/img/imgs_manual/opcion_contenido.jpg"
+                              alt="Crear regla opcion contenido"
+                            />
+                          </div>
+                        </li>
+                        <li>
+                          Con los conceptos claros de cada tipo de regla que
+                          podemos crear, debemos definir la regla que queremos
+                          crear. Ingresamos los valores como se muestra a
+                          continuación y luego presionamos en
+                          <strong>Crear Regla</strong>.
+                        </li>
+                        <li>
+                          Para verificar que la regla se creó correctamente,
+                          debe mostrarse un mensaje de confirmación indicando
+                          que la regla fue creada correctamente. También
+                          podremos visualizarla en la tabla, dependiendo de la
+                          dirección que le dimos a la regla.
+                        </li>
+                      </ol>
+
+                      <p>
+                        De esta manera, podremos crear una nueva regla para
+                        permitir o denegar el tráfico para el servidor.
+                      </p>
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div class="section" id="desactivar-activar-reglas">
+                      <span id="slow-script"></span>
+                      <h3>
+                        2. Desactivar o Activar Reglas<a
+                          class="headerlink"
+                          href="#desactivar-activar-reglas"
+                          title="Desactivar o Activar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Después de haber creado una regla, encontraremos en la
+                        tabla la opción para desactivar o activarla, en caso de
+                        que deseemos inhabilitar temporalmente la comunicación
+                        con una IP o puerto específico.
+                      </p>
+                      <p>
+                        Para confirmar que la regla se desactivó o activó sin
+                        problemas, veremos un mensaje de confirmación como
+                        respuesta al realizar esta acción. Además, en la tabla,
+                        la regla desactivada se mostrará con el botón de
+                        desactivación de color gris.
+                      </p>
+
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/desactivar_reglas.jpg"
+                          alt="Desactivar reglas"
+                        />
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/activar_reglas.jpg"
+                          alt="Activar reglas"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div class="section" id="eliminar-reglas">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        3. Eliminar Reglas<a
+                          class="headerlink"
+                          href="#eliminar-reglas"
+                          title="Eliminar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        En la tabla, encontraremos otra opción que nos permitirá
+                        eliminar completamente una regla si ya no la necesitamos
+                        o la consideramos relevante. Para hacerlo, simplemente
+                        presionamos el botón de color rojo con el texto
+                        <strong>Eliminar Regla</strong>. Al hacer clic, se
+                        abrirá un mensaje de confirmación para confirmar la
+                        eliminación, donde debemos seleccionar nuevamente
+                        <strong>Eliminar</strong>.
+                      </p>
+                      <p>
+                        Para verificar que la acción se realizó correctamente,
+                        debemos observar un mensaje de
+                        <strong>Eliminación de Regla</strong>. Además, en la
+                        tabla, se actualizarán los registros después de eliminar
+                        la regla.
+                        <!-- <a
+                          class="reference external"
+                          href="http://www.haproxy.org/"
+                          >HAProxy</a
+                        > -->
+                      </p>
+
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/eliminar_reglas.jpg"
+                          alt="Eliminar reglas"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div class="section" id="visualizar-reglas">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        4. Visualizar Reglas<a
+                          class="headerlink"
+                          href="#visualizar-reglas"
+                          title="Visualizar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Como última opción dentro de las reglas, podremos
+                        visualizar la información de la regla creada. Esto
+                        incluye la dirección IP o puerto configurado, y en el
+                        caso de ser una regla de dominio o contenido, podremos
+                        ver los dominios involucrados.
+                      </p>
+
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/visualizar_reglas.jpg"
+                          alt="Visualizar reglas"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="section" id="reglas-firewall-contenido">
+                    <span id="splash-in-production"></span>
+                    <h2>
+                      Reglas de Firewall por Contenido<a
+                        class="headerlink"
+                        href="#reglas-firewall-contenido"
+                        title="Reglas de Firewall por Contenido"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>
+                      En el menú principal, buscamos la opción
+                      <strong>Reglas por Contenido</strong> y accedemos a ella.
+                      Si aún no tenemos configurada ninguna regla en la primera
+                      opción del menú de
+                      <strong>Configuración de Reglas</strong>, aparecerá un
+                      mensaje indicando que
+                      <strong><i>no hay datos disponibles</i></strong
+                      >. En caso de que ya tengamos creada alguna regla por
+                      contenido, se mostrará un tipo de menú acordeón con todos
+                      los tipos de contenidos de las reglas por contenido que se
+                      hayan creado. Al hacer clic en cualquiera de ellos,
+                      veremos la tabla de los dominios involucrados en ese tipo
+                      de contenido.
+                    </p>
+
+                    <div class="img-container">
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/reglas_contenido.jpg"
+                        alt="Reglas por contenido opcion"
+                      />
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/reglas_contenido_page.jpg"
+                        alt="Reglas por contenido pagina"
+                      />
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div class="section" id="crear-regla-contenido">
+                      <h3>
+                        1. Crear Reglas<a
+                          class="headerlink"
+                          href="#crear-regla-contenido"
+                          title="Crear Reglas Contenido"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        En el acordeón que muestra los tipos de contenidos de
+                        las reglas creadas, ubicamos el contenido al cual
+                        queremos agregar un dominio que no esté presente o
+                        consideremos que deba ir en ese contenido. Luego,
+                        presionamos el botón <strong>Agregar Dominio</strong> y
+                        se desplegará un formulario que debemos completar:
+                      </p>
+                      <ul>
+                        <li>
+                          Campo <strong>Dirección de la Regla:</strong> esta
+                          opción nos permite seleccionar si queremos que la
+                          comunicación entre o salga del servidor.
+                        </li>
+                        <li>
+                          Campo <strong>Acción de la Regla:</strong> esta opción
+                          nos permitirá escoger si queremos permitir o
+                          denegar/rechazar la comunicación desde o hacia el
+                          servidor.
+                        </li>
+                        <li>
+                          Campo <strong>Nombre de Dominio:</strong> en este
+                          campo debemos ingresar el valor del dominio al cual
+                          queremos permitir o denegar el acceso mediante la web.
+                        </li>
+                      </ul>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/crear_regla_contenido.jpg"
+                          alt="Crear regla contenido"
+                        />
+                        <img
+                          class="img-system contenido-form"
+                          src="../static/img/imgs_manual/crear_regla_contenido_form.jpg"
+                          alt="Crear regla contenido formulario"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div
+                      class="section"
+                      id="desactivar-activar-regla-contenido"
+                    >
+                      <h3>
+                        2. Desactivar o Activar Reglas<a
+                          class="headerlink"
+                          href="#desactivar-activar-regla-contenido"
+                          title="Desactivar o Activar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Después de haber agregado una nueva regla para un nuevo
+                        dominio o con los registros existentes en la tabla, una
+                        de las opciones que encontraremos es la posibilidad de
+                        desactivar o activar momentáneamente las reglas que
+                        consideremos innecesarias o para permitir temporalmente
+                        la comunicación con un dominio específico.
+                      </p>
+                      <p>
+                        Para confirmar que la regla se ha desactivado o activado
+                        sin conflicto, observaremos un mensaje de confirmación
+                        como respuesta inicial. Además, en la tabla, la regla
+                        desactivada mostrará el botón de desactivación en color
+                        gris.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/desactivar_regla_conteindo.jpg"
+                          alt="Desactivar regla contenido"
+                        />
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/activar_regla_contenido.jpg"
+                          alt="Activar regla contenido"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="highlight-default notranslate">
+                      <div class="highlight"></div>
+                    </div>
+
+                    <div class="section" id="eliminar-regla-contenido">
+                      <h3>
+                        3. Eliminar Reglas<a
+                          class="headerlink"
+                          href="#eliminar-regla-contenido"
+                          title="Eliminar Reglas"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Otra opción que encontraremos en la tabla es la
+                        posibilidad de eliminar completamente una regla en caso
+                        de que ya no la necesitemos o la consideremos
+                        irrelevante. Para ello, presionamos el botón de color
+                        rojo <strong>Eliminar Regla</strong>. Al hacerlo, se
+                        abrirá un mensaje de confirmación solicitando la
+                        confirmación para eliminar la regla. Luego, procedemos a
+                        hacer clic en <strong>Eliminar</strong>.
+                      </p>
+                      <p>
+                        De la misma manera que con las funciones anteriores,
+                        para confirmar que la acción se realizó correctamente,
+                        debemos visualizar un mensaje de
+                        <strong>Eliminación de Regla</strong>. Además, en la
+                        tabla, los registros estarán actualizados.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/eliminar_regla_contenido.jpg"
+                          alt="Eliminar regla contenido"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr
+                    style="
+                      height: 2px;
+                      border-width: 0;
+                      color: gray;
+                      background-color: gray;
+                    "
+                  />
+
+                  <br />
+                </div>
+              </div>
+            </div>
+            <footer>
+              <div
+                class="rst-footer-buttons"
+                role="navigation"
+                aria-label="footer navigation"
+              >
+                <a
+                  href="/user-manual-monitoreo"
+                  class="btn btn-neutral float-right"
+                  title="Siguiente pagina"
+                  accesskey="n"
+                  rel="next"
+                  >Siguiente <span class="fas fa-arrow-circle-right"></span
+                ></a>
+              </div>
+
+              <hr />
+
+              <div role="contentinfo">
+                <p>
+                  &copy; Copyright
+                  <span class="commit">
+                    Manual de usuario <code>Firewall Intelho</code>.
+                  </span>
+                </p>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/modernizr.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/documentation_options.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/jquery.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/underscore.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/doctools.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/language_data.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/theme.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/readthedocs-data.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/clipboard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/copy_to_clipboard_style.js"></script>
+    <script src="{{ url_for('static', filename='js/user-manual.js') }}"></script>
+
+    {% endblock %}
+  </body>
+</html>

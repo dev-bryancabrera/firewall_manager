@@ -28,22 +28,22 @@ from models.entities.filterPacket import FilterPacket
 
 def validar_ingreso(username, password_hash):
     try:
-        if "firewall" in username:
-            user = User(0, username, password_hash)
-            logged_user = modelUser.login(user)
-            if logged_user is not None:
-                if logged_user.password_hash:
-                    login_user(logged_user)
-                    return True
-                else:
-                    flash("Credenciales Erroneas")
-                    return False
+        # if "firewall" in username:
+        user = User(0, username, password_hash)
+        logged_user = modelUser.login(user)
+        if logged_user is not None:
+            if logged_user.password_hash:
+                login_user(logged_user)
+                return True
             else:
-                flash("Usuario no Encontrado")
+                flash("Credenciales Erroneas")
                 return False
         else:
-            flash("Usuario no permitido")
-        return False
+            flash("Usuario no Encontrado")
+            return False
+        # else:
+        #     flash("Usuario no permitido")
+        # return False
     except Exception as e:
         return str(e)
 
@@ -422,7 +422,7 @@ def delete_rule(regla_content_id, id_regla):
 
         save_iptables_rules()
 
-        return jsonify({"message": "Regla Eliminada Correctamente"})
+        return jsonify({"message": "¡Regla Eliminada Correctamente!"})
     except subprocess.CalledProcessError as e:
         return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
 
@@ -498,7 +498,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 if all_rules_disabled:
                     modelFirewall.updateRule(0, id_regla_detalle)
 
-                message = "Regla Desactivada Correctamente"
+                message = "¡Regla Desactivada Correctamente!"
 
             elif estado_detail == 0:
                 domain_dynamic = rule_detail_name.split("-", 2)[2].strip()
@@ -557,7 +557,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 if not all_rules_disabled:
                     modelFirewall.updateRule(1, id_regla_detalle)
 
-                message = "Regla Activada Correctamente"
+                message = "¡Regla Activada Correctamente!"
 
             save_iptables_rules()
 
@@ -676,11 +676,11 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                         remove_domain_from_hosts(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
-                message = "Regla Desactivada Correctamente"
+                message = "¡Regla Desactivada Correctamente!"
 
             elif numero_data == 0:
                 modelFirewall.updateRule(1, id_regla)
-                message = "Regla Activa Correctamente"
+                message = "¡Regla Activada Correctamente!"
 
             save_iptables_rules()
 
@@ -708,7 +708,7 @@ def iptables_rules_matched(salida_iptables, name_iptable, direccion):
                 shlex.split(f"{rule_delete}"),
             )
 
-    return "Regla Eliminada"
+    return "¡Regla Eliminada Correctamente!"
 
 
 def save_iptables_rules():
@@ -1136,7 +1136,7 @@ def allow_connections(
 
         save_iptables_rules()
 
-        return jsonify({"message": "Regla creada correctamente"})
+        return jsonify({"message": "¡Regla creada correctamente!"})
     except subprocess.CalledProcessError:
         return jsonify({"error": "Error al permitir el puerto."})
 
@@ -1249,7 +1249,7 @@ def allow_connections_detail(
 
         save_iptables_rules()
 
-        return jsonify({"message": "Regla creada correctamente"})
+        return jsonify({"message": "¡Regla creada correctamente!"})
     except subprocess.CalledProcessError:
         return "Error al crear la regla."
 
@@ -1782,7 +1782,7 @@ def start_capture(
     )
 
     base_command = [
-        "/bin/tcpdump",
+        "/sbin/tcpdump",
         # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
         "-l",
         "-c",

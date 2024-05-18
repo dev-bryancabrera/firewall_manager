@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual de Usuario</title>
+    {% include 'includes/styles-imports.html' %}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/css/copy_to_clipboard_style.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/css/theme.css"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/pygments.css"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/user-manual.css') }}"
+    />
+  </head>
+
+  <body class="wy-body-for-nav">
+    {% extends 'navbar.html' %} {% block content %}
+
+    <div class="wy-grid-for-nav">
+      <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+        <div class="wy-side-scroll">
+          <div class="wy-side-nav-search">
+            <a href="/home" class="icon icon-home"> Home </a>
+
+            <div class="manual-title">
+              SOFTWARE FIREWALL PARA LINUX DEBIAN SIGCENTER
+            </div>
+          </div>
+
+          <div
+            class="wy-menu wy-menu-vertical"
+            data-spy="affix"
+            role="navigation"
+            aria-label="main navigation"
+          >
+            <ul class="current">
+              <li class="toctree-l1 current">
+                <a
+                  class="current reference internal"
+                  href="/user-manual-firewall"
+                  >Administrador de Firewall</a
+                >
+              </li>
+
+              <!-- Menu de Administrador de Paquetes -->
+              <li class="toctree-l1 current">
+                <a
+                  class="current reference internal"
+                  href="#monitoreo-trafico-red"
+                  >Monitoreo de Trafico de Red</a
+                >
+                <ul>
+                  <li class="toctree-l2">
+                    <a class="reference internal" href="#paquetes-red"
+                      >Paquetes de red</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#que-es-un-paquete-de-red"
+                          >¿Que es un paquete de red?</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#funcion-paquete-red"
+                          >¿Como funcionan los paquetes de red?</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a
+                      class="reference internal"
+                      href="#configuracion-de-filtros-de-captura"
+                      >Configuracion de filtros de captura</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#crear-filtro"
+                          >1. Crear nuevo filtro</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#revisar-reporte"
+                          >2. Revisar reporte</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#capturar-trafico"
+                          >3. Capturar trafico
+                        </a>
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#limpiar-trafico-capturado"
+                          >4. Limpiar trafico capturado</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#eliminar-filtro"
+                          >5. Eliminar filtro</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li class="toctree-l2">
+                    <a class="reference internal" href="#monitoreo-paquetes"
+                      >Monitoreo de paquetes</a
+                    >
+
+                    <ul>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#limpiar-tabla"
+                          >1. Limpiar tabla</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#boton-ayuda"
+                          >2. Boton de ayuda</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a
+                          class="reference internal"
+                          href="#boton-play-pause-captura-de-paquetes"
+                          >3. Boton play/pause para la captura de paquetes</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#guardar-reporte"
+                          >4. Guardar reporte</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#cargar-reporte"
+                          >5. Cargar reporte</a
+                        >
+                      </li>
+                      <li class="toctree-l3">
+                        <a class="reference internal" href="#regresar-filtros"
+                          >6. Regresar a los Filtros</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+        <nav class="wy-nav-top" aria-label="top navigation">
+          <i data-toggle="wy-nav-top" class="fas fa-bars"></i>
+          <a href="/home">Home</a>
+        </nav>
+
+        <div class="wy-nav-content">
+          <div class="rst-content">
+            <div
+              role="main"
+              class="document"
+              itemscope="itemscope"
+              itemtype="http://schema.org/Article"
+            >
+              <div itemprop="articleBody">
+                <div class="section" id="monitoreo-trafico-red">
+                  <h1>
+                    Monitoreo de Trafico de Red<a
+                      class="headerlink"
+                      href="#monitoreo-trafico-red"
+                      title="Monitoreo de Trafico de Red"
+                      >¶</a
+                    >
+                  </h1>
+                  <p>
+                    El monitoreo de tráfico de red es una práctica que implica
+                    la supervisión continua del flujo de datos a través de una
+                    red. Su objetivo principal es garantizar el rendimiento, la
+                    seguridad y la eficiencia de la red, permitiendo identificar
+                    problemas como congestión, amenazas de seguridad y fallos en
+                    el sistema. Mediante el uso de herramientas especializadas,
+                    los administradores de red pueden analizar patrones de
+                    tráfico, detectar anomalías y tomar decisiones informadas
+                    para optimizar el funcionamiento de la infraestructura de
+                    red.
+                  </p>
+                  <div class="section" id="paquetes-red">
+                    <span id="using-http-api"></span>
+                    <h2>
+                      Paquetes de Red
+                      <a
+                        class="headerlink"
+                        href="#paquetes-red"
+                        title="Paquetes de Red"
+                        >¶</a
+                      >
+                    </h2>
+
+                    <p>
+                      Los paquetes de red son pequeñas unidades de datos que se
+                      envían a través de una red. Cada paquete incluye tanto la
+                      información que se quiere transmitir como las direcciones
+                      del remitente y el destinatario.
+                    </p>
+
+                    <div class="section" id="que-es-un-paquete-de-red">
+                      <h3>
+                        ¿Qué es un paquete de red?
+                        <a
+                          class="headerlink"
+                          href="#que-es-un-paquete-de-red"
+                          title="¿Qué es un paquete de red?"
+                          >¶</a
+                        >
+                      </h3>
+
+                      <p>
+                        Los paquetes de red son unidades fundamentales de datos
+                        que se utilizan para enviar información a través de
+                        redes digitales, incluyendo Internet. Cuando se envían
+                        datos desde un dispositivo a otro, estos se dividen en
+                        segmentos más pequeños llamados paquetes. Cada paquete
+                        contiene varios elementos clave:
+                      </p>
+                      <ul>
+                        <li>
+                          <strong>Dirección de Origen: </strong> La dirección IP
+                          del dispositivo que envía el paquete.
+                        </li>
+                        <li>
+                          <strong>Dirección de Destino: </strong> La dirección
+                          IP del dispositivo que debe recibir el paquete.
+                        </li>
+                        <li>
+                          <strong>Número de Secuencia: </strong> Indica el orden
+                          de los paquetes para que el receptor pueda
+                          reensamblarlos correctamente.
+                        </li>
+                        <li>
+                          <strong>Protocolo: </strong> El protocolo de
+                          comunicación utilizado, como TCP o UDP.
+                        </li>
+                        <li>
+                          <strong>Flags: </strong> Bits que controlan aspectos
+                          como el establecimiento de la conexión (SYN, ACK,
+                          FIN).
+                        </li>
+                        <li>
+                          <strong>TTL (Time to Live): </strong> Evita que los
+                          paquetes circulen indefinidamente, siendo decrementado
+                          en cada nodo hasta que el paquete se descarta.
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="section" id="funcion-paquete-red">
+                      <h3>
+                        ¿Cómo funcionan los paquetes de red?
+                        <a
+                          class="headerlink"
+                          href="#funcion-paquete-red"
+                          title="¿Cómo funcionan los paquetes de red?"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Los paquetes de red son esenciales para la comunicación
+                        digital, permitiendo el intercambio eficiente y fiable
+                        de datos en redes complejas. Comprender cómo funcionan y
+                        cómo se gestionan es crucial para mantener la seguridad,
+                        el rendimiento y la integridad de las redes modernas.
+                      </p>
+                      <ul>
+                        <li>
+                          <strong>Fragmentación: </strong>
+                          Cuando los datos que se van a enviar son mayores que
+                          el tamaño máximo permitido para un solo paquete, se
+                          dividen en múltiples paquetes. Cada uno de estos
+                          paquetes contiene parte de los datos y la información
+                          necesaria para que el receptor pueda reensamblarlos
+                          correctamente.
+                        </li>
+                        <li>
+                          <strong>Encaminamiento (Routing): </strong>
+                          Los paquetes pueden tomar diferentes rutas para llegar
+                          a su destino. Los routers y switches en la red
+                          utilizan tablas de encaminamiento y algoritmos para
+                          determinar la mejor ruta para cada paquete,
+                          considerando factores como la congestión de la red y
+                          las fallas en los enlaces.
+                        </li>
+                        <li>
+                          <strong>Control de Flujo y Congestión: </strong>
+                          En el caso de TCP, existen mecanismos para ajustar la
+                          velocidad de transmisión de los paquetes en función de
+                          la capacidad del receptor y la carga actual de la red,
+                          lo que ayuda a evitar la congestión y la pérdida de
+                          paquetes.
+                        </li>
+                        <li>
+                          <strong>Reensamblaje: </strong>
+                          En el dispositivo de destino, los paquetes se
+                          reensamblan en su orden original utilizando los
+                          números de secuencia. Si algún paquete falta o está
+                          corrupto, se solicita su retransmisión.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="section" id="configuracion-de-filtros-de-captura">
+                    <span id="timeouts"></span>
+                    <h2>
+                      Configuración de filtros de captura
+                      <a
+                        class="headerlink"
+                        href="#configuracion-de-filtros-de-captura"
+                        title="Configuración de filtros de captura"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>
+                      En el menú principal, una de las opciones es el
+                      <strong>Monitoreo de tráfico de red</strong>. Al ingresar,
+                      como ventana principal, veremos una tabla vacía donde se
+                      mostrarán los filtros que creemos.
+                    </p>
+                    <div class="img-container">
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/monitoreo_paquetes.jpg"
+                        alt="home-menu"
+                      />
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/filtro_paquetes.jpg"
+                        alt="firewall"
+                      />
+                    </div>
+
+                    <div class="section" id="crear-filtro">
+                      <span id="id2"></span>
+                      <h3>
+                        1. Crear nuevo filtro
+                        <a
+                          class="headerlink"
+                          href="#crear-filtro"
+                          title="Crear nuevo filtro"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        La creación de filtros nos ayuda a definir cómo y qué
+                        tipo de tráfico queremos capturar. Podemos personalizar
+                        el tráfico a seguir, ya sea HTTP, HTTPS, SSH, entre
+                        otros.
+                      </p>
+                      <p>
+                        Para crear un filtro correctamente, debemos tener claro
+                        el tipo de tráfico que queremos capturar, ya sea
+                        dominios, contenidos o tráfico del servidor como SSH,
+                        MySQL, etc. Debemos considerar lo siguiente:
+                      </p>
+                      <ol class="steps-create-rules">
+                        <li>
+                          Presionamos el botón <strong>Crear filtro</strong> y
+                          se desplegará un formulario que debemos llenar según
+                          la explicación de cada campo.
+                          <div class="img-container">
+                            <img
+                              class="img-system"
+                              src="../static/img/imgs_manual/crear_filtro.jpg"
+                              alt="Crear nuevo filtro"
+                            />
+                            <img
+                              class="img-system form-filter"
+                              src="../static/img/imgs_manual/crear_filtro_form.jpg"
+                              alt="Crear nuevo filtro"
+                            />
+                          </div>
+                        </li>
+                        <li>
+                          En el formulario, configuramos y completamos con la
+                          información correcta teniendo en cuenta los siguientes
+                          puntos:
+                          <ul>
+                            <li>
+                              Campo
+                              <strong>Nombre del Filtro:</strong> Definimos el
+                              nombre del filtro como un alias para
+                              identificarlo.
+                            </li>
+                            <li>
+                              Campo <strong>Tipo de Filtro:</strong> Escogemos
+                              el tipo de tráfico a monitorear: contenido,
+                              dominios, IP, puerto, protocolo de red, etc.
+                              <div class="admonition note">
+                                <p class="first admonition-title">Nota</p>
+                                <p class="last">
+                                  Al seleccionar un tipo de filtro específico,
+                                  se habilitarán ciertos campos según la
+                                  elección.
+                                </p>
+                              </div>
+                              <ul>
+                                <li>
+                                  <strong>Tipo de regla - Contenido</strong>
+                                  <ul class="field-type">
+                                    <li>
+                                      Campo
+                                      <strong>Filtro de Contenido:</strong>
+                                      Escogemos si queremos capturar únicamente
+                                      paquetes que establezcan comunicación
+                                      hacia un dominio dentro del tipo de
+                                      contenido (Contenido de Destino) o si
+                                      queremos visualizar todos los paquetes que
+                                      salen del servidor (Contenido General).
+                                    </li>
+                                    <li>
+                                      Campo
+                                      <strong>Contenido de Destino</strong> o
+                                      Campo <strong>Contenido General</strong>:
+                                      Estos campos cambian según la selección
+                                      anterior. Escogemos de la lista el
+                                      contenido a filtrar.
+                                    </li>
+                                  </ul>
+                                </li>
+                                <li>
+                                  <strong>Tipo de regla - Dominio</strong>
+                                  <ul class="field-type">
+                                    <li>
+                                      Campo
+                                      <strong>Filtro de Dominio:</strong>
+                                      Similar a la elección anterior, elegimos
+                                      si queremos capturar paquetes hacia un
+                                      dominio específico (Dominio de Destino) o
+                                      todos los paquetes que salen del servidor
+                                      (Dominio General).
+                                    </li>
+                                    <li>
+                                      Campo
+                                      <strong>Dominio de Destino</strong> o
+                                      Campo <strong>Dominio General</strong>:
+                                      Estos campos cambian según la selección
+                                      anterior. Ingresamos el dominio a filtrar.
+                                    </li>
+                                  </ul>
+                                </li>
+                                <li>
+                                  <strong
+                                    >Tipo de regla - Personalizar IP y
+                                    Puerto</strong
+                                  >
+                                  <ul class="field-type">
+                                    <p>
+                                      Al seleccionar esta opción, los campos
+                                      funcionan de manera similar. Explicamos
+                                      uno para evitar redundancias.
+                                    </p>
+                                    <li>
+                                      Campos
+                                      <strong
+                                        >Filtro de IPs, Filtro de Puertos,
+                                        Filtro de Protocolos de Red:</strong
+                                      >
+                                      Podemos especificar si el filtro capturará
+                                      paquetes solo de origen, solo de destino,
+                                      general (origen y destino), o establecer
+                                      un filtro con datos de origen y destino,
+                                      por ejemplo, tráfico de la IP
+                                      192.168.0.100 a la IP 192.168.0.111.
+                                    </li>
+                                    <li>
+                                      Campo
+                                      <strong
+                                        >IP de origen, Puerto de origen,
+                                        Protocolo de red de origen:</strong
+                                      >
+                                      Indicamos el valor de origen (puerto, IP,
+                                      protocolo de red).
+                                    </li>
+                                    <li>
+                                      Campo
+                                      <strong
+                                        >IP de destino, Puerto de destino,
+                                        Protocolo de red de destino:</strong
+                                      >
+                                      Indicamos el valor de destino (puerto, IP,
+                                      protocolo de red).
+                                    </li>
+                                    <li>
+                                      Campo
+                                      <strong
+                                        >IP general, Puerto general, Protocolo
+                                        general:</strong
+                                      >
+                                      Indicamos el valor general para filtrar el
+                                      tráfico saliente o entrante.
+                                    </li>
+                                    <li>
+                                      Campo
+                                      <strong>Protocolo:</strong> Filtramos el
+                                      tráfico por tipo de protocolo de
+                                      comunicación, TCP o UDP.
+                                    </li>
+                                  </ul>
+                                </li>
+                              </ul>
+                              Hay campos adicionales que se habilitan o
+                              deshabilitan según cómo llenemos los campos. En el
+                              caso de las IPs, si especificamos origen y
+                              destino, aparecerá un campo adicional para definir
+                              si se deben cumplir ambos requisitos o uno de
+                              ellos.
+                              <ul>
+                                <li>
+                                  Campo
+                                  <strong>¿Cómo deseas filtrar?:</strong>
+                                  Indicamos si queremos cumplir ambos criterios
+                                  o uno de ellos para filtrar los paquetes.
+                                </li>
+                              </ul>
+                              <div class="img-container type-rule">
+                                <img
+                                  class="img-type"
+                                  src="../static/img/imgs_manual/filtro_contenido.jpg"
+                                  alt="Crear nuevo filtro opcion contenido"
+                                />
+                                <img
+                                  class="img-type"
+                                  src="../static/img/imgs_manual/filtro_dominio.jpg"
+                                  alt="Crear nuevo filtro opcion dominio"
+                                />
+                                <img
+                                  class="img-type"
+                                  src="../static/img/imgs_manual/filtro_personalizado.jpg"
+                                  alt="Crear nuevo filtro opcion personalizado"
+                                />
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                        <li>
+                          Una vez entendidos los conceptos de cada campo,
+                          definimos el filtro, ingresamos los valores y
+                          presionamos el botón <strong>Crear Filtro</strong>.
+                        </li>
+                        <li>
+                          Para verificar que la regla se creó correctamente,
+                          debe aparecer un mensaje de confirmación y podremos
+                          ver el filtro creado en la tabla.
+                        </li>
+                      </ol>
+                    </div>
+
+                    <div class="section" id="revisar-reporte">
+                      <span id="slow-script"></span>
+                      <h3>
+                        2. Revisar reporte
+                        <a
+                          class="headerlink"
+                          href="#revisar-reporte"
+                          title="Revisar reporte"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Dentro de la ventana de los filtros, encontramos el
+                        botón <strong>Revisar reporte</strong>, disponible una
+                        vez guardado algún reporte de un filtro creado.
+                      </p>
+                      <p>
+                        Al presionar este botón, nos redirige a otra página que
+                        se explica más adelante.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/revisar_reporte.jpg"
+                          alt="Revisar reporte"
+                        />
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/revisar_reporte_form.jpg"
+                          alt="Revisar reporte"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="capturar-trafico">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        3. Capturar tráfico
+                        <a
+                          class="headerlink"
+                          href="#capturar-trafico"
+                          title="Capturar tráfico"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Al crear un filtro, en la celda del registro tendremos
+                        el botón <strong>Capturar tráfico</strong>, que nos
+                        permite aplicar el filtro para capturar paquetes. Al
+                        igual que el botón anterior, nos redirige a otra página
+                        explicada más adelante.
+                      </p>
+                      <p>
+                        Es importante recalcar que cada filtro tiene
+                        adicionalmente un botón para aplicar el filtro y
+                        capturar paquetes.
+                        <!-- <a
+                          class="reference external"
+                          href="http://www.haproxy.org/"
+                          >HAProxy</a
+                        > -->
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/capturar_trafico.jpg"
+                          alt="Capturar tráfico"
+                        />
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/monitoreo_paquete_page.jpg"
+                          alt="Capturar tráfico"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="limpiar-trafico-capturado">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        4. Limpiar tráfico capturado
+                        <a
+                          class="headerlink"
+                          href="#limpiar-trafico-capturado"
+                          title="Limpiar tráfico capturado"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Otra opción disponible al crear un registro de un nuevo
+                        filtro, después de capturar paquetes, es el botón
+                        <strong>Limpiar tráfico capturado</strong>. Este botón
+                        permite limpiar una captura anterior para aplicar un
+                        nuevo filtro y evitar confusiones.
+                        <!--  <code class="docutils literal notranslate"
+                          ><span class="pre">--slots</span></code
+                        > -->
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/limpiar_trafico_capturado.jpg"
+                          alt="Limpiar tráfico capturado"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="eliminar-filtro">
+                      <span id="splash-overloaded"></span>
+                      <h3>
+                        5. Eliminar filtro
+                        <a
+                          class="headerlink"
+                          href="#eliminar-filtro"
+                          title="Eliminar filtro"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        La última opción en esta página es eliminar un filtro
+                        creado, ya sea porque no lo vamos a usar o queremos
+                        crear uno más completo. Ubicamos el botón
+                        <strong>Eliminar filtro</strong> que abre un mensaje de
+                        confirmación.
+                      </p>
+                      <p>
+                        Para comprobar que la acción se realizó con éxito, debe
+                        aparecer un mensaje de
+                        <strong>Filtro eliminado correctamente</strong> y los
+                        registros actualizados en la tabla.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/eliminar_filtro.jpg"
+                          alt="Eliminar filtro"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="section" id="monitoreo-paquetes">
+                    <span id="splash-in-production"></span>
+                    <h2>
+                      Monitoreo de paquetes
+                      <a
+                        class="headerlink"
+                        href="#monitoreo-paquetes"
+                        title="Monitoreo de paquetes"
+                        >¶</a
+                      >
+                    </h2>
+                    <p>
+                      Cuando aplicamos un filtro para capturar el tráfico o
+                      queremos revisar algún reporte, se nos presentará una
+                      nueva página con una tabla vacía y botones que realizan
+                      diferentes acciones según lo que deseemos hacer. A
+                      continuación, se explican las acciones que se pueden
+                      realizar en esta página.
+                    </p>
+                    <div class="admonition note">
+                      <p class="first admonition-title">Nota</p>
+                      <p class="last">
+                        Es importante tener en cuenta que en la página para ver
+                        el tráfico de paquetes, encontraremos dos tipos de
+                        acciones. Por ejemplo, al capturar tráfico con algún
+                        filtro, veremos botones para interactuar con el tráfico,
+                        como capturar paquetes o guardar reportes. Pero al
+                        revisar un reporte específico, habrá otros botones para
+                        cargar un reporte guardado, sin relación con algún
+                        filtro.
+                      </p>
+                    </div>
+
+                    <div class="img-container">
+                      <img
+                        class="img-system"
+                        src="../static/img/imgs_manual/capturar_trafico.jpg"
+                        alt="Monitoreo de paquetes opcion"
+                      /><img
+                        class="img-system"
+                        src="../static/img/imgs_manual/revisar_reporte.jpg"
+                        alt="Monitoreo de paquetes pagina"
+                      />
+                    </div>
+
+                    <div class="section" id="limpiar-tabla">
+                      <h3>
+                        1. Limpiar tabla
+                        <a
+                          class="headerlink"
+                          href="#limpiar-tabla"
+                          title="Limpiar tabla"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Una de las acciones que podemos realizar en esta ventana
+                        es <strong>Limpiar tabla</strong>. Este botón nos
+                        permite borrar los datos de la tabla para evitar la
+                        sobrecarga de la página o eliminar paquetes de un filtro
+                        anterior, de modo que podamos comenzar una nueva captura
+                        de paquetes.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/limpiar_tabla.jpg"
+                          alt="Limpiar tabla"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="boton-ayuda">
+                      <h3>
+                        2. Botón de ayuda
+                        <a
+                          class="headerlink"
+                          href="#boton-ayuda"
+                          title="Botón de ayuda"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Otra opción disponible es el botón informativo, que abre
+                        una tarjeta con información sobre la captura del
+                        paquete, como el
+                        <strong
+                          >Tipo de Servicio (TOS), Tiempo de Vida (TTL),
+                          Identificación (ID), Desplazamiento (Offset),
+                          Indicadores (Flags), Protocolo y Longitud</strong
+                        >.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/boton_ayuda.jpg"
+                          alt="Botón de ayuda"
+                        />
+                        <img
+                          class="img-system form-filter"
+                          src="../static/img/imgs_manual/ayuda_form.jpg"
+                          alt="Botón de ayuda"
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      class="section"
+                      id="boton-play-pause-captura-de-paquetes"
+                    >
+                      <h3>
+                        3. Botón play/pause para la captura de paquetes
+                        <a
+                          class="headerlink"
+                          href="#boton-play-pause-captura-de-paquetes"
+                          title="Botón play/pause para la captura de paquetes"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Este botón nos permite iniciar o pausar la captura de
+                        paquetes. Al ingresar a esta ventana, el botón
+                        <strong><i>Capturar paquetes</i></strong> abrirá la
+                        página, pero no comenzará a capturar hasta que
+                        presionemos <strong><i>Play</i></strong
+                        >. Para pausar la captura, presionamos nuevamente el
+                        botón, y para reanudar, volvemos a presionar
+                        <i>Play</i>.
+                      </p>
+                      <div class="admonition note">
+                        <p class="first admonition-title">Nota</p>
+                        <p class="last">
+                          Al comenzar a capturar paquetes, la información no se
+                          mostrará instantáneamente ya que debe cumplir los
+                          requisitos del filtro. Si no vemos información, podría
+                          ser porque el filtro no está configurado
+                          correctamente.
+                        </p>
+                      </div>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/play-pause.jpg"
+                          alt="Botón play/pause"
+                        />
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/boton-play-pause.jpg"
+                          alt="Botón play/pause"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="guardar-reporte">
+                      <h3>
+                        4. Guardar reporte
+                        <a
+                          class="headerlink"
+                          href="#guardar-reporte"
+                          title="Guardar reporte"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Este botón nos permite guardar un reporte generado al
+                        capturar paquetes. Debemos pausar la captura antes de
+                        guardar, y al presionar el botón, se nos pedirá asignar
+                        un nombre al reporte. Al confirmar, se mostrará un
+                        mensaje de
+                        <strong>Reporte guardado correctamente</strong>,
+                        indicando que el reporte está disponible para visualizar
+                        en el futuro.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/guardar_reporte.jpg"
+                          alt="Guardar reporte"
+                        />
+                        <img
+                          class="img-system form-save-report"
+                          src="../static/img/imgs_manual/guardar_reporte_form.jpg"
+                          alt="Guardar reporte"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="cargar-reporte">
+                      <h3>
+                        5. Cargar reporte
+                        <a
+                          class="headerlink"
+                          href="#cargar-reporte"
+                          title="Cargar reporte"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Al guardar un reporte, este botón abrirá una ventana con
+                        una lista de reportes guardados. Tenemos dos opciones:
+                        <strong><i>Mostrar datos</i></strong> para cargar el
+                        reporte guardado, y
+                        <strong><i>Eliminar reporte</i></strong> para eliminar
+                        un reporte que ya no necesitemos.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/cargar_reporte.jpg"
+                          alt="Cargar reporte"
+                        />
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/cargar_reporte_tabla.jpg"
+                          alt="Cargar reporte"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="section" id="regresar-filtros">
+                      <h3>
+                        6. Regresar a los Filtros
+                        <a
+                          class="headerlink"
+                          href="#regresar-filtros"
+                          title="Regresar a los Filtros"
+                          >¶</a
+                        >
+                      </h3>
+                      <p>
+                        Por último, el botón
+                        <strong><i>Regresar a los Filtros</i></strong> nos
+                        permite volver a la ventana con la tabla de filtros,
+                        para aplicar otro filtro o realizar una nueva captura de
+                        paquetes.
+                      </p>
+                      <div class="img-container">
+                        <img
+                          class="img-system"
+                          src="../static/img/imgs_manual/regresar_filtros.jpg"
+                          alt="Regresar a los Filtros"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr
+                    style="
+                      height: 2px;
+                      border-width: 0;
+                      color: gray;
+                      background-color: gray;
+                    "
+                  />
+
+                  <br />
+                </div>
+              </div>
+            </div>
+            <footer>
+              <div
+                class="rst-footer-buttons"
+                role="navigation"
+                aria-label="footer navigation"
+              >
+                <a
+                  href="/user-manual-firewall"
+                  class="btn btn-neutral float-left"
+                  title="Pagina anterior"
+                  accesskey="p"
+                  rel="prev"
+                  ><span class="fas fa-arrow-circle-left"></span> Anterior</a
+                >
+              </div>
+
+              <hr />
+
+              <div role="contentinfo">
+                <p>
+                  &copy; Copyright
+                  <span class="commit">
+                    Manual de usuario <code>Firewall Intelho</code>.
+                  </span>
+                </p>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/modernizr.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/documentation_options.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/jquery.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/underscore.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/doctools.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/language_data.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/theme.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/readthedocs-data.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/clipboard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/linuxguist/_static@main/js/copy_to_clipboard_style.js"></script>
+    <script src="{{ url_for('static', filename='js/user-manual.js') }}"></script>
+
+    {% endblock %}
+  </body>
+</html>

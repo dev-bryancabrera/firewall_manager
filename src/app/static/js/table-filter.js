@@ -627,11 +627,11 @@ $(document).ready(function () {
         title: "Consumos",
       },
       {
-        field: "delete",
+        field: "visualizar",
         title: "",
       },
       {
-        field: "visualizar",
+        field: "delete",
         title: "",
       },
       {

@@ -65,11 +65,16 @@ def configurar_rutas(app, login_manager_app):
     def home_page():
         return render_template("home-page.html")
 
-    @app.route("/user-manual")
+    @app.route("/user-manual-firewall")
     @login_required
     def user_manual():
-        return render_template("user-manual.html")
+        return render_template("user-manual-firewall.html")
 
+    @app.route("/user-manual-monitoreo")
+    @login_required
+    def user_manual_monitoreo():
+        return render_template("user-manual-monitoreo.html")
+    
     @app.route("/traffic-packets/<id>/<filtro>")
     @login_required
     def packet_monitoring(id, filtro):

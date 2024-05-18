@@ -18,6 +18,7 @@ def instalar_paquetes():
         subprocess.run(["sudo", "apt-get", "install", "ufw", "-y"])
         subprocess.run(["sudo", "apt-get", "install", "dnsutils", "-y"])
         subprocess.run(["sudo", "apt-get", "install", "tcpdump", "-y"])
+        subprocess.run(["sudo", "apt-get", "install", "arp-scan", "-y"])
         # subprocess.run(["sudo", "apt-get", "install", "iptables-persistent", "-y"])
 
         print("Paquetes instalados correctamente.")
