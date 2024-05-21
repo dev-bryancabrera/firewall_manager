@@ -28,31 +28,38 @@ from models.entities.filterPacket import FilterPacket
 
 def validar_ingreso(username, password_hash):
     try:
-        # if "firewall" in username:
-        user = User(0, username, password_hash)
-        logged_user = modelUser.login(user)
-        if logged_user is not None:
-            if logged_user.password_hash:
-                login_user(logged_user)
-                return True
+        if "firewall" in username:
+            user = User(0, username, password_hash)
+            logged_user = modelUser.login(user)
+            if logged_user is not None:
+                if logged_user.password_hash:
+                    login_user(logged_user)
+                    return True
+                else:
+                    flash("Credenciales Erroneas")
+                    return False
             else:
-                flash("Credenciales Erroneas")
+                flash("Usuario no Encontrado")
                 return False
         else:
-            flash("Usuario no Encontrado")
-            return False
-        # else:
-        #     flash("Usuario no permitido")
-        # return False
+            flash("Usuario no permitido")
+        return False
     except Exception as e:
         return str(e)
 
 
 def is_valid_ip(ip):
-    # Expresión regular para verificar el formato de la dirección IP
+    # Expresión regular para verificar el formato de la IP
     ip_regex = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
 
     return re.match(ip_regex, ip) is not None
+
+
+def is_valid_mac(mac):
+    # Expresión regular para verificar el formato de la MAC
+    mac_regex = r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
+
+    return re.match(mac_regex, mac) is not None
 
 
 def obtener_reglas_ufw():
@@ -102,7 +109,7 @@ def obtener_reglas_ufw():
 
                         rule_data = ", ".join(domains)
 
-                    elif tipo_regla not in ["contenido", "dominio"]:
+                    else:
                         rule_detail_parts = detail_domain[1].split(" comment ")
                         rule_detail_command = (
                             rule_detail_parts[0].replace("/", " ").split()
@@ -110,7 +117,7 @@ def obtener_reglas_ufw():
                         name_rule = rule_detail_parts[1].replace("'", "")
 
                         for part in rule_detail_command:
-                            if is_valid_ip(part):
+                            if is_valid_ip(part) or is_valid_mac(part):
                                 ip = part
 
                             elif "port" in part.lower():
@@ -381,7 +388,10 @@ def delete_rule(regla_content_id, id_regla):
                 for detail_rule in detail_rules:
                     rule_string = detail_rule[1]
 
-                    if tipo_regla in ["contenido", "dominio"]:
+                    if (
+                        tipo_regla in ["contenido", "dominio"]
+                        or "iptables" in rule_string
+                    ):
                         if "INPUT" in rule_string:
                             direccion = "INPUT"
                         elif "OUTPUT" in rule_string:
@@ -401,7 +411,7 @@ def delete_rule(regla_content_id, id_regla):
                             capture_output=True,
                         )
 
-                if tipo_regla in ["contenido", "dominio"]:
+                if tipo_regla in ["contenido", "dominio"] or "iptables" in rule_string:
                     salida_iptables = subprocess.check_output(
                         [
                             "/sbin/iptables",
@@ -414,7 +424,10 @@ def delete_rule(regla_content_id, id_regla):
 
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
 
-                    if "REJECT" in rule_string:
+                    if (
+                        tipo_regla in ["contenido", "dominio"]
+                        and "REJECT" in rule_string
+                    ):
                         remove_domain_from_hosts(rule_name)
 
             modelFirewallDetail.deleteRuleDetail(id_regla)
@@ -575,7 +588,10 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                 rule_detail_id, rule_string, _ = detail_rule
 
                 if numero_data == 1:
-                    if tipo_regla in ["contenido", "dominio"]:
+                    if (
+                        tipo_regla in ["contenido", "dominio"]
+                        or "iptables" in rule_string
+                    ):
                         if "INPUT" in rule_string:
                             direccion = "INPUT"
                         elif "OUTPUT" in rule_string:
@@ -667,12 +683,15 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                     )
 
             if numero_data == 1:
-                if tipo_regla in ["contenido", "dominio"]:
+                if tipo_regla in ["contenido", "dominio"] or "iptables" in rule_string:
                     salida_iptables = subprocess.check_output(
                         ["/sbin/iptables", "-L", direccion, "--line-numbers", "-n"]
                     )
                     iptables_rules_matched(salida_iptables, rule_name, direccion)
-                    if "REJECT" in rule_string:
+                    if (
+                        tipo_regla in ["contenido", "dominio"]
+                        and "REJECT" in rule_string
+                    ):
                         remove_domain_from_hosts(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
@@ -893,6 +912,7 @@ def allow_connections(
     action_rule,
     rule_type,
     ip_addr,
+    local_red,
     domain,
     port,
     protocol,
@@ -907,7 +927,14 @@ def allow_connections(
     content_tp,
 ):
     try:
-        protocol = "" if protocol == "tcp/udp" else protocol
+        protocol = (
+            ["tcp", "udp"]
+            if protocol == "tcp/udp" and local_red
+            else protocol
+            if protocol != "tcp/udp"
+            else ""
+        )
+
         ip_dest = "" if entry == "out" else "any"
 
         if entry == "in":
@@ -919,8 +946,9 @@ def allow_connections(
         fecha_creacion = datetime.now()
 
         rulesTypeContent = []
+        rules_protocols = []
 
-        if rule_type in ("dominio", "contenido"):
+        if rule_type in ("dominio", "contenido") or local_red:
             action_rule = "ACCEPT" if action_rule == "allow" else "REJECT"
             entry = "INPUT" if entry == "in" else "OUTPUT"
             direction = "-s" if entry == "INPUT" else "-d"
@@ -1001,68 +1029,98 @@ def allow_connections(
             if action_rule == "REJECT":
                 add_domain_to_hosts(domain, comment_domain)
 
-        elif port and ip_addr:
-            if ip_addr and netmask:
-                ip_addr += f"/{netmask}"
-            if ip_dest and dest_netmask:
-                ip_dest += f"/{dest_netmask}"
+        elif port and (ip_addr or local_red):
+            if ip_addr:
+                if ip_addr and netmask:
+                    ip_addr += f"/{netmask}"
+                if ip_dest and dest_netmask:
+                    ip_dest += f"/{dest_netmask}"
 
-            elif entry and direction and ip_addr and ip_dest and port and protocol:
-                rule += f" {entry} {direction} {ip_addr} to {ip_dest} port {port} proto {protocol} comment '{comment}'"
+                elif entry and direction and ip_addr and ip_dest and port and protocol:
+                    rule += f" {entry} {direction} {ip_addr} to {ip_dest} port {port} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_addr and port and protocol:
-                rule += f" {entry} {direction} {ip_addr} port {port} proto {protocol} comment '{comment}'"
+                elif entry and direction and ip_addr and port and protocol:
+                    rule += f" {entry} {direction} {ip_addr} port {port} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_addr and ip_dest and port:
-                rule += f" {entry} {direction} {ip_addr} to {ip_dest} port {port} comment '{comment}'"
+                elif entry and direction and ip_addr and ip_dest and port:
+                    rule += f" {entry} {direction} {ip_addr} to {ip_dest} port {port} comment '{comment}'"
 
-            elif entry and direction and ip_addr and ip_dest and port:
-                rule += f" {entry} {direction} {ip_addr} to {ip_dest} {port} comment '{comment}'"
+                elif entry and direction and ip_addr and ip_dest and port:
+                    rule += f" {entry} {direction} {ip_addr} to {ip_dest} {port} comment '{comment}'"
 
-            elif entry and direction and ip_dest and port and protocol:
-                rule += f" {entry} {direction} any to {ip_dest} port {port} proto {protocol} comment '{comment}'"
+                elif entry and direction and ip_dest and port and protocol:
+                    rule += f" {entry} {direction} any to {ip_dest} port {port} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_addr and port and protocol:
-                rule += f" {entry} {direction} {ip_addr} port {port} proto {protocol} comment '{comment}'"
+                elif entry and direction and ip_addr and port and protocol:
+                    rule += f" {entry} {direction} {ip_addr} port {port} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_addr and port:
-                rule += (
-                    f" {entry} {direction} {ip_addr} port {port} comment '{comment}'"
-                )
+                elif entry and direction and ip_addr and port:
+                    rule += f" {entry} {direction} {ip_addr} port {port} comment '{comment}'"
 
-            elif entry and direction and ip_dest and port:
-                rule += f" {entry} {direction} any to {ip_dest} port {port} comment '{comment}'"
+                elif entry and direction and ip_dest and port:
+                    rule += f" {entry} {direction} any to {ip_dest} port {port} comment '{comment}'"
 
-            subprocess.run(shlex.split(f"{rule}"))
+            else:
+                if isinstance(protocol, list):
+                    for protocol_option in protocol:
+                        rule = f"/sbin/iptables -I {entry} -p {protocol_option} --dport {port} -m mac --mac-source {local_red} -j {action_rule} -m comment --comment '{comment}'"
+                        rules_protocols.append(rule)
+
+                else:
+                    rule = f"/sbin/iptables -I {entry} -p {protocol} --dport {port} -m mac --mac-source {local_red} -j {action_rule} -m comment --comment '{comment}'"
+
+            if rules_protocols:
+                for rule in rules_protocols:
+                    subprocess.run(shlex.split(f"{rule}"))
+
+            else:
+                subprocess.run(shlex.split(f"{rule}"))
 
         # IPs
-        elif ip_addr:
-            if ip_addr and netmask:
-                ip_addr += f"/{netmask}"
-            if ip_dest and dest_netmask:
-                ip_dest += f"/{dest_netmask}"
+        elif ip_addr or local_red:
+            if ip_addr:
+                if ip_addr and netmask:
+                    ip_addr += f"/{netmask}"
+                if ip_dest and dest_netmask:
+                    ip_dest += f"/{dest_netmask}"
 
-            if entry and direction and ip_addr and ip_dest and protocol:
-                rule += f" {entry} {direction} {ip_addr} to {ip_dest} proto {protocol} comment '{comment}'"
+                if entry and direction and ip_addr and ip_dest and protocol:
+                    rule += f" {entry} {direction} {ip_addr} to {ip_dest} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_addr and protocol:
-                rule += f" {entry} {direction} {ip_addr} proto {protocol} comment '{comment}'"
+                elif entry and direction and ip_addr and protocol:
+                    rule += f" {entry} {direction} {ip_addr} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_dest and protocol:
-                rule += f" {entry} {direction} any to {ip_dest} proto {protocol} comment '{comment}'"
+                elif entry and direction and ip_dest and protocol:
+                    rule += f" {entry} {direction} any to {ip_dest} proto {protocol} comment '{comment}'"
 
-            elif entry and direction and ip_addr and ip_dest:
-                rule += (
-                    f" {entry} {direction} {ip_addr} to {ip_dest} comment '{comment}'"
-                )
+                elif entry and direction and ip_addr and ip_dest:
+                    rule += f" {entry} {direction} {ip_addr} to {ip_dest} comment '{comment}'"
 
-            elif entry and direction and ip_addr:
-                rule += f" {entry} {direction} {ip_addr} comment '{comment}'"
+                elif entry and direction and ip_addr:
+                    rule += f" {entry} {direction} {ip_addr} comment '{comment}'"
 
-            elif entry and direction and ip_dest:
-                rule += f" {entry} {direction} any to {ip_dest} comment '{comment}'"
+                elif entry and direction and ip_dest:
+                    rule += f" {entry} {direction} any to {ip_dest} comment '{comment}'"
 
-            subprocess.run(shlex.split(f"{rule}"))
+            else:
+                if local_red and protocol:
+                    if isinstance(protocol, list):
+                        for protocol_option in protocol:
+                            rule = f"/sbin/iptables -I {entry} -p {protocol_option} -m mac --mac-source {local_red} -j {action_rule} -m comment --comment '{comment}'"
+                            rules_protocols.append(rule)
+
+                    else:
+                        rule = f"/sbin/iptables -I {entry} -p {protocol} -m mac --mac-source {local_red} -j {action_rule} -m comment --comment '{comment}'"
+
+                else:
+                    rule = f"/sbin/iptables -I {entry} -m mac --mac-source {local_red} -j {action_rule} -m comment --comment '{comment}'"
+
+            if rules_protocols:
+                for rule in rules_protocols:
+                    subprocess.run(shlex.split(f"{rule}"))
+
+            else:
+                subprocess.run(shlex.split(f"{rule}"))
 
         # Port
         elif port:

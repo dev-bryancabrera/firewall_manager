@@ -114,7 +114,7 @@
                       class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
                     >
                       {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
-                  </button>
+                    </button>
                   </td>
                   <td>
                     <button
@@ -530,109 +530,131 @@
                           <option value="out">Salida</option>
                         </select>
                       </div>
-                    </div>
 
-                    <div class="form-inputs">
-                      <div class="form1">
-                        <div class="form-group" id="ipContainer">
-                          <label for="ipaddr">Direccion IP</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            name="ip_addr"
-                            id="ipaddr"
-                            placeholder="0.0.0.0"
-                            minlength="7"
-                            maxlength="15"
-                            oninput="formatoDireccionIP(this)"
-                          />
-                        </div>
+                      <div class="form-group" id="redTypeContainer">
+                        <label for="red_type">Tipo de red</label>
+                        <select class="form-select" id="red_type_select">
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="red_local">Red Local</option>
+                          <option value="red_externa">Red Externa</option>
+                        </select>
+                      </div>
 
-                        <div class="form-group" id="domainContainer">
-                          <label for="ipaddr">Nombre de Dominio</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            name="domain"
-                            id="domain"
-                            placeholder="example.com"
-                          />
-                        </div>
+                      <div class="form-group" id="redContainer">
+                        <label for="selectProtocol">IP/Mac de Red Local</label>
+                        <select
+                          class="selectpicker"
+                          name="localRed"
+                          id="type_red"
+                          aria-label="Seleccione un red local"
+                          data-none-selected-text="Seleccione un red local"
+                          data-live-search="true"
+                        >
+                          <option value="" hidden selected>
+                            Seleccione un red local
+                          </option>
+                          {% for device in devices %}
+                          <option value="{{ device['mac'] }}">
+                            {{ device['ip'] }} - {{ device['mac'] }}
+                          </option>
+                          {% endfor %}
+                        </select>
+                      </div>
 
-                        <div class="form-group" id="contentContainer">
-                          <label for="selectProtocolRed"
-                            >Contenido de red</label
-                          >
-                          <!-- En caso de querer seleccionar varios incluir multiple en el select -->
-                          <select
-                            class="selectpicker"
-                            name="contentOption"
-                            id="content"
-                            aria-label="Seleccione Contenido"
-                            data-none-selected-text="Seleccione Contenido"
-                            data-live-search="true"
-                          >
-                            <option value="redes_sociales">
-                              Redes Sociales
-                            </option>
-                            <option value="videojuegos">Videojuegos</option>
-                            <option value="musica">Musica</option>
-                            <option value="streaming">Streaming</option>
-                            <option value="lectura">Lectura</option>
-                            <option value="video">Video</option>
-                            <option value="mensajeria">Mensajeria</option>
-                            <option value="podcast">Podcast</option>
-                            <option value="mailing">Mailing</option>
-                            <option value="imagenes">Imagenes</option>
-                            <option value="ecommerce">Ecommerce</option>
-                            <option value="blogging">Blogs</option>
-                            <option value="crm">CRM</option>
-                            <option value="pagos">Pagos</option>
-                            <option value="apuestas">Apuestas</option>
-                            <option value="publicidad_digital">
-                              Publicidad Digital
-                            </option>
-                            <option value="redes_profesionales">
-                              Redes Profesionales
-                            </option>
-                            <option value="videoconferencias">
-                              Videoconferencias
-                            </option>
-                            <option value="educacion">Educacion</option>
-                            <option value="trabajo_colaborativo">
-                              Trabajo colaborativo
-                            </option>
-                          </select>
-                        </div>
+                      <div class="form-group" id="ipContainer">
+                        <label for="ipaddr">Direccion IP</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          name="ip_addr"
+                          id="ipaddr"
+                          placeholder="0.0.0.0"
+                          minlength="7"
+                          maxlength="15"
+                          oninput="formatoDireccionIP(this)"
+                        />
+                      </div>
 
-                        <div class="form-group" id="portContainer">
-                          <label for="inputPort">Puerto</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            name="port"
-                            id="port"
-                            minlength="2"
-                            maxlength="7"
-                            oninput="formatoPuerto(this)"
-                          />
-                        </div>
+                      <div class="form-group" id="domainContainer">
+                        <label for="ipaddr">Nombre de Dominio</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          name="domain"
+                          id="domain"
+                          placeholder="example.com"
+                        />
+                      </div>
 
-                        <div class="form-group" id="protocolContainer">
-                          <label for="selectProtocol">Protocolo</label>
-                          <select
-                            class="form-select"
-                            name="protocol"
-                            id="selectProtocol"
-                          >
-                            <option value="" selected disabled>
-                              Seleccionar...
-                            </option>
-                            <option value="tcp">TCP</option>
-                            <option value="udp">UDP</option>
-                            <option value="tcp/udp">TCP/UDP</option>
-                          </select>
-                        </div>
+                      <div class="form-group" id="contentContainer">
+                        <label for="selectProtocolRed">Contenido de red</label>
+                        <!-- En caso de querer seleccionar varios incluir 'multiple' en el select -->
+                        <select
+                          class="selectpicker"
+                          name="contentOption"
+                          id="content"
+                          aria-label="Seleccione Contenido"
+                          data-none-selected-text="Seleccione Contenido"
+                          data-live-search="true"
+                        >
+                          <option value="redes_sociales">Redes Sociales</option>
+                          <option value="videojuegos">Videojuegos</option>
+                          <option value="musica">Musica</option>
+                          <option value="streaming">Streaming</option>
+                          <option value="lectura">Lectura</option>
+                          <option value="video">Video</option>
+                          <option value="mensajeria">Mensajeria</option>
+                          <option value="podcast">Podcast</option>
+                          <option value="mailing">Mailing</option>
+                          <option value="imagenes">Imagenes</option>
+                          <option value="ecommerce">Ecommerce</option>
+                          <option value="blogging">Blogs</option>
+                          <option value="crm">CRM</option>
+                          <option value="pagos">Pagos</option>
+                          <option value="apuestas">Apuestas</option>
+                          <option value="publicidad_digital">
+                            Publicidad Digital
+                          </option>
+                          <option value="redes_profesionales">
+                            Redes Profesionales
+                          </option>
+                          <option value="videoconferencias">
+                            Videoconferencias
+                          </option>
+                          <option value="educacion">Educacion</option>
+                          <option value="trabajo_colaborativo">
+                            Trabajo colaborativo
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="form-group" id="portContainer">
+                        <label for="inputPort">Puerto</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          name="port"
+                          id="port"
+                          minlength="2"
+                          maxlength="7"
+                          oninput="formatoPuerto(this)"
+                        />
+                      </div>
+
+                      <div class="form-group" id="protocolContainer">
+                        <label for="selectProtocol">Protocolo</label>
+                        <select
+                          class="form-select"
+                          name="protocol"
+                          id="selectProtocol"
+                        >
+                          <option value="" selected disabled>
+                            Seleccionar...
+                          </option>
+                          <option value="tcp">TCP</option>
+                          <option value="udp">UDP</option>
+                          <option value="tcp/udp">TCP/UDP</option>
+                        </select>
                       </div>
 
                       <div class="form2" style="display: none">
@@ -763,7 +785,7 @@
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
-    <script src="{{ url_for('static', filename='js/data-input.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/firewall-config.js') }}"></script>
 
     {% endblock %}
   </body>

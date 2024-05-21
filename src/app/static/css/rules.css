@@ -278,3 +278,17 @@ h2 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.bootstrap-select .btn {
+  width: 509px;
+  max-width: 509px;
+  border: 1px solid #000000 !important;
+  border-radius: 5px !important;
+}
+
+@media (max-width: 576px) {
+  .bootstrap-select .btn {
+    width: 100%;
+    max-width: 100%;
+  }
+}

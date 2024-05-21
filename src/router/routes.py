@@ -74,7 +74,7 @@ def configurar_rutas(app, login_manager_app):
     @login_required
     def user_manual_monitoreo():
         return render_template("user-manual-monitoreo.html")
-    
+
     @app.route("/traffic-packets/<id>/<filtro>")
     @login_required
     def packet_monitoring(id, filtro):
@@ -179,9 +179,10 @@ def configurar_rutas(app, login_manager_app):
     @login_required
     def allow_rule():
         try:
-            accion_regla = request.form.get("action_rule")
-            tipo_regla = request.form.get("regla")
+            action_rule = request.form.get("action_rule")
+            type_rule = request.form.get("regla")
             ip_addr = request.form.get("ip_addr")
+            local_red = request.form.get("localRed")
             domain = request.form.get("domain")
             direction = request.form.get("fromto")
             netmask = request.form.get("netmask")
@@ -196,9 +197,10 @@ def configurar_rutas(app, login_manager_app):
             content_tp = request.form.getlist("contentOption")
 
             response = allow_connections(
-                accion_regla,
-                tipo_regla,
+                action_rule,
+                type_rule,
                 ip_addr,
+                local_red,
                 domain,
                 port,
                 protocol,

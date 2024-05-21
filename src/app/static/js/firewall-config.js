@@ -1,5 +1,6 @@
 /* Seleccionar Campos */
 var selectRegla = $("#formSelectRegla");
+var selectTypeRed = $("#red_type_select");
 var name_rule = $("#comment");
 var action = $("#formSelectAction");
 var ipAddrInput = $("#ipaddr");
@@ -11,12 +12,15 @@ var portStart = $("#portStart");
 var portEnd = $("#portEnd");
 var selectEntry = $("#selectEntry");
 var selectProtocol = $("#selectProtocol");
+var typeRed = $("#type_red");
 
 var btnCancelar = $("#btnCancelar");
 var btnCreate = $("#btncreate");
 
 /* Container */
 var domainContainer = $("#domainContainer");
+var redContainer = $("#redContainer");
+var redTypeContainer = $("#redTypeContainer");
 var ipContainer = $("#ipContainer");
 var portContainer = $("#portContainer");
 var protocolContainer = $("#protocolContainer");
@@ -60,12 +64,13 @@ $(document).ready(function () {
   /* Ocultar campos iniciales */
   domainContainer.css("display", "none");
   contentContainer.css("display", "none");
+  redTypeContainer.css("display", "none");
+  redContainer.css("display", "none");
 
   ipAddrInput.prop("disabled", true);
   selectPortRange.prop("disabled", true);
   portStart.prop("disabled", true);
   portEnd.prop("disabled", true);
-  selectEntry.prop("disabled", true);
   selectProtocol.prop("disabled", true);
   port.prop("disabled", true);
 
@@ -106,11 +111,11 @@ $(document).ready(function () {
     });
     cleanDisabledSelect({
       selectPortRange: selectPortRange,
-      selectEntry: selectEntry,
       selectProtocol: selectProtocol,
     });
     cleanDisabledMultiselect({
       content: content,
+      typeRed: typeRed,
     });
     ocultarCampos({
       domainContainer: domainContainer,
@@ -122,21 +127,21 @@ $(document).ready(function () {
       initPortContainer: initPortContainer,
       endPortContainer: endPortContainer,
       protocolContainer: protocolContainer,
+      redTypeContainer: redTypeContainer,
+      redContainer: redContainer,
     });
 
     var selectedOption = selectRegla.val();
     if (selectedOption === "direccion ip") {
       ipAddrInput.prop("disabled", false);
-      selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);
 
-      ipContainer.css("display", "block");
+      redTypeContainer.css("display", "block");
       protocolContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", false);
     } else if (selectedOption === "puerto") {
       selectPortRange.prop("disabled", false);
-      selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);
       port.prop("disabled", false);
 
@@ -153,18 +158,16 @@ $(document).ready(function () {
       // $("#selectEntry option[value='in']").prop("disabled", true);
     } else if (selectedOption === "direccion ip y puerto") {
       ipAddrInput.prop("disabled", false);
-      selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);
       port.prop("disabled", false);
 
-      ipContainer.css("display", "block");
+      redTypeContainer.css("display", "block");
       portContainer.css("display", "block");
       protocolContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", false);
     } else if (selectedOption === "dominio") {
       domain.prop("disabled", false);
-      selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);
       port.prop("disabled", false);
 
@@ -172,7 +175,6 @@ $(document).ready(function () {
 
       $("#selectEntry option[value='in']").prop("disabled", true);
     } else if (selectedOption === "contenido") {
-      selectEntry.prop("disabled", false);
       selectProtocol.prop("disabled", false);
       contentContainer.css("display", "block");
 
@@ -211,6 +213,30 @@ $(document).ready(function () {
     }
   });
 
+  selectTypeRed.on("change", function () {
+    cleanDisabledInput({
+      ipAddrInput: ipAddrInput,
+    });
+    cleanDisabledMultiselect({
+      typeRed: typeRed,
+    });
+    ocultarCampos({
+      ipContainer: ipContainer,
+      redContainer: redContainer,
+    });
+
+    var selectedTypeOption = selectTypeRed.val();
+    if (selectedTypeOption === "red_local") {
+      typeRed.prop("disabled", false);
+
+      redContainer.css("display", "block");
+    } else if (selectedTypeOption === "red_externa") {
+      ipAddrInput.prop("disabled", false);
+
+      ipContainer.css("display", "block");
+    }
+  });
+
   $tablesFirewall.bootstrapTable({});
 
   $("#formFirewall").submit(function (event) {
@@ -223,6 +249,16 @@ $(document).ready(function () {
       mostrarAlerta(ipAddrInput, "El campo de dirección IP es requerido.") ||
       mostrarAlerta(selectEntry, "El campo de entrada es requerido.") ||
       mostrarAlerta(domain, "El campo de dominio es requerido") ||
+      validarSelectContainer(
+        redTypeContainer,
+        selectTypeRed,
+        "Seleccione que tipo de red se establecera"
+      ) ||
+      validarSelectContainer(
+        redContainer,
+        typeRed,
+        "Seleccione una red para crear la regla"
+      ) ||
       validarSelectContainer(
         contentContainer,
         content,
@@ -368,11 +404,21 @@ $(document).ready(function () {
     } else {
       var ip_regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
       if (/:/.test(data_rule)) {
-        data_rule_str = data_rule.split(":");
-        data_ip = data_rule_str[0];
-        data_port = data_rule_str[1];
-        ipAddrInputEdit.val(data_ip);
-        portEdit.val(data_port);
+        let data_rule_str = data_rule.split(":");
+        if (data_rule_str.length > 6) {
+          // Join the first 6 parts as MAC address
+          let data_mac = data_rule_str.slice(0, 6).join(":");
+          // Join the remaining parts as the port
+          let data_port = data_rule_str.slice(6).join(":");
+          ipAddrInputEdit.val(data_mac);
+          portEdit.val(data_port);
+        } else {
+          data_rule_str = data_rule.split(":");
+          data_ip = data_rule_str[0];
+          data_port = data_rule_str[1];
+          ipAddrInputEdit.val(data_ip);
+          portEdit.val(data_port);
+        }
       } else if (ip_regex.test(data_rule)) {
         ipAddrInputEdit.val(data_rule);
       } else {
@@ -483,10 +529,12 @@ function limpiarFormulario() {
   selectPortRange.prop("disabled", true);
   portStart.prop("disabled", true);
   portEnd.prop("disabled", true);
-  selectEntry.prop("disabled", true);
   selectProtocol.prop("disabled", true);
   port.prop("disabled", true);
+
+  redTypeContainer.css("display", "none");
   domainContainer.css("display", "none");
+  contentContainer.css("display", "none");
 }
 
 function formatoDireccionIP(input) {
