@@ -31,7 +31,7 @@ def configurar_reglas_basicas():
         # Base de datos
         subprocess.run(
             shlex.split(
-                "/sbin/ufw allow out to 192.168.0.115 port 3306 comment 'Acceso a base de datos'"
+                "/sbin/ufw allow out to 192.168.100.43 port 3306 comment 'Acceso a base de datos'"
             )
         )
 
@@ -42,12 +42,12 @@ def configurar_reglas_basicas():
             "allow out 443 comment 'Puerto de comunicacion HTTPS'",
             "allow out 53 comment 'Puerto de comunicacion DNS'",
             "allow out 8092 comment 'Puerto para facturacion'",
-            "allow out to any port 8085 comment 'Puerto para recibir respuesta de SIGCENTER'",
-            "allow out to any port 18087 comment 'Puerto para uso de API WhatsApp'",
-            "allow out to any port 4080 comment 'Puerto para uso de firma electronica'",
+            "allow out 8085 comment 'Puerto para recibir respuesta de SIGCENTER'",
+            "allow out 18087 comment 'Puerto para uso de API WhatsApp'",
+            "allow out 4080 comment 'Puerto para uso de firma electronica'",
             # Conexion ssh
             "allow from 186.101.189.104 to any port 3000 comment 'Acceso mediante ssh a Intelho'",
-            "allow from 179.49.52.49 to any port 3000 comment 'Acceso mediante ssh a John'",
+            "allow from 192.168.100.0/24 to any port 3000 comment 'Acceso mediante ssh local'",
             "allow from 45.164.64.138 to any port 3000 comment 'Acceso mediante ssh a Bryan'",
             "allow from 157.100.89.95 to any port 3000 comment 'Acceso mediante ssh a Michael'",
             # Conexion base de datos

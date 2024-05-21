@@ -3,10 +3,10 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    MYSQL_HOST = "192.168.0.115"
-    MYSQL_USER = "root"
-    MYSQL_PASSWORD = ""
-    MYSQL_DB = "sigcenter"
+    MYSQL_HOST = "192.168.100.43"
+    MYSQL_USER = "tecnico"
+    MYSQL_PASSWORD = "IntelHome123"
+    MYSQL_DB = "SIG_CENTER"
     MYSQL_PORT = 3306
 
 
