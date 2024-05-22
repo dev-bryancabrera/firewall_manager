@@ -1,4 +1,4 @@
-from flask import Response, redirect, render_template, jsonify, request, url_for
+from flask import redirect, render_template, jsonify, request, url_for
 
 # from scapy.all import sniff, IP, TCP
 from flask_login import logout_user, login_required
@@ -158,21 +158,17 @@ def configurar_rutas(app, login_manager_app):
             command_id = request.args.get("command_id")
             command_filter = request.args.get("command_filter")
 
-            return Response(
-                start_capture(
-                    command_id,
-                    command_filter,
-                ),
-                content_type="text/event-stream",
+            return start_capture(
+                command_id,
+                command_filter,
             )
-
         except Exception as e:
             # Manejar cualquier error que pueda ocurrir durante la captura
             return f"Error al capturar los paquetes: {e}"
 
     @app.route("/pre_start_capture", methods=["GET"])
     def pre_packet_capture():
-        return Response(pre_start_capture(), content_type="text/event-stream")
+        return pre_start_capture()
 
     # Definir apertura de conexiones
     @app.route("/add_rule", methods=["POST"])

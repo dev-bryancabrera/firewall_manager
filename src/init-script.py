@@ -38,6 +38,7 @@ def configurar_reglas_basicas():
         reglas = [
             "allow 4845 comment 'Puerto del sistema firewall'",
             "allow 8085 comment 'Puerto del sistema SIGCENTER'",
+            "allow 8092 comment 'Puerto de entrada para facturacion'",
             "allow out 80 comment 'Puerto de comunicacion HTTP'",
             "allow out 443 comment 'Puerto de comunicacion HTTPS'",
             "allow out 53 comment 'Puerto de comunicacion DNS'",
@@ -76,12 +77,11 @@ def guardar_reglas_basicas():
     # Crear tablas
     createTable.createTables()
     fecha_creacion = datetime.now()
-    rule_type = "predefinida"
 
     firewall = Firewall(
         0,
         "Reglas Predeterminadas",
-        rule_type,
+        "predefinida",
         fecha_creacion,
         1,
         2,

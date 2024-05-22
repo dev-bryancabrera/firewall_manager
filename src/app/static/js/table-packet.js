@@ -258,7 +258,7 @@ function cargarDatosTabla() {
   }
 }
 
-$("#btnBackFilter").click(function () {
+btnBackFilter.click(function () {
   guardarDatosTabla();
   window.location.href = baseUrl + "/traffic-filter";
 });
@@ -281,26 +281,37 @@ function loadPacketFilter() {
       btnPausePlayReporte.prop("disabled", false);
     }
 
-    const packetInfo = packetData.split(" ");
-    const time = packetInfo[0] + " " + packetInfo[1];
-    const src_ip = packetInfo[2].split(":")[0];
-    const src_port = packetInfo[2].split(":")[1];
-    const dst_ip = packetInfo[4].split(":")[0];
-    const dst_port = packetInfo[4].split(":")[1];
-    const protocol = packetInfo[5];
-    const info = packetInfo.slice(6).join(" ");
+    if (packetData.includes("ERROR: ")) {
+      console.log("se cerror");
+      eventSource.close();
+      eventSource = null;
 
-    const row = {
-      time: time,
-      src_ip: src_ip,
-      src_port: src_port,
-      dst_ip: dst_ip,
-      dst_port: dst_port,
-      protocol: protocol,
-      info: info,
-    };
+      $("#play-icon").show();
+      $("#pause-icon").hide();
+      btnGuardarReporte.prop("disabled", false);
+      btnBackFilter.prop("disabled", false);
+    } else {
+      const packetInfo = packetData.split(" ");
+      const time = packetInfo[0] + " " + packetInfo[1];
+      const src_ip = packetInfo[2].split(":")[0];
+      const src_port = packetInfo[2].split(":")[1];
+      const dst_ip = packetInfo[4].split(":")[0];
+      const dst_port = packetInfo[4].split(":")[1];
+      const protocol = packetInfo[5];
+      const info = packetInfo.slice(6).join(" ");
 
-    $packetTable.bootstrapTable("append", row);
+      const row = {
+        time: time,
+        src_ip: src_ip,
+        src_port: src_port,
+        dst_ip: dst_ip,
+        dst_port: dst_port,
+        protocol: protocol,
+        info: info,
+      };
+
+      $packetTable.bootstrapTable("append", row);
+    }
   };
 }
 
@@ -364,7 +375,7 @@ function stopPlayData() {
     $("#play-icon").hide();
     $("#pause-icon").show();
     if (load_data) {
-      loadData();
+      console.log("alfo esta de hacer ");
     } else {
       capturaActiva = true; // Reactivar la captura
       preLoadData();

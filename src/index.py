@@ -16,11 +16,11 @@ login_manager_app = LoginManager(app)
 
 configurar_rutas(app, login_manager_app)
 
-file_path = "/var/fi/iptables/rules.v4"
+file_path = "/home/firewall/iptables/rules.v4"
 
 # Verificar si el archivo existe
 if os.path.exists(file_path):
-    with open("/home/kali/iptables/rules.v4", "r") as restore:
+    with open("/home/firewall/iptables/rules.v4", "r") as restore:
         subprocess.run(["/sbin/iptables-restore"], stdin=restore)
 
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from io import BytesIO
 
 import shlex
-from flask import flash, jsonify
+from flask import Response, flash, jsonify
 from flask_login import current_user, login_user
 import pandas as pd
 
@@ -731,7 +731,7 @@ def iptables_rules_matched(salida_iptables, name_iptable, direccion):
 
 
 def save_iptables_rules():
-    with open("/home/kali/iptables/rules.v4", "w") as save:
+    with open("/home/firewall/iptables/rules.v4", "w") as save:
         subprocess.run(["/sbin/iptables-save"], stdout=save)
 
 
@@ -1825,12 +1825,12 @@ def start_capture(
     command_filter,
 ):
     # Comando arp-scan para escanear la red
-    command = "/sbin/arp-scan -l"
-    process = subprocess.Popen(
-        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    command_networks = "/sbin/arp-scan -l"
+    process_networks = subprocess.Popen(
+        command_networks, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
 
-    stdout, _ = process.communicate()
+    stdout, _ = process_networks.communicate()
 
     # Decodificar la salida del comando arp-scan de bytes a texto
     output = stdout.decode()
@@ -1839,15 +1839,7 @@ def start_capture(
         output.strip().split("\n")[0].split(",")[0].split("Interface:")[1].strip()
     )
 
-    base_command = [
-        "/sbin/tcpdump",
-        # "-n"   # Muestra el trafico los host en formato de ip y no de dominio
-        "-l",
-        "-c",
-        "80",
-        "-i",
-        interface,
-    ]
+    base_command = f"/bin/tcpdump -l -i {interface}"
 
     default_filter = (
         "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
@@ -1887,31 +1879,116 @@ def start_capture(
         else:
             content_command, _ = process_content(consumos, "host")
 
-        custom_values = [
-            content_command,
-        ]
+        custom_values = content_command
 
     else:
-        custom_values = [
-            custom_command,
-        ]
+        custom_values = custom_command
 
-    end_command = [
-        "-tttt",
-        "-q",
-        "-v",
-    ]
+    end_command = "-tttt -q -v"
 
     # Concatenar las dos partes del comando
-    command = base_command + custom_values + end_command
+    command = f"{base_command} '{custom_values}' {end_command}"
 
     print("Comando > ", command)
 
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+        shell=True,
     )
 
-    packet_count = 0
+    def generate():
+        packet_count = 0
+
+        for stdout_line in iter(process.stdout.readline, ""):
+            if packet_count >= 20:
+                break
+            if "ARP" in stdout_line:
+                arp_info = stdout_line.strip().split(",")
+                arp_parts = arp_info[0].split(" ")
+                time = " ".join(arp_parts[:2])
+                time_formatted = datetime.strptime(
+                    time, "%Y-%m-%d %H:%M:%S.%f"
+                ).strftime("%Y-%m-%d %H:%M:%S")
+                src_ip_domain = ""
+                src_port = ""
+                dst_ip_domain = ""
+                dst_port = ""
+                protocol = ""
+                info = " ".join(arp_info[2:])
+                yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
+            else:
+                line2 = process.stdout.readline().strip()
+
+                if not line2:
+                    break
+
+                combined_line = stdout_line.strip() + " " + line2.strip()
+
+                parts = []
+                parenthesis_count = 0
+                current_part = ""
+
+                for char in combined_line:
+                    if char == "(":
+                        parenthesis_count += 1
+                    elif char == ")":
+                        parenthesis_count -= 1
+
+                    if parenthesis_count > 0:
+                        current_part += char
+                    else:
+                        if char == " " and current_part:
+                            parts.append(current_part)
+                            current_part = ""
+                        else:
+                            current_part += char
+
+                if current_part:
+                    parts.append(current_part)
+
+                if len(parts) >= 6:
+                    time = " ".join(parts[:2])
+                    time_formatted = datetime.strptime(
+                        time, "%Y-%m-%d %H:%M:%S.%f"
+                    ).strftime("%Y-%m-%d %H:%M:%S")
+
+                    info = parts[3]
+
+                    info_parts = parts[3].rsplit(",", 6)
+                    info_protocol = info_parts[5].rsplit(" ", 2)
+                    protocol = info_protocol[1]
+
+                    src_parts = parts[4].rsplit(".", 1)
+                    src_ip_domain = src_parts[0]
+                    src_port = src_parts[1] if len(src_parts) > 1 else None
+
+                    dst_parts = parts[6].rsplit(".", 1)
+                    dst_ip_domain = dst_parts[0]
+                    dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
+
+                    packet_count += 1
+
+                    yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
+
+        # Después de salir del bucle de captura, cerrar la conexión EventSource
+        yield "event: close\n\n"
+
+        process.stdout.close()
+
+        for stderr_line in iter(process.stderr.readline, ""):
+            yield f"data: ERROR: {stderr_line}\n\n"
+            
+        process.stderr.close()
+
+        process.wait()
+
+    return Response(generate(), mimetype="text/event-stream")
+
+    """ packet_count = 0
 
     for line in process.stdout:
         if packet_count >= 80:
@@ -1986,7 +2063,7 @@ def start_capture(
             yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
 
     # Después de salir del bucle de captura, cerrar la conexión EventSource
-    yield "event: close\n\n"
+    yield "event: close\n\n" """
 
 
 def save_report(nombre_reporte, filtro_monitoreo, table_data):
