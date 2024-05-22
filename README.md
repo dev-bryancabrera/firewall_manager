@@ -1,6 +1,4 @@
-# Login (Autenticación) con Python, Flask y MySQL
-
-Tutorial para autenticación de usuarios utilizando Python, Flask, flask-login y MySQL.
+# Desplegar aplicacion firewall
 
 <hr/>
 
