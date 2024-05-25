@@ -107,6 +107,14 @@ body {
   top: 2px;
 }
 
+/* Desactivar botones */
+#btnLoadReport,
+#save_report,
+#btn-play-pause,
+#btn-play-pause-modal {
+  display: none;
+}
+
 /* Formulario */
 .container-form {
   padding-top: 40px;

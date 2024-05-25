@@ -75,7 +75,12 @@
 
         <div class="table-filter-data">
           <div class="filter-data">
-            <table id="filterPacketTable" class="table">
+            <table
+              id="filterPacketTable"
+              class="table"
+              data-show-columns="true"
+              data-locale="es-ES"
+            >
               <thead>
                 <tr>
                   <th data-field="number" data-sortable="true">N°</th>
@@ -93,9 +98,9 @@
                   <th data-field="ports" data-sortable="true">Puertos</th>
                   <th data-field="protocol" data-sortable="true">Protocolo</th>
                   <th data-field="consumos" data-sortable="true">Consumos</th>
+
                   <th data-field="visualizar"></th>
                   <th data-field="delete"></th>
-                  <th data-field="clean"></th>
                 </tr>
               </thead>
 
@@ -112,11 +117,63 @@
                   <td class="protocol">{{ filtro['protocolo'] }}</td>
                   <td class="consumos">{{ filtro['consumos'] }}</td>
                   <td class="actions">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      id="btn-capture-modal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#capturarTrafico"
+                    >
+                      Capturar Trafico
+                    </button>
                     <a
                       href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
                       class="btn btn-primary"
+                      id="btn-capture"
                       >Capturar Trafico</a
                     >
+                    <!-- Modal Eliminar Filtro -->
+                    <div
+                      class="modal fade"
+                      id="capturarTrafico"
+                      tabindex="-1"
+                      aria-labelledby="confirmacionModalLabel"
+                      aria-hidden="true"
+                    >
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="confirmacionModalLabel">
+                              Captura de Paquetes
+                            </h5>
+                            <button
+                              type="button"
+                              class="btn-close"
+                              data-bs-dismiss="modal"
+                              aria-label="Cerrar"
+                            ></button>
+                          </div>
+                          <div class="modal-body">
+                            Usted tiene una captura de paquetes previamente
+                            realizada ¿Desea empezar una nueva captura o
+                            continuar con los datos de la captura anterior?
+                          </div>
+                          <div class="modal-footer">
+                            <a
+                              href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
+                              class="btn btn-success cleanDataTable"
+                              >Empezar nueva captura</a
+                            >
+                            <a
+                              href="{{ url_for('packet_monitoring', id=filtro['id'], filtro=filtro['filtro']) }}"
+                              class="btn btn-primary"
+                              id="clean-data"
+                              >Continuar con captura anterior</a
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td class="actions">
                     <button
@@ -174,16 +231,6 @@
                       </div>
                     </div>
                   </td>
-                  <td class="actions">
-                    <button
-                      type="button"
-                      class="btn btn-success cleanDataTable"
-                      id="cleanDataTab"
-                      data-bs-toggle="modal"
-                    >
-                      Limpiar Tráfico Anterior
-                    </button>
-                  </td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -227,7 +274,7 @@
                 </div>
 
                 <div class="form-wrap">
-                  <form class="form-content" id="formPacket">
+                  <form class="form-content" id="formFilter">
                     <input
                       type="hidden"
                       name="csrf_token"
@@ -865,7 +912,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script src="https://unpkg.com/tableexport.jquery.plugin/tableExport.min.js"></script>
     <script src="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>

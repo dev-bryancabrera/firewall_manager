@@ -16,6 +16,16 @@ $(document).ready(function () {
   filterName.removeData("tagsinput");
   var selectFilterType = $("#selectFilterType");
 
+  // Botones para captura de trafico
+  var btnCaptureModal = $("#btn-capture-modal");
+  var btnCapture = $("#btn-capture");
+
+  if (sessionStorage.getItem("datosTabla")) {
+    btnCaptureModal.css("display", "block");
+  } else {
+    btnCapture.css("display", "block");
+  }
+
   var filterIp = $("#selectFilterIp");
   var filterDomain = $("#selectFilterDomain");
   var filterContent = $("#selectFilterContent");
@@ -586,68 +596,21 @@ $(document).ready(function () {
     }
   });
 
-  $packetTable.bootstrapTable({
-    showColumns: true,
-    locale: "es-ES",
-    columns: [
-      {
-        field: "number",
-        title: "N°",
-      },
-      {
-        field: "name",
-        title: "Nombre de Filtro",
-      },
-      {
-        field: "type",
-        title: "Tipo de Filtro",
-      },
-      {
-        field: "created_date",
-        title: "Fecha de Creacion",
-      },
-      {
-        field: "ips",
-        title: "Direcciones",
-      },
-      {
-        field: "protocolsRed",
-        title: "Protocolo de Red",
-      },
-      {
-        field: "ports",
-        title: "Puertos",
-      },
-      {
-        field: "protocol",
-        title: "Protocolo",
-      },
-      {
-        field: "consumos",
-        title: "Consumos",
-      },
-      {
-        field: "visualizar",
-        title: "",
-      },
-      {
-        field: "delete",
-        title: "",
-      },
-      {
-        field: "clean",
-        title: "",
-      },
-    ],
+  $packetTable.bootstrapTable({});
+
+  $("#clean-data").click(function () {
+    sessionStorage.removeItem("countPackets");
   });
 
   $(".cleanDataTable").click(function () {
     sessionStorage.removeItem("datosTabla");
+    sessionStorage.removeItem("countPackets");
+
     alertMessage("Se han limpiado los datos de tráfico correctamente.");
   });
 
   /* Aplicar el fitro para los paquetes */
-  $("#formPacket").submit(function (event) {
+  $("#formFilter").submit(function (event) {
     event.preventDefault();
 
     if (
@@ -731,7 +694,6 @@ $(document).ready(function () {
       url: "/save_filter",
       data: formData,
       success: function (response) {
-        //location.reload();
         //$("#modal-filter").find(".close").trigger("click");
         alertMessage(response.message);
       },
@@ -850,51 +812,6 @@ $(".delete-btn").click(function () {
   $("#ruleNumberInput").val(filterId);
 });
 
-function stopPlayData() {
-  var isPaused = $("#pause-icon").is(":visible");
-
-  if (eventSource) {
-    btnGuardarReporte.prop("disabled", false);
-    if (isPaused) {
-      capturaActiva = false; // Desactivar la captura
-      pageLoaded = false;
-      eventSource.close(); // Cierra la conexión del EventSource
-      eventSource = null; // Limpia la variable eventSource
-      $("#play-icon").show();
-      $("#pause-icon").hide();
-    }
-  } else {
-    btnGuardarReporte.prop("disabled", true);
-
-    $("#play-icon").hide();
-    $("#pause-icon").show();
-    if (load_data) {
-      loadData();
-    } else {
-      capturaActiva = true; // Reactivar la captura
-      preLoadData();
-    }
-    capturaPausada = false;
-  }
-}
-
-async function resetData() {
-  btnPausePlayReporte.prop("disabled", true);
-  if (!eventSource) {
-    capturaActiva = true;
-  }
-  load_data = true;
-  var $packetTable = $("#packetTable");
-  $packetTable.bootstrapTable("removeAll");
-}
-
 function formatoNombreRegla(input) {
   input.value = input.value.replace(/-/g, "");
 }
-
-$("#btn-clean").on("click", function () {
-  $("#play-icon").hide();
-  $("#pause-icon").show();
-  load_data = false;
-  resetData();
-});

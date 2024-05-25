@@ -1,24 +1,24 @@
 let eventSource = null;
-let capturaPausada = false;
-let pageLoaded = false;
-let load_data = false;
-var capturaActiva = true;
 
 /* Boton guardar Reporte */
 var btnGuardarReporte = $("#save_report");
 var btnPausePlayReporte = $("#btn-play-pause");
+var btnPlayPauseModal = $("#btn-play-pause-modal");
 var btnSaveReportData = $("#btn_save_report");
 var nombreReporte = $("#nombreReporte");
 var btnLoadReport = $("#btnLoadReport");
 var btnBackFilter = $("#btnBackFilter");
 var $packetTable = $("#packetTable");
 
+// Botones play/pause paquetes
+
 var confirmDeleteModal = $("#confirmarEliminar");
 var btnConfirmDeleteReport = $("#deleteReportConfirm");
 
 var idReport = $("#reporte_id");
+var cantidadPaquetes = $("#cantidadPaquetes");
 
-var loadDataSaved = false;
+var loadDataSaved = true;
 
 /* Obtener el parametro de filtro para cargar los datos */
 var url = window.location.pathname; // Obtener la parte de la ruta de la URL
@@ -30,17 +30,17 @@ var commandEncodedId = parts[parts.length - 2]; // Obtener el valor del parámet
 var commandId = decodeURIComponent(commandEncodedId); // Decodificar el valor
 
 $(document).ready(function () {
-  btnLoadReport.css("display", "none");
-  btnGuardarReporte.css("display", "none");
-  btnPausePlayReporte.css("display", "none");
-  btnBackFilter.prop("disabled", true);
-
   if (parts.length == 4) {
     btnGuardarReporte.css("display", "block");
-    btnPausePlayReporte.css("display", "block");
+
+    if (sessionStorage.getItem("countPackets")) {
+      btnPausePlayReporte.css("display", "block");
+    } else {
+      btnPlayPauseModal.css("display", "block");
+    }
+
     cargarDatosTabla();
   } else {
-    loadDataSaved = true;
     btnLoadReport.css("display", "block");
     btnBackFilter.prop("disabled", false);
   }
@@ -93,7 +93,6 @@ $(document).ready(function () {
 
   /* Guardar los Reportes */
   btnSaveReportData.on("click", function () {
-    console.log(nombreReporte);
     if (mostrarAlerta(nombreReporte, "Debe asignar un nombre al reporte")) {
       return;
     }
@@ -130,6 +129,7 @@ $(document).ready(function () {
         // Redirigir a la ruta base
         window.location.href = baseUrl + "/traffic-filter";
         sessionStorage.removeItem("datosTabla");
+        sessionStorage.removeItem("countPackets");
       },
       error: function (xhr) {
         var errorMessage = xhr.responseText;
@@ -184,11 +184,6 @@ function loadDataReport(registro_id) {
       });
       btnGuardarReporte.prop("disabled", true);
       btnPausePlayReporte.prop("disabled", true);
-      capturaActiva = false;
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-      }
     })
     .catch((error) => {
       console.error("Hubo un problema al realizar la accion:", error);
@@ -260,13 +255,22 @@ function cargarDatosTabla() {
 
 btnBackFilter.click(function () {
   guardarDatosTabla();
+  sessionStorage.removeItem("countPackets");
+
   window.location.href = baseUrl + "/traffic-filter";
 });
 
 function loadPacketFilter() {
-  const urlWithFilter = `/packetdata?command_id=${commandId}&command_filter=${commandFilter}`;
+  var paquetes = "";
 
-  load_data = true;
+  if (cantidadPaquetes.val() === "") {
+    paquetes = sessionStorage.getItem("countPackets");
+  } else {
+    paquetes = cantidadPaquetes.val();
+  }
+
+  const urlWithFilter = `/packetdata?command_id=${commandId}&command_filter=${commandFilter}&count_packets=${paquetes}`;
+
   eventSource = new EventSource(urlWithFilter);
 
   btnPausePlayReporte.prop("disabled", true);
@@ -279,10 +283,11 @@ function loadPacketFilter() {
       $("#pause-icon").show();
 
       btnPausePlayReporte.prop("disabled", false);
+      btnBackFilter.prop("disabled", true);
+      loadDataSaved = false;
     }
 
     if (packetData.includes("ERROR: ")) {
-      console.log("se cerror");
       eventSource.close();
       eventSource = null;
 
@@ -316,88 +321,87 @@ function loadPacketFilter() {
 }
 
 function preLoadData() {
-  if (!pageLoaded) {
-    pageLoaded = true;
-    console.log("Cargando datos por primera vez...");
-    eventSource = new EventSource("/pre_start_capture");
+  console.log("Cargando datos por primera vez...");
+  eventSource = new EventSource("/pre_start_capture");
 
-    eventSource.onmessage = function (event) {
-      const packetData = event.data;
+  eventSource.onmessage = function (event) {
+    const packetData = event.data;
 
-      if (packetData.length !== 0) {
-        btnPausePlayReporte.prop("disabled", false);
-      }
+    if (packetData.length !== 0) {
+      btnPausePlayReporte.prop("disabled", false);
+    }
 
-      const packetInfo = packetData.split(" ");
-      const time = packetInfo[0] + " " + packetInfo[1];
-      const src_ip = packetInfo[2].split(":")[0];
-      const src_port = packetInfo[2].split(":")[1];
-      const dst_ip = packetInfo[4].split(":")[0];
-      const dst_port = packetInfo[4].split(":")[1];
-      const protocol = packetInfo[5];
-      const info = packetInfo.slice(6).join(" ");
+    const packetInfo = packetData.split(" ");
+    const time = packetInfo[0] + " " + packetInfo[1];
+    const src_ip = packetInfo[2].split(":")[0];
+    const src_port = packetInfo[2].split(":")[1];
+    const dst_ip = packetInfo[4].split(":")[0];
+    const dst_port = packetInfo[4].split(":")[1];
+    const protocol = packetInfo[5];
+    const info = packetInfo.slice(6).join(" ");
 
-      const row = {
-        time: time,
-        src_ip: src_ip,
-        src_port: src_port,
-        dst_ip: dst_ip,
-        dst_port: dst_port,
-        protocol: protocol,
-        info: info,
-      };
-
-      $packetTable.bootstrapTable("append", row);
+    const row = {
+      time: time,
+      src_ip: src_ip,
+      src_port: src_port,
+      dst_ip: dst_ip,
+      dst_port: dst_port,
+      protocol: protocol,
+      info: info,
     };
-  }
+
+    $packetTable.bootstrapTable("append", row);
+  };
 }
 
 function stopPlayData() {
-  var isPaused = $("#pause-icon").is(":visible");
+  if (!sessionStorage.getItem("countPackets")) {
+    sessionStorage.setItem("countPackets", cantidadPaquetes.val());
+  }
+
+  $("#count-packet").find(".close").trigger("click");
+
+  btnPlayPauseModal.css("display", "none");
+  btnPausePlayReporte.css("display", "block");
 
   if (eventSource) {
     btnGuardarReporte.prop("disabled", false);
     btnBackFilter.prop("disabled", false);
-    if (isPaused) {
-      capturaActiva = false; // Desactivar la captura
-      pageLoaded = false;
-      eventSource.close(); // Cierra la conexión del EventSource
-      eventSource = null; // Limpia la variable eventSource
-      $("#play-icon").show();
-      $("#pause-icon").hide();
-    }
+
+    eventSource.close(); // Cierra la conexión del EventSource
+    eventSource = null; // Limpia la variable eventSource
+    $("#play-icon").show();
+    $("#pause-icon").hide();
   } else {
     loadPacketFilter();
 
     btnGuardarReporte.prop("disabled", true);
-    btnBackFilter.prop("disabled", true);
 
     $("#play-icon").hide();
     $("#pause-icon").show();
-    if (load_data) {
-      console.log("alfo esta de hacer ");
-    } else {
-      capturaActiva = true; // Reactivar la captura
-      preLoadData();
-    }
-    capturaPausada = false;
   }
 }
 
 async function resetData() {
   btnPausePlayReporte.prop("disabled", false);
   sessionStorage.removeItem("datosTabla");
-  /* if (!eventSource) {
-    capturaActiva = true;
-    preLoadData();
-  } */
-  load_data = true;
+  sessionStorage.removeItem("countPackets");
+
   $packetTable.bootstrapTable("removeAll");
 }
 
 $("#btn-clean").on("click", function () {
   $("#pause-icon").hide();
   $("#play-icon").show();
-  load_data = false;
   resetData();
+});
+
+window.addEventListener("beforeunload", function (event) {
+  // Realiza la acción deseada aquí
+  // Por ejemplo, puedes hacer una llamada a una API para guardar el estado o registrar el evento
+  console.log("abandono ilegal");
+
+  // Si deseas mostrar un mensaje de confirmación al usuario antes de salir (no es garantizado en todos los navegadores)
+  // event.preventDefault();
+  // event.returnValue = 'Are you sure you want to leave?';
 });

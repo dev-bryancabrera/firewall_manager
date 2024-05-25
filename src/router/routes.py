@@ -1,6 +1,5 @@
 from flask import redirect, render_template, jsonify, request, url_for
 
-# from scapy.all import sniff, IP, TCP
 from flask_login import logout_user, login_required
 
 # Models
@@ -157,11 +156,9 @@ def configurar_rutas(app, login_manager_app):
         try:
             command_id = request.args.get("command_id")
             command_filter = request.args.get("command_filter")
+            count_packets = request.args.get("count_packets")
 
-            return start_capture(
-                command_id,
-                command_filter,
-            )
+            return start_capture(command_id, command_filter, count_packets)
         except Exception as e:
             # Manejar cualquier error que pueda ocurrir durante la captura
             return f"Error al capturar los paquetes: {e}"

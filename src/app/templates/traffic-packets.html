@@ -18,7 +18,7 @@
     />
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/tables.css') }}"
+      href="{{ url_for('static', filename='css/traffic-packets.css') }}"
     />
     <title>Trafico de Paquetes</title>
   </head>
@@ -57,6 +57,17 @@
             class="btn btn-primary"
             id="btn-play-pause"
             onclick="stopPlayData()"
+          >
+            <i id="play-icon" class="fas fa-play"></i>
+            <i id="pause-icon" class="fas fa-pause" style="display: none"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="btn-play-pause-modal"
+            data-toggle="modal"
+            data-target="#count-packet"
           >
             <i id="play-icon" class="fas fa-play"></i>
             <i id="pause-icon" class="fas fa-pause" style="display: none"></i>
@@ -206,6 +217,69 @@
                 data-dismiss="modal"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Count Packets -->
+      <div
+        class="modal fade"
+        id="count-packet"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="countModalPackets"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="reportModalName">
+                Cantidad de Paquetes
+              </h5>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <span
+                  >Ingrese la cantidad de paquetes que desea capturar, tenga en
+                  cuenta que ingresar un valor muy alto puede ocacionar
+                  inconvenientes en el servidor o pagina web</span
+                >
+              </div>
+              <div class="form-group">
+                <label for="nombreReporte">Cantidad de Paquetes</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="cantidad_paquetes"
+                  id="cantidadPaquetes"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="btn-star-capture"
+                onclick="stopPlayData()"
+              >
+                Capturar
               </button>
             </div>
           </div>

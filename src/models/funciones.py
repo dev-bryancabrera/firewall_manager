@@ -1820,10 +1820,7 @@ def pre_start_capture():
     yield "event: close\n\n"
 
 
-def start_capture(
-    command_id,
-    command_filter,
-):
+def start_capture(command_id, command_filter, count_packets):
     # Comando arp-scan para escanear la red
     command_networks = "/sbin/arp-scan -l"
     process_networks = subprocess.Popen(
@@ -1839,7 +1836,7 @@ def start_capture(
         output.strip().split("\n")[0].split(",")[0].split("Interface:")[1].strip()
     )
 
-    base_command = f"/bin/tcpdump -l -i {interface}"
+    base_command = f"/bin/tcpdump -l -c {count_packets} -i {interface}"
 
     default_filter = (
         "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
@@ -1904,7 +1901,7 @@ def start_capture(
         packet_count = 0
 
         for stdout_line in iter(process.stdout.readline, ""):
-            if packet_count >= 20:
+            if packet_count >= int(count_packets):
                 break
             if "ARP" in stdout_line:
                 arp_info = stdout_line.strip().split(",")
@@ -1981,7 +1978,7 @@ def start_capture(
 
         for stderr_line in iter(process.stderr.readline, ""):
             yield f"data: ERROR: {stderr_line}\n\n"
-            
+
         process.stderr.close()
 
         process.wait()

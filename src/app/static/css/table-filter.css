@@ -37,6 +37,11 @@ body {
   margin-right: 10px;
 }
 
+#btn-capture-modal,
+#btn-capture {
+  display: none;
+}
+
 .container-title {
   padding: 25px;
 }
