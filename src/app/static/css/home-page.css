@@ -14,7 +14,6 @@
 body {
   background-color: var(--background) !important;
   width: 100% !important;
-  height: 100% !important;
 }
 
 .home-container {
@@ -32,6 +31,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 35px;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 .card {

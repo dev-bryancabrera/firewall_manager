@@ -6,6 +6,12 @@ from flask_login import logout_user, login_required
 from models.modelUser import modelUser
 
 from models.funciones import (
+    create_automation,
+    delete_community,
+    get_plataforms,
+    get_plataforms_domain,
+    load_automation,
+    load_comunnity,
     obtener_reglas_ufw,
     obtener_reglas_ufw_contenido,
     delete_rule,
@@ -13,6 +19,7 @@ from models.funciones import (
     allow_connections,
     allow_connections_detail,
     validar_ingreso,
+    create_community,
     start_capture,
     pre_start_capture,
     deactivate_activate_rule,
@@ -63,6 +70,39 @@ def configurar_rutas(app, login_manager_app):
     @login_required
     def home_page():
         return render_template("home-page.html")
+
+    @app.route("/community_management")
+    @login_required
+    def community_management():
+        comunidades = load_comunnity()
+        devices = scan_network()
+        return render_template(
+            "community-management.html", devices=devices, comunidades=comunidades
+        )
+
+    @app.route("/firewall_automation/<id>")
+    @login_required
+    def firewall_automation_id(id):
+        automatizaciones = load_automation()
+        plataformas = get_plataforms()
+
+        return render_template(
+            "firewall-automation.html",
+            plataformas=plataformas,
+            automatizaciones=automatizaciones,
+        )
+
+    @app.route("/firewall_automation")
+    @login_required
+    def firewall_automation():
+        automatizaciones = load_comunnity()
+        plataformas = get_plataforms()
+
+        return render_template(
+            "firewall-automation.html",
+            plataformas=plataformas,
+            automatizaciones=automatizaciones,
+        )
 
     @app.route("/user-manual-firewall")
     @login_required
@@ -166,6 +206,12 @@ def configurar_rutas(app, login_manager_app):
     @app.route("/pre_start_capture", methods=["GET"])
     def pre_packet_capture():
         return pre_start_capture()
+
+    @app.route("/domain_plataform", methods=["GET"])
+    def domain_plataform():
+        key = request.args.get("key_plataform")
+
+        return get_plataforms_domain(key)
 
     # Definir apertura de conexiones
     @app.route("/add_rule", methods=["POST"])
@@ -304,6 +350,54 @@ def configurar_rutas(app, login_manager_app):
         except Exception as e:
             return jsonify({"message": str(e)}), 500
 
+    @app.route("/add_community", methods=["POST"])
+    @login_required
+    def allow_add_community():
+        try:
+            community_name = request.form.get("communityName")
+            community_type = request.form.get("communityType")
+            local_ip = request.form.getlist("localIp")
+            initial_ip = request.form.get("initialIp")
+            final_ip = request.form.get("finalIp")
+
+            response = create_community(
+                community_name,
+                community_type,
+                local_ip,
+                initial_ip,
+                final_ip,
+            )
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/add_automation", methods=["POST"])
+    @login_required
+    def allow_add_automation():
+        try:
+            automation_name = request.form.get("automationName")
+            automation_type = request.form.get("automationType")
+            automation_action = request.form.get("automationAction")
+            domain = request.form.get("domain")
+            content_type = request.form.get("contentType")
+            domain_plataform = request.form.getlist("domainPlataform")
+            community_id = request.form.get("idComunnity")
+            horario = request.form.get("horario")
+
+            response = create_automation(
+                automation_name,
+                automation_type,
+                automation_action,
+                domain,
+                content_type,
+                domain_plataform,
+                community_id,
+                horario,
+            )
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
     @app.route("/save_report", methods=["POST"])
     @login_required
     def save_report_excel():
@@ -374,6 +468,19 @@ def configurar_rutas(app, login_manager_app):
 
         except Exception as e:
             return f"Error al eliminar la regla: {e}"
+
+    @app.route("/eliminar_comunidad", methods=["GET"])
+    @login_required
+    def eliminar_comunidad():
+        try:
+            id_comunidad = request.args.get("id")
+
+            delete_community(id_comunidad)
+
+            return redirect(url_for("community_management"))
+
+        except Exception as e:
+            return f"Error al eliminar la comunidad: {e}"
 
     # Eliminar una regla establecida
     @app.route("/eliminar_regla", methods=["GET"])

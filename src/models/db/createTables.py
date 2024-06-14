@@ -20,7 +20,12 @@ class createTable:
             cursor.execute(
                 "CREATE TABLE IF NOT EXISTS monitoreo_reporte (id INT AUTO_INCREMENT PRIMARY KEY, nombre_reporte VARCHAR(255), reporte LONGBLOB, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, filtro_monitoreo TEXT, user_id INT, FOREIGN KEY (user_id) REFERENCES user(id))"
             )
-
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS comunidades (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255), tipo VARCHAR(80), rango TEXT, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, estado TINYINT(1) DEFAULT 1, user_id INT, FOREIGN KEY (user_id) REFERENCES user(id))"
+            )
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS automatizacion_firewall (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255), tipo VARCHAR(80), restriccion TEXT, horario TEXT, estado TINYINT(1) DEFAULT 1, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, comunidad_id INT, user_id INT, FOREIGN KEY (comunidad_id) REFERENCES comunidades(id), FOREIGN KEY (user_id) REFERENCES user(id))"
+            )
             db.commit()
             cursor.close()
             db.close()

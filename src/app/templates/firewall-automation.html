@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include 'includes/styles-imports.html' %}
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.4.2/bootstrap-tagsinput.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/firewall-automation.css') }}"
+    />
+    <title>Automatizacion de firewall</title>
+  </head>
+  <body>
+    {% extends 'navbar.html' %} {% block content %}
+
+    <section class="automation-form-table">
+      <div class="title-automation">
+        <h1>Automatizacion de firewall</h1>
+      </div>
+      <div class="container-automation">
+        <div class="form-automation">
+          <div class="container-ssh">
+            <form class="form-content" id="form-automation">
+              <input
+                type="hidden"
+                name="csrf_token"
+                id="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+
+              <div class="top-row">
+                <div class="form-group">
+                  <label for="automation-name"
+                    >Nombre de la automatizacion</label
+                  >
+                  <input
+                    class="form-control"
+                    id="automation-name"
+                    name="automationName"
+                    placeholder="Nombre de la automatizacion"
+                  />
+                  <!-- oninput="formatoNombreRegla(this)" -->
+                </div>
+
+                <!-- AQUI MOSTRARA LA LISTA DE COMUNIDADES UNICAMENTE SI EL USUARIO ENTRA DESDE EL HOME PAGE -->
+                <div class="form-group">
+                  <label for="ip-local">Comunidades</label>
+                  <select
+                    class="selectpicker"
+                    id="contents-type"
+                    name="contentType"
+                    aria-label="content-type"
+                    data-none-selected-text="Seleccione tipo de contenido"
+                    data-live-search="true"
+                  >
+                    <option value="" disabled selected hidden>
+                      Seleccione una opción
+                    </option>
+                    {% for plataforma_key in plataformas[1] %} {% set index =
+                    loop.index - 1 %}
+                    <option value="{{ plataformas[1][index] }}">
+                      {{ plataformas[0][index] }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="selectFilterType">Tipo de restriccion</label>
+                  <select
+                    class="form-select"
+                    id="automation-type"
+                    name="automationType"
+                  >
+                    <option value="" selected disabled>Seleccionar...</option>
+                    <option value="red_local">Contenido</option>
+                    <option value="rango_red">Dominios</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="top-row">
+                <div class="form-group">
+                  <label for="selectFilterType">Accion a realizar</label>
+                  <select
+                    class="form-select"
+                    id="automation-action"
+                    name="automationAction"
+                  >
+                    <option value="" selected disabled>Seleccionar...</option>
+                    <option value="allow">Permitir</option>
+                    <option value="reject">Bloquear</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="initial-ip">Dominio</label>
+                  <input
+                    type="text"
+                    class="form-control ips"
+                    data-role="tagsinput"
+                    id="domain"
+                    name="domain"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="ip-local">Contenidos</label>
+                  <select
+                    class="selectpicker"
+                    id="content-type"
+                    name="contentType"
+                    aria-label="content-type"
+                    data-none-selected-text="Seleccione tipo de contenido"
+                    data-live-search="true"
+                  >
+                    <option value="" disabled selected hidden>
+                      Seleccione una opción
+                    </option>
+                    {% for plataforma_key in plataformas[1] %} {% set index =
+                    loop.index - 1 %}
+                    <option value="{{ plataformas[1][index] }}">
+                      {{ plataformas[0][index] }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="segundo-select"
+                    >Valores de la plataforma seleccionada</label
+                  >
+                  <select
+                    class="selectpicker"
+                    multiple
+                    id="domain-plataform"
+                    name="domainPlataform"
+                    aria-label="segundo-select"
+                    data-none-selected-text="Seleccione un valor"
+                    data-live-search="true"
+                  ></select>
+                </div>
+              </div>
+
+              <div class="top-row">
+                <div class="form-group">
+                  <label for="datepicker"
+                    >Dias aplicados a la restriccion</label
+                  >
+                  <div class="weekDays-selector">
+                    <input type="checkbox" id="weekday-mon" class="weekday" />
+                    <label for="weekday-mon">Lunes</label>
+                    <input type="checkbox" id="weekday-tue" class="weekday" />
+                    <label for="weekday-tue">Martes</label>
+                    <input type="checkbox" id="weekday-wed" class="weekday" />
+                    <label for="weekday-wed">Miercoles</label>
+                    <input type="checkbox" id="weekday-thu" class="weekday" />
+                    <label for="weekday-thu">Jueves</label>
+                    <input type="checkbox" id="weekday-fri" class="weekday" />
+                    <label for="weekday-fri">Viernes</label>
+                    <input type="checkbox" id="weekday-sat" class="weekday" />
+                    <label for="weekday-sat">Sabado</label>
+                    <input type="checkbox" id="weekday-sun" class="weekday" />
+                    <label for="weekday-sun">Domingo</label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="timepicker">Horas y minutos de inicio</label>
+                  <div id="timepicker" class="input-group timepicker">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="initial-time"
+                      readonly
+                    />
+                    <div class="input-group-append input-group-addon">
+                      <span class="input-group-text">
+                        <i class="fa fa-clock" id="timepickerIcon"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="timepicker"
+                    >Horas y minutos de finalizacion</label
+                  >
+                  <div id="timepicker" class="input-group timepicker">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="final-time"
+                      readonly
+                    />
+                    <div class="input-group-append input-group-addon">
+                      <span class="input-group-text">
+                        <i class="fa fa-clock" id="timepickerIcon"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="top-row">
+                <div class="form-group">
+                  <button
+                    type="submit"
+                    id="btn-create-comunnity"
+                    class="btn btn-primary"
+                  >
+                    Crear Automatizacion
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="table">
+          <div class="subtitle-tables">
+            <h2>Comunidades establecidas</h2>
+          </div>
+          <table
+            id="automation-table"
+            class="table"
+            data-locale="es-ES"
+            data-show-columns="true"
+            data-locale="es-ES"
+          >
+            <thead>
+              <tr>
+                <th data-field="number" data-sortable="true">N° Registro</th>
+                <th data-field="name" data-sortable="true">
+                  Nombre de Comunidad
+                </th>
+                <th data-field="type_rule" data-sortable="true">
+                  Tipo de Comunidad
+                </th>
+                <th data-field="created_date" data-sortable="true">
+                  Fecha de Creacion
+                </th>
+                <th data-field="domain" data-sortable="true">Rango de Red</th>
+                <th data-field="action" data-sortable="true">Estado</th>
+                <th data-field="en/dis"></th>
+                <th data-field="delete"></th>
+                <th data-field="see"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for comunidad in comunidades %}
+              <tr>
+                <td class="numero">{{ loop.index }}</td>
+                <td class="nombre">{{ comunidad[1] }}</td>
+                <td class="tipo_regla">{{ comunidad[2] }}</td>
+                <td class="fecha_creacion">{{ comunidad[4] }}</td>
+                <td class="rango">{{ comunidad[3] }}</td>
+                <td class="estado">{{ comunidad[5] }}</td>
+                <td>
+                  <button
+                    id="btn-regla-{{ comunidad['id_regla'] }}"
+                    class="btn {{ 'btn-success' if comunidad['estado'] == 1 else 'btn-secondary' }}"
+                  >
+                    {{ 'Desactivar' if comunidad['estado'] == 1 else 'Activar'
+                    }}
+                  </button>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    id="btn-delete-rule"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmarEliminar"
+                    data-regla-id="{{ comunidad['id_regla'] }}"
+                  >
+                    Eliminar Regla
+                  </button>
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('firewall_automation_id', id=comunidad[0]) }}"
+                    class="btn btn-primary"
+                    >Crear Automatizacion</a
+                  >
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div
+          id="liveToast"
+          class="toast hide"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div class="toast-header">
+            <img
+              src="../static/img/alert_message.png"
+              class="rounded me-2"
+              alt="..."
+            />
+            <strong class="me-auto">Campo Requerido</strong>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="toast"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="toast-body"></div>
+        </div>
+      </div>
+
+      <!-- Alerts Message -->
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
+            </div>
+            <div class="alert-message text-center"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    {% include 'includes/js-imports.html' %}
+    <script src="{{ url_for('static', filename='js/firewall-automation.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/eonasdan-bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    {% endblock %}
+  </body>
+</html>

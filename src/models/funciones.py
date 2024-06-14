@@ -17,6 +17,8 @@ from models.modelFirewall import modelFirewall
 from models.modelFirewallDetail import modelFirewallDetail
 from models.modelMonitoreo import modelPaquetes
 from models.modelFilterPacket import modelFilterPacket
+from models.modelCommunity import modelCommunity
+from models.modelAutomation import modelAutomation
 
 # Entities
 from models.entities.user import User
@@ -24,6 +26,8 @@ from models.entities.firewall import Firewall
 from models.entities.firewallDetail import FirewallDetail
 from models.entities.monitoreo import Monitoreo
 from models.entities.filterPacket import FilterPacket
+from models.entities.community import Community
+from models.entities.automationFirewall import Automation
 
 
 def validar_ingreso(username, password_hash):
@@ -741,6 +745,112 @@ def execute_command(command):
     return result.stdout
 
 
+# Este diccionario es el que va a devolver para la vista
+plataformas_unificadas = {
+    "redes_sociales": [
+        "www.facebook.com",
+        "twitter.com",
+        "www.instagram.com",
+        "ec.linkedin.com",
+        "www.linkedin.com",
+        "www.pinterest.com",
+        "snapchat.com",
+        "x.com",
+        "www.tiktok.com",
+    ],
+    "videojuegos": [
+        "store.steampowered.com",
+        "store.epicgames.com",
+        "origin.com",
+        "uplay.com",
+        "gog.com",
+        "ubisoftconnect.com",
+        "www.gog.com",
+        "www.ea.com",
+    ],
+    "musica": ["open.spotify.com", "pandora.com"],
+    "streaming": [
+        "www.hulu.com",
+        "www.primevideo.com",
+        "www.disneyplus.com",
+        "www.hbo.com",
+        "www.max.com",
+        "www.netflix.com",
+    ],
+    "lectura": ["www.scribd.com", "www.wattpad.com", "www.goodreads.com"],
+    "video": ["vimeo.com", "www.dailymotion.com", "www.youtube.com", "www.twitch.tv"],
+    "mensajeria": [
+        "web.whatsapp.com",
+        "facebook.com",
+        "web.telegram.org",
+        "discord.com",
+    ],
+    "podcast": ["open.spotify.com", "www.stitcher.com", "www.podbean.com"],
+    "mailing": [
+        "mail.google.com",
+        "mail.aol.com",
+        "outlook.live.com",
+        "mail.yahoo.com",
+        "www.aol.com",
+        "proton.me",
+    ],
+    "imagenes": ["www.flickr.com", "unsplash.com", "imgur.com"],
+    "ecommerce": [
+        "www.amazon.com",
+        "www.ebay.com",
+        "www.walmart.com",
+        "www.target.com",
+        "www.etsy.com",
+    ],
+    "blogging": ["wordpress.com", "www.blogger.com", "www.tumblr.com", "medium.com"],
+    "pagos": ["www.paypal.com", "squareup.com", "www.authorize.net", "stripe.com"],
+    "apuestas": [
+        "www.bet365.com",
+        "www.bet365.es",
+        "sports.bwin.com",
+        "www.888sport.com",
+        "www.williamhill.com",
+        "www.betfair.com",
+        "www.unibet.com",
+        "sports.ladbrokes.com",
+        "sports.coral.co.uk",
+        "www.unibet.co.uk",
+    ],
+    "educacion": [
+        "www.coursera.org",
+        "www.udemy.com",
+        "www.khanacademy.org",
+        "www.edx.org",
+        "www.udacity.com",
+    ],
+    "crm": [
+        "www.zoho.com",
+        "www.hubspot.com",
+        "business.adobe.com",
+        "www.salesforce.com",
+        "pardot.com",
+    ],
+    "redes_profesionales": ["www.linkedin.com", "ec.indeed.com", "www.glassdoor.com"],
+    "trabajo_colaborativo": ["www.dropbox.com"],
+    "videoconferencias": ["zoom.us", "teams.microsoft.com"],
+}
+
+
+def get_plataforms():
+    plataforms_key = list(plataformas_unificadas.keys())
+    plataforms = [
+        key.replace("_", " ").title() for key in plataformas_unificadas.keys()
+    ]
+
+    return plataforms, plataforms_key
+
+
+def get_plataforms_domain(key):
+    domains = plataformas_unificadas[key]
+
+    return domains
+
+
 # Plataformas con ips estaticas
 plataformas = {
     "redes_sociales": [
@@ -838,7 +948,6 @@ plataformas = {
         "www.edx.org",
         "www.udacity.com",
     ],
-    # Pendientes
     "crm": [
         "www.zoho.com",
         "www.hubspot.com",
@@ -1195,6 +1304,114 @@ def allow_connections(
         save_iptables_rules()
 
         return jsonify({"message": "¡Regla creada correctamente!"})
+    except subprocess.CalledProcessError:
+        return jsonify({"error": "Error al permitir el puerto."})
+
+
+def create_community(
+    community_name,
+    community_type,
+    local_ip,
+    initial_ip,
+    final_ip,
+):
+    try:
+        fecha_creacion = datetime.now()
+
+        if local_ip:
+            local_ip = ",".join(local_ip)
+            rango = local_ip
+        else:
+            rango = f"{initial_ip} - {final_ip}"
+
+        community = Community(
+            0,
+            community_name,
+            community_type,
+            rango,
+            fecha_creacion,
+            1,
+            current_user.id,
+        )
+        community = modelCommunity.insertCommunity(community)
+
+        return jsonify({"message": "¡Comunidad creada correctamente!"})
+    except subprocess.CalledProcessError:
+        return jsonify({"error": "Error al permitir el puerto."})
+
+
+def create_automation(
+    automation_name,
+    automation_type,
+    automation_action,
+    domain,
+    content_type,
+    domain_plataform,
+    comunidad_id,
+    horario,
+):
+    try:
+        fecha_creacion = datetime.now()
+
+        restriccion = content_type
+
+        with open("/etc/squid/squid-restriction/blacklist", "a") as save:
+            for domain_content in domain_plataform:
+                save.write(domain_content + "\n")
+
+        dias_mapeo = {
+            "Lunes": "M",
+            "Martes": "T",
+            "Miércoles": "W",
+            "Miercoles": "W",
+            "Jueves": "H",
+            "Viernes": "F",
+            "Sábado": "A",
+            "Sabado": "A",
+            "Domingo": "S",
+        }
+
+        horario_format = horario
+
+        # Reemplazar los días en la cadena de horario
+        for dia, abreviatura in dias_mapeo.items():
+            horario_format = horario_format.replace(dia, abreviatura).replace(", ", "")
+
+        horario_format = f"acl {automation_name.replace(" ", "_")} time {horario_format.replace(' - ', '-').replace('  ', ' ')}"
+
+        # Leer el contenido del archivo squid.conf
+        with open("/etc/squid/squid.conf", "r") as archivo:
+            lineas = archivo.readlines()
+
+        indice_referencia = None
+        for i, linea in enumerate(lineas):
+            if "# Horario de restricciones" in linea:
+                indice_referencia = i
+                break
+
+        if indice_referencia:
+            lineas.insert(indice_referencia + 1, "\n")  # Inserta una línea en blanco
+            lineas.insert(indice_referencia + 2, horario_format)
+
+            with open("/etc/squid/squid.conf", "w") as archivo:
+                archivo.writelines(lineas)
+
+        # subprocess.run(["systemctl", "restart", "squid"])
+
+        automation = Automation(
+            0,
+            automation_name,
+            automation_type,
+            restriccion,
+            horario,
+            1,
+            fecha_creacion,
+            comunidad_id,
+            current_user.id,
+        )
+        automation = modelAutomation.insertAutomation(automation)
+
+        return jsonify({"message": "Automatizacion creada correctamente!"})
     except subprocess.CalledProcessError:
         return jsonify({"error": "Error al permitir el puerto."})
 
@@ -1985,83 +2202,6 @@ def start_capture(command_id, command_filter, count_packets):
 
     return Response(generate(), mimetype="text/event-stream")
 
-    """ packet_count = 0
-
-    for line in process.stdout:
-        if packet_count >= 80:
-            break
-
-        if "ARP" in line:
-            arp_info = line.strip().split(",")
-            arp_parts = arp_info[0].split(" ")
-            time = " ".join(arp_parts[:2])
-            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            src_ip_domain = ""
-            src_port = ""
-            dst_ip_domain = ""
-            dst_port = ""
-            protocol = ""
-            info = " ".join(arp_info[2:])
-            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
-        else:
-            line2 = process.stdout.readline().strip()
-
-            if not line2:
-                break
-
-            combined_line = line.strip() + " " + line2.strip()
-
-        parts = []
-        parenthesis_count = 0
-        current_part = ""
-
-        for char in combined_line:
-            if char == "(":
-                parenthesis_count += 1
-            elif char == ")":
-                parenthesis_count -= 1
-
-            if parenthesis_count > 0:
-                current_part += char
-            else:
-                if char == " " and current_part:
-                    parts.append(current_part)
-                    current_part = ""
-                else:
-                    current_part += char
-
-        if current_part:
-            parts.append(current_part)
-
-        if len(parts) >= 6:
-            time = " ".join(parts[:2])
-            time_formatted = datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-            info = parts[3]
-
-            info_parts = parts[3].rsplit(",", 6)
-            info_protocol = info_parts[5].rsplit(" ", 2)
-            protocol = info_protocol[1]
-
-            src_parts = parts[4].rsplit(".", 1)
-            src_ip_domain = src_parts[0]
-            src_port = src_parts[1] if len(src_parts) > 1 else None
-
-            dst_parts = parts[6].rsplit(".", 1)
-            dst_ip_domain = dst_parts[0]
-            dst_port = dst_parts[1].rstrip(":") if len(dst_parts) > 1 else None
-
-            packet_count += 1
-
-            yield f"data: {time_formatted} {src_ip_domain}:{src_port} > {dst_ip_domain}:{dst_port} {protocol} {info}\n\n"
-
-    # Después de salir del bucle de captura, cerrar la conexión EventSource
-    yield "event: close\n\n" """
-
 
 def save_report(nombre_reporte, filtro_monitoreo, table_data):
     try:
@@ -2182,6 +2322,51 @@ def load_filter_data():
         return f"Error al cargar el reporte: {str(e)}"
 
 
+def load_comunnity():
+    try:
+        comunidades = modelCommunity.getCommunity()
+
+        if comunidades:
+            registros_modificados = []
+            for comunidad in comunidades:
+                registro_modificado = list(comunidad)
+                registro_modificado[2] = (
+                    registro_modificado[2].replace("_", " ").title()
+                )
+                registro_modificado[4] = registro_modificado[4].strftime("%d-%m-%Y")
+                registros_modificados.append(tuple(registro_modificado))
+
+            return registros_modificados
+
+        else:
+            return comunidades
+    except Exception as e:
+        return f"Error al cargar el reporte: {str(e)}"
+    
+    
+def load_automation():
+    try:
+        automatizaciones =  modelAutomation.getAutomation()
+
+        if automatizaciones:
+            print(automatizaciones)
+            registros_modificados = []
+            for comunidad in automatizaciones:
+                registro_modificado = list(comunidad)
+                registro_modificado[2] = (
+                    registro_modificado[2].replace("_", " ").title()
+                )
+                registro_modificado[4] = registro_modificado[4].strftime("%d-%m-%Y")
+                registros_modificados.append(tuple(registro_modificado))
+
+            return registros_modificados
+
+        else:
+            return automatizaciones
+    except Exception as e:
+        return f"Error al cargar el reporte: {str(e)}"
+
+
 def load_report():
     try:
         registros = modelPaquetes.getPackets()
@@ -2228,5 +2413,14 @@ def delete_filter(id_filter):
         modelFilterPacket.deleteFilter(id_filter)
 
         return "Reporte Eliminado"
+    except Exception as e:
+        return f"Error al obtener el número de la regla: {str(e)}"
+
+
+def delete_community(id_community):
+    try:
+        modelCommunity.deleteCommunity(id_community)
+
+        return "Comindad Eliminada"
     except Exception as e:
         return f"Error al obtener el número de la regla: {str(e)}"

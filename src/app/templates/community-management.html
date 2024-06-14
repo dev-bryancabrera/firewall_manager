@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include 'includes/styles-imports.html' %}
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.4.2/bootstrap-tagsinput.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/community-management.css') }}"
+    />
+    <title>Manejo de comunidades</title>
+  </head>
+  <body>
+    {% extends 'navbar.html' %} {% block content %}
+
+    <section class="community-form-table">
+      <div class="title-community">
+        <h1>Comunidades de firewall</h1>
+      </div>
+      <div class="container-community">
+        <div class="form-community">
+          <div class="container-ssh">
+            <form class="form-content" id="form-community">
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+
+              <div class="top-row">
+                <div class="form-group">
+                  <label for="community-name">Nombre de la comunidad</label>
+                  <input
+                    class="form-control"
+                    id="community-name"
+                    name="communityName"
+                    placeholder="Nombre de la comunidad"
+                  />
+                  <!-- oninput="formatoNombreRegla(this)" -->
+                </div>
+
+                <div class="form-group">
+                  <label for="selectFilterType">Tipo de Comunidad</label>
+                  <select
+                    class="form-select"
+                    id="community-type"
+                    name="communityType"
+                  >
+                    <option value="" selected disabled>Seleccionar...</option>
+                    <option value="red_local">Redes locales</option>
+                    <option value="rango_red">Rango de IPs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="top-row">
+                <div class="form-group">
+                  <label for="ip-local">Redes locales</label>
+                  <select
+                    class="selectpicker"
+                    id="local-ip"
+                    name="localIp"
+                    multiple
+                    aria-label="ip-local"
+                    data-none-selected-text="Seleccione Red Local"
+                    data-live-search="true"
+                  >
+                    {% for device in devices %}
+                    <option value="{{ device['ip'] }}">
+                      {{ device['ip'] }} - {{ device['mac'] }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="initial-ip">Direccion IP de inico</label>
+                  <input
+                    type="text"
+                    class="form-control ips"
+                    data-role="tagsinput"
+                    id="initial-ip"
+                    name="initialIp"
+                    placeholder="0.0.0.0"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="final-ip">Direccion IP final</label>
+                  <input
+                    type="text"
+                    class="form-control ips"
+                    data-role="tagsinput"
+                    id="final-ip"
+                    name="finalIp"
+                    placeholder="0.0.0.0"
+                  />
+                </div>
+              </div>
+
+              <div class="top-row">
+                <div class="form-group">
+                  <button
+                    type="submit"
+                    id="btn-create-comunnity"
+                    class="btn btn-primary"
+                  >
+                    Crear Comunidad
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="table">
+          <div class="subtitle-tables">
+            <h2>Comunidades establecidas</h2>
+          </div>
+          <table
+            id="community-table"
+            class="table"
+            data-locale="es-ES"
+            data-show-columns="true"
+            data-locale="es-ES"
+          >
+            <thead>
+              <tr>
+                <th data-field="number" data-sortable="true">N° Registro</th>
+                <th data-field="name" data-sortable="true">
+                  Nombre de Comunidad
+                </th>
+                <th data-field="type_rule" data-sortable="true">
+                  Tipo de Comunidad
+                </th>
+                <th data-field="created_date" data-sortable="true">
+                  Fecha de Creacion
+                </th>
+                <th data-field="domain" data-sortable="true">Rango de Red</th>
+                <!-- <th data-field="en/dis"></th> -->
+                <th data-field="delete"></th>
+                <th data-field="see"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for comunidad in comunidades %}
+              <tr>
+                <td class="numero">{{ loop.index }}</td>
+                <td class="nombre">{{ comunidad[1] }}</td>
+                <td class="tipo_regla">{{ comunidad[2] }}</td>
+                <td class="fecha_creacion">{{ comunidad[4] }}</td>
+                <td class="rango">{{ comunidad[3] }}</td>
+                <!-- <td>
+                  <button
+                    id="btn-regla-{{ comunidad['id_regla'] }}"
+                    class="btn {{ 'btn-success' if comunidad['estado'] == 1 else 'btn-secondary' }}"
+                  >
+                    {{ 'Desactivar' if comunidad['estado'] == 1 else 'Activar'
+                    }}
+                  </button>
+                </td> -->
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    id="btn-delete-community"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmarEliminar{{ comunidad[0] }}"
+                  >
+                    Eliminar Comunidad
+                  </button>
+
+                  <!-- Modal Eliminar Filtro -->
+                  <div
+                    class="modal fade"
+                    id="confirmarEliminar{{ comunidad[0] }}"
+                    tabindex="-1"
+                    aria-labelledby="confirmacionModalLabel"
+                    aria-hidden="true"
+                  >
+                    <input
+                      type="hidden"
+                      name="filter_number"
+                      value="{{ comunidad[0] }}"
+                    />
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="confirmacionModalLabel">
+                            Confirmar Eliminación
+                          </h5>
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          ¿Estás seguro de que deseas eliminar la comunidad?
+                        </div>
+                        <div class="modal-footer">
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancelar
+                          </button>
+                          <a
+                            href="{{ url_for('eliminar_comunidad', id=comunidad[0]) }}"
+                            class="btn btn-danger"
+                            id="delete-btn"
+                            >Eliminar</a
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('firewall_automation_id', id=comunidad[0]) }}"
+                    class="btn btn-primary"
+                    >Crear Automatizacion</a
+                  >
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div
+          id="liveToast"
+          class="toast hide"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div class="toast-header">
+            <img
+              src="../static/img/alert_message.png"
+              class="rounded me-2"
+              alt="..."
+            />
+            <strong class="me-auto">Campo Requerido</strong>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="toast"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="toast-body"></div>
+        </div>
+      </div>
+
+      <!-- Alerts Message -->
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
+            </div>
+            <div class="alert-message text-center"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    {% include 'includes/js-imports.html' %}
+    <script src="{{ url_for('static', filename='js/community-management.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    {% endblock %}
+  </body>
+</html>
