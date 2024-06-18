@@ -5,6 +5,7 @@ class Automation:
         nombre,
         tipo,
         restriccion,
+        restriccion_proxy,
         horario,
         estado,
         fecha_creacion,
@@ -15,6 +16,7 @@ class Automation:
         self.nombre = nombre
         self.tipo = tipo
         self.restriccion = restriccion
+        self.restriccion_proxy = restriccion_proxy
         self.horario = horario
         self.estado = estado
         self.fecha_creacion = fecha_creacion

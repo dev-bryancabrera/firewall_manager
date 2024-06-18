@@ -7,6 +7,8 @@ from models.modelUser import modelUser
 
 from models.funciones import (
     create_automation,
+    deactivate_activate_automation,
+    delete_automation,
     delete_community,
     get_plataforms,
     get_plataforms_domain,
@@ -95,13 +97,15 @@ def configurar_rutas(app, login_manager_app):
     @app.route("/firewall_automation")
     @login_required
     def firewall_automation():
-        automatizaciones = load_comunnity()
+        automatizaciones = load_automation()
+        comunidades = load_comunnity()
         plataformas = get_plataforms()
 
         return render_template(
             "firewall-automation.html",
             plataformas=plataformas,
             automatizaciones=automatizaciones,
+            comunidades=comunidades,
         )
 
     @app.route("/user-manual-firewall")
@@ -475,12 +479,41 @@ def configurar_rutas(app, login_manager_app):
         try:
             id_comunidad = request.args.get("id")
 
-            delete_community(id_comunidad)
+            response = delete_community(id_comunidad)
 
-            return redirect(url_for("community_management"))
+            return response
 
         except Exception as e:
             return f"Error al eliminar la comunidad: {e}"
+
+    @app.route("/desactivar_automatizacion", methods=["GET"])
+    @login_required
+    def desactivar_automatizacion():
+        try:
+            id_automation = request.args.get("id")
+
+            response = deactivate_activate_automation(id_automation)
+
+            return response
+
+        except Exception as e:
+            error_message = (
+                f"Error al desactivar la regla: {type(e).__name__}: {str(e)}"
+            )
+            return error_message
+
+    @app.route("/eliminar_automatizacion", methods=["GET"])
+    @login_required
+    def eliminar_automatizacion():
+        try:
+            id_automatizacion = request.args.get("id")
+
+            response = delete_automation(id_automatizacion)
+
+            return response
+
+        except Exception as e:
+            return f"Error al eliminar la automatizacion: {e}"
 
     # Eliminar una regla establecida
     @app.route("/eliminar_regla", methods=["GET"])

@@ -66,45 +66,45 @@
                   <!-- oninput="formatoNombreRegla(this)" -->
                 </div>
 
-                <!-- AQUI MOSTRARA LA LISTA DE COMUNIDADES UNICAMENTE SI EL USUARIO ENTRA DESDE EL HOME PAGE -->
-                <div class="form-group">
+                <div class="form-group" id="community-list">
                   <label for="ip-local">Comunidades</label>
                   <select
                     class="selectpicker"
-                    id="contents-type"
-                    name="contentType"
-                    aria-label="content-type"
-                    data-none-selected-text="Seleccione tipo de contenido"
+                    id="community"
+                    name="community"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione una comunidad"
                     data-live-search="true"
                   >
                     <option value="" disabled selected hidden>
                       Seleccione una opción
                     </option>
-                    {% for plataforma_key in plataformas[1] %} {% set index =
-                    loop.index - 1 %}
-                    <option value="{{ plataformas[1][index] }}">
-                      {{ plataformas[0][index] }}
+                    {% for comunidad in comunidades %}
+                    <option value="{{ comunidad[0] }}">
+                      {{ comunidad[1] }}
                     </option>
                     {% endfor %}
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label for="selectFilterType">Tipo de restriccion</label>
+                  <label for="ip-local">Tipo de restriccion</label>
                   <select
-                    class="form-select"
+                    class="selectpicker"
                     id="automation-type"
                     name="automationType"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione una comunidad"
                   >
-                    <option value="" selected disabled>Seleccionar...</option>
-                    <option value="red_local">Contenido</option>
-                    <option value="rango_red">Dominios</option>
+                    <option value="" selected disabled>Seleccionar tipo</option>
+                    <option value="contenido">Contenido</option>
+                    <option value="dominio">Dominios</option>
                   </select>
                 </div>
               </div>
 
               <div class="top-row">
-                <div class="form-group">
+                <!-- <div class="form-group">
                   <label for="selectFilterType">Accion a realizar</label>
                   <select
                     class="form-select"
@@ -115,10 +115,10 @@
                     <option value="allow">Permitir</option>
                     <option value="reject">Bloquear</option>
                   </select>
-                </div>
+                </div> -->
 
                 <div class="form-group">
-                  <label for="initial-ip">Dominio</label>
+                  <label for="domain">Dominio</label>
                   <input
                     type="text"
                     class="form-control ips"
@@ -151,9 +151,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="segundo-select"
-                    >Valores de la plataforma seleccionada</label
-                  >
+                  <label for="segundo-select">Dominios de Plataforma</label>
                   <select
                     class="selectpicker"
                     multiple
@@ -164,14 +162,38 @@
                     data-live-search="true"
                   ></select>
                 </div>
+
+                <div id="new-domain-input" class="form-group floating-input">
+                  <label for="new-domain">Nuevo Dominio:</label>
+                  <input
+                    type="text"
+                    id="new-domain"
+                    class="form-control"
+                    placeholder="Ingrese el nuevo dominio"
+                  />
+                  <button id="add-domain-btn" class="btn btn-primary mt-2">
+                    Añadir
+                  </button>
+                </div>
               </div>
 
               <div class="top-row">
                 <div class="form-group">
-                  <label for="datepicker"
-                    >Dias aplicados a la restriccion</label
-                  >
-                  <div class="weekDays-selector">
+                  <label for="daypicker">Dias aplicados a la restriccion</label>
+                  <div class="input-group">
+                    <input
+                      type="text"
+                      id="daypicker"
+                      class="form-control"
+                      readonly
+                    />
+                    <div class="input-group-append" id="icon-day">
+                      <span class="input-group-text">
+                        <i class="fa fa-calendar" id="daypickerIcon"></i>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="days-popup weekDays-selector" id="daysPopup">
                     <input type="checkbox" id="weekday-mon" class="weekday" />
                     <label for="weekday-mon">Lunes</label>
                     <input type="checkbox" id="weekday-tue" class="weekday" />
@@ -230,7 +252,7 @@
                 <div class="form-group">
                   <button
                     type="submit"
-                    id="btn-create-comunnity"
+                    id="btn-create-automation"
                     class="btn btn-primary"
                   >
                     Crear Automatizacion
@@ -245,7 +267,7 @@
 
         <div class="table">
           <div class="subtitle-tables">
-            <h2>Comunidades establecidas</h2>
+            <h2>Automatizaciones establecidas</h2>
           </div>
           <table
             id="automation-table"
@@ -258,57 +280,105 @@
               <tr>
                 <th data-field="number" data-sortable="true">N° Registro</th>
                 <th data-field="name" data-sortable="true">
-                  Nombre de Comunidad
+                  Nombre de la Automatizacion
                 </th>
-                <th data-field="type_rule" data-sortable="true">
-                  Tipo de Comunidad
+                <th data-field="type" data-sortable="true">
+                  Tipo de Automatizacion
                 </th>
                 <th data-field="created_date" data-sortable="true">
                   Fecha de Creacion
                 </th>
-                <th data-field="domain" data-sortable="true">Rango de Red</th>
-                <th data-field="action" data-sortable="true">Estado</th>
+                <th data-field="schedule" data-sortable="true">
+                  Horario de restriccion
+                </th>
+                <th data-field="restriction_type" data-sortable="true">
+                  Acceso restringido
+                </th>
+                <th data-field="community" data-sortable="true">
+                  Comunidad restriccion
+                </th>
                 <th data-field="en/dis"></th>
                 <th data-field="delete"></th>
-                <th data-field="see"></th>
               </tr>
             </thead>
             <tbody>
-              {% for comunidad in comunidades %}
+              {% for automatizacion in automatizaciones %}
               <tr>
                 <td class="numero">{{ loop.index }}</td>
-                <td class="nombre">{{ comunidad[1] }}</td>
-                <td class="tipo_regla">{{ comunidad[2] }}</td>
-                <td class="fecha_creacion">{{ comunidad[4] }}</td>
-                <td class="rango">{{ comunidad[3] }}</td>
-                <td class="estado">{{ comunidad[5] }}</td>
+                <td class="nombre">{{ automatizacion[1] }}</td>
+                <td class="tipo">{{ automatizacion[2] }}</td>
+                <td class="fecha_creacion">{{ automatizacion[7] }}</td>
+                <td class="horario">{{ automatizacion[3] }}</td>
+                <td class="tipo_restriccion">{{ automatizacion[4] }}</td>
+                <td class="comunidad">{{ automatizacion[10] }}</td>
                 <td>
                   <button
-                    id="btn-regla-{{ comunidad['id_regla'] }}"
-                    class="btn {{ 'btn-success' if comunidad['estado'] == 1 else 'btn-secondary' }}"
+                    id="btn-automatizacion-{{ automatizacion[0] }}"
+                    class="btn {{ 'btn-success' if automatizacion[6] == 1 else 'btn-secondary' }}"
                   >
-                    {{ 'Desactivar' if comunidad['estado'] == 1 else 'Activar'
-                    }}
+                    {{ 'Desactivar' if automatizacion[6] == 1 else 'Activar' }}
                   </button>
                 </td>
                 <td>
                   <button
                     type="button"
                     class="btn btn-danger"
-                    id="btn-delete-rule"
+                    id="btn-delete-automation"
                     data-bs-toggle="modal"
-                    data-bs-target="#confirmarEliminar"
-                    data-regla-id="{{ comunidad['id_regla'] }}"
+                    data-bs-target="#confirmarEliminar{{ automatizacion[0] }}"
                   >
                     Eliminar Regla
                   </button>
-                </td>
-                <td>
-                  <a
-                    href="{{ url_for('firewall_automation_id', id=comunidad[0]) }}"
-                    class="btn btn-primary"
-                    >Crear Automatizacion</a
+
+                  <!-- Modal Eliminar Filtro -->
+                  <div
+                    class="modal fade"
+                    id="confirmarEliminar{{ automatizacion[0] }}"
+                    tabindex="-1"
+                    aria-labelledby="confirmacionModalLabel"
+                    aria-hidden="true"
                   >
+                    <input
+                      type="hidden"
+                      name="filter_number"
+                      value="{{ automatizacion[0] }}"
+                    />
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="confirmacionModalLabel">
+                            Confirmar Eliminación
+                          </h5>
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          ¿Estás seguro de que deseas eliminar la
+                          automatizacion?
+                        </div>
+                        <div class="modal-footer">
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancelar
+                          </button>
+
+                          <button
+                            class="btn btn-danger"
+                            id="delete-automatizacion-{{ automatizacion[0] }}"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -352,6 +422,20 @@
               <i class="fas fa-check-circle fa-3x text-success"></i>
             </div>
             <div class="alert-message text-center"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
+            </div>
+            <div class="alert-message text-center">
+              {% if request.args.get('response') %} {{
+              request.args.get('response') }} {% endif %}
+            </div>
           </div>
         </div>
       </div>

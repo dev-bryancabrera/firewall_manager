@@ -220,6 +220,11 @@
                         </div>
                         <div class="modal-body">
                           ¿Estás seguro de que deseas eliminar la comunidad?
+                          Antes de proceder, asegúrate de verificar si existen
+                          automatizaciones asociadas a esta comunidad. En caso
+                          de que haya alguna automatización vinculada, ten en
+                          cuenta que también será eliminada junto con la
+                          comunidad.
                         </div>
                         <div class="modal-footer">
                           <button
@@ -229,12 +234,12 @@
                           >
                             Cancelar
                           </button>
-                          <a
-                            href="{{ url_for('eliminar_comunidad', id=comunidad[0]) }}"
+                          <button
                             class="btn btn-danger"
-                            id="delete-btn"
-                            >Eliminar</a
+                            id="delete-community-{{ comunidad[0] }}"
                           >
+                            Eliminar
+                          </button>
                         </div>
                       </div>
                     </div>

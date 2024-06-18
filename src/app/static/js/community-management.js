@@ -86,14 +86,31 @@ $(document).ready(function () {
     });
   });
 
-  btnDeleteCommunity.click(function () {
-    console.log("fsdfsf");
-    // Mostrar el mensaje en la alerta
-    $(".alert-message").text("¡Comunidad eliminada correctamente!");
-    $(".alert-message-container").show("medium");
-    setTimeout(function () {
-      $(".alert-message-container").hide("medium");
-    }, 5000);
+  $('button[id^="delete-community"]').on("click", function (event) {
+    event.preventDefault();
+
+    var comunidadId = $(this).attr("id").split("-", 3)[2];
+
+    var btn_status = $(this);
+    btn_status.prop("disabled", true);
+
+    $.ajax({
+      type: "GET",
+      url: "/eliminar_comunidad",
+      data: { id: comunidadId },
+      success: function (response) {
+        if (response.error) {
+          btn_status.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
+      },
+    });
   });
 
   function alertMessage(response) {

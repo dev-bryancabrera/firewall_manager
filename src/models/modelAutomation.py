@@ -7,13 +7,14 @@ class modelAutomation:
         try:
             db = get_connection()
             cursor = db.cursor()
-            sql = "INSERT INTO automatizacion_firewall (nombre, tipo, restriccion, horario, estado, fecha_creacion, comunidad_id, user_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            sql = "INSERT INTO automatizacion_firewall (nombre, tipo, restriccion, restriccion_proxy, horario, estado, fecha_creacion, comunidad_id, user_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
             cursor.execute(
                 sql,
                 (
                     automation.nombre,
                     automation.tipo,
                     automation.restriccion,
+                    automation.restriccion_proxy,
                     automation.horario,
                     automation.estado,
                     automation.fecha_creacion.strftime("%Y-%m-%d %H:%M:%S"),
@@ -65,7 +66,7 @@ class modelAutomation:
         try:
             db = get_connection()
             cursor = db.cursor()
-            sql = "SELECT * FROM automatizacion_firewall"
+            sql = "SELECT id, nombre, tipo, horario, restriccion, restriccion_proxy, estado, fecha_creacion, comunidad_id, user_id FROM automatizacion_firewall"
             cursor.execute(sql)
             db.close()
             return cursor.fetchall()
@@ -77,7 +78,21 @@ class modelAutomation:
         try:
             db = get_connection()
             cursor = db.cursor()
-            sql = "SELECT nombre, tipo, horario, restriccion, estado, fecha_creacion, comunidad_id, user_id FROM automatizacion_firewall WHERE id='{}'".format(
+            sql = "SELECT nombre, tipo, horario, restriccion, restriccion_proxy, estado, fecha_creacion, comunidad_id, user_id FROM automatizacion_firewall WHERE id='{}'".format(
+                id
+            )
+            cursor.execute(sql)
+            db.close()
+            return cursor.fetchone()
+        except Exception as ex:
+            raise Exception(ex)
+
+    @classmethod
+    def getCommunityById(self, id):
+        try:
+            db = get_connection()
+            cursor = db.cursor()
+            sql = "SELECT id, nombre, tipo, horario, restriccion, restriccion_proxy, estado, fecha_creacion, comunidad_id, user_id FROM automatizacion_firewall WHERE comunidad_id='{}'".format(
                 id
             )
             cursor.execute(sql)

@@ -1,27 +1,29 @@
 $(document).ready(function () {
   // Variables
   var $automationForm = $("#form-automation");
-  var $communityTable = $("#community-table");
+  var $automationTable = $("#automation-table");
 
   var automationName = $("#automation-name");
   var automationType = $("#automation-type");
+  var community = $("#community");
   var automationAction = $("#automation-action");
   var domain = $("#domain");
   var contentType = $("#content-type");
   var domainPlataform = $("#domain-plataform");
   var intialTime = $("#initial-time");
   var finalTime = $("#final-time");
-  var diasHorario = "";
-  var daysSelected = $(".weekday");
+  var daySchedule = $("#daypicker");
 
-  var btnCreateComunnity = $("#btn-create-comunnity");
-  var btnDeleteCommunity = $("#delete-btn");
+  var btnCreateAutomation = $("#btn-create-automation");
 
-  /* localIp.prop("disabled", true);
-  localIp.selectpicker("refresh");
+  var communityList = $("#community-list");
 
-  initialIp.prop("disabled", true);
-  finalIp.prop("disabled", true); */
+  contentType.prop("disabled", true);
+  contentType.selectpicker("refresh");
+  domainPlataform.prop("disabled", true);
+  domainPlataform.selectpicker("refresh");
+
+  domain.prop("disabled", true);
 
   /* Obtener el parametro de filtro para cargar los datos */
   var url = window.location.pathname; // Obtener la parte de la ruta de la URL
@@ -29,6 +31,10 @@ $(document).ready(function () {
   var baseUrl = url.split("/firewall_automation")[0];
   var commandEncodedId = parts[parts.length - 1]; // Obtener el valor del parámetro de ruta "id"
   var commandId = decodeURIComponent(commandEncodedId); // Decodificar el valor
+
+  if (isNaN(commandId)) {
+    communityList.css("display", "flex");
+  }
 
   /* Configuracion para el timer */
   var defaults = {
@@ -39,7 +45,7 @@ $(document).ready(function () {
     useCurrent: false,
     ignoreReadonly: true,
     // minDate: new Date(),
-  
+
     toolbarPlacement: "top",
     locale: "nl",
     icons: {
@@ -54,10 +60,37 @@ $(document).ready(function () {
       close: "fa fa-times",
     },
   };
-  
+
   var optionsTime = $.extend({}, defaults, { format: "HH:mm" });
-  
+
   $(".timepicker").datetimepicker(optionsTime);
+
+  /* Manejar selector de dias */
+  function togglePopup() {
+    const popup = $("#daysPopup");
+    if (popup.css("display") === "none") {
+      popup.css("display", "flex");
+    } else {
+      popup.css("display", "none");
+    }
+  }
+
+  function updateInput() {
+    const selectedDays = [];
+    $(".weekday:checked").each(function () {
+      selectedDays.push($(this).next("label").text());
+    });
+    $("#daypicker").val(selectedDays.join(", "));
+  }
+
+  $("#daypicker, #icon-day").on("click", togglePopup);
+  $(".weekday").on("change", updateInput);
+
+  $(document).on("click", function (event) {
+    if (!$(event.target).closest("#daypicker, #icon-day, #daysPopup").length) {
+      $("#daysPopup").hide();
+    }
+  });
 
   /* Agregar los dominios personalizado de cada plataforma */
   contentType.change(function () {
@@ -75,19 +108,97 @@ $(document).ready(function () {
           // Crear una nueva opción
           var option = $("<option>").val(value).text(value);
 
-          // Agregar la opción al select
           domainPlataform.append(option);
         });
 
-        // Refrescar la vista del selectpicker
+        // Agregar la opción "Añadir nuevo..." al final
+        var addNewOption = $("<option>")
+          .val("add_new")
+          .html("&#x2795; Añadir dominio");
+        domainPlataform.append(addNewOption);
+
+        domainPlataform.find("option").slice(0, -1).prop("selected", true);
+
         domainPlataform.selectpicker("refresh");
       },
       error: function (xhr, status, error) {
-        // Manejar errores
         console.error(error);
       },
     });
   });
+
+  domainPlataform.on(
+    "changed.bs.select",
+    function (e, clickedIndex, isSelected, previousValue) {
+      var selectedValue = $(this).find("option").eq(clickedIndex).val();
+
+      if (selectedValue === "add_new") {
+        // Prompt user for new item
+        var newItem = prompt("Ingrese el nuevo dominio:");
+
+        if (newItem) {
+          // Remove "Añadir dominio" option
+          $(this).find('option[value="add_new"]').remove();
+
+          // Add the new item to the select options
+          $(this).append(new Option(newItem, newItem, true, true));
+
+          // Add "Añadir dominio" option at the end
+          var addNewOption = $("<option>")
+            .val("add_new")
+            .html("&#x2795; Añadir dominio");
+          $(this).append(addNewOption);
+
+          $(this).selectpicker("refresh");
+        }
+
+        // Unselect the "Añadir dominio" option
+        $(this).find('option[value="add_new"]').prop("selected", false);
+        $(this).selectpicker("refresh");
+      }
+    }
+  );
+
+  /* domainPlataform.on(
+    "changed.bs.select",
+    function (e, clickedIndex, isSelected, previousValue) {
+      var selectedValue = $(this).find("option").eq(clickedIndex).val();
+
+      if (selectedValue === "add_new") {
+        // Mostrar el input para ingresar el nuevo dominio
+        $("#new-domain-input").show();
+
+        // Manejar clic en el botón para añadir el nuevo dominio
+        $("#add-domain-btn").on("click", function () {
+          console.log("fsdfdsfsd");
+          var newItem = $("#new-domain").val();
+          if (newItem) {
+            // Remove "Añadir dominio" option
+            $(this).find('option[value="add_new"]').remove();
+
+            // Add the new item to the select options
+            $(this).append(new Option(newItem, newItem, true, true));
+
+            // Add "Añadir dominio" option at the end
+            var addNewOption = $("<option>")
+              .val("add_new")
+              .html("&#x2795; Añadir dominio");
+            $(this).append(addNewOption);
+
+            $(this).selectpicker("refresh");
+          }
+
+          // Unselect the "Añadir dominio" option
+          $(this).find('option[value="add_new"]').prop("selected", false);
+          $(this).selectpicker("refresh");
+          // Ocultar el input para ingresar el nuevo dominio
+          $("#new-domain-input").hide();
+          // Desmarcar la opción "Añadir dominio"
+          $(this).selectpicker("deselectAll");
+        });
+      }
+    }
+  ); */
 
   function cleanDisabledInput(elements) {
     $.each(elements, function (key, value) {
@@ -105,63 +216,68 @@ $(document).ready(function () {
     });
   }
 
-  /*  automationType.on("change", function () {
+  automationType.on("change", function () {
     cleanDisabledInput({
-      initialIp: initialIp,
-      finalIp: finalIp,
+      domain: domain,
     });
     cleanDisabledMultiselect({
-      localIp: localIp,
+      contentType: contentType,
+      domainPlataform: domainPlataform,
     });
     var selectedOption = automationType.val();
 
-    if (selectedOption === "red_local") {
-      localIp.prop("disabled", false);
-      localIp.selectpicker("refresh");
-    } else if (selectedOption === "rango_red") {
-      initialIp.prop("disabled", false);
-      finalIp.prop("disabled", false);
+    if (selectedOption === "contenido") {
+      contentType.prop("disabled", false);
+      domainPlataform.prop("disabled", false);
+
+      contentType.selectpicker("refresh");
+      domainPlataform.selectpicker("refresh");
+    } else if (selectedOption === "dominio") {
+      domain.prop("disabled", false);
     }
-  }); */
-
-  $communityTable.bootstrapTable({});
-
-  /* Seleccionar los dias que se aplicaran la automatizacion */
-  daysSelected.change(function () {
-    var days = []; // Array para almacenar los días seleccionados
-
-    // Iterar sobre los checkboxes
-    daysSelected.each(function () {
-      if ($(this).prop("checked")) {
-        // Si el checkbox está marcado, agregar el valor al array
-        days.push($(this).next("label").text());
-      }
-    });
-
-    // Convertir el array en una cadena de texto separada por comas
-    diasHorario = days.join(", ");
   });
+
+  $automationTable.bootstrapTable({});
 
   $automationForm.submit(function (event) {
     event.preventDefault();
 
-    /* if (
-      mostrarAlerta(communityName, "Asignar un nombre a la comunidad.") ||
-      mostrarAlertaSelect(communityType, "Seleccionar un tipo de comunidad.") ||
-      mostrarAlertaSelect(localIp, "Selecciona la o las IPs necesarias.") ||
-      mostrarAlerta(initialIp, "Asigne un valor a la IP de inicio.") ||
-      mostrarAlerta(finalIp, "Asigne un valor a la IP final.")
+    if (
+      mostrarAlerta(automationName, "Asignar un nombre a la automatizacion.") ||
+      validarSelectContainer(
+        communityList,
+        community,
+        "Seleccione una comunidad a asignar la automatizacion"
+      ) ||
+      mostrarAlertaSelect(
+        automationType,
+        "Seleccionar un tipo de restriccion."
+      ) ||
+      mostrarAlertaSelect(contentType, "Selecciona un tipo de contenido.") ||
+      mostrarAlertaSelect(
+        domainPlataform,
+        "Selecciona el o los dominos a restringir."
+      ) ||
+      mostrarAlerta(domain, "Asigne un valor del dominio a restringir.") ||
+      mostrarAlerta(daySchedule, "Asigne el o los dias a restringir.") ||
+      mostrarAlerta(
+        intialTime,
+        "Asigne una hora de inicio a la restriccion."
+      ) ||
+      mostrarAlerta(finalTime, "Asigne una hora de fin a la restriccion.")
     ) {
       return;
-    } */
-
-    // var formData = $(this).serialize();
+    }
 
     var name = automationName.val();
     var type = automationType.val();
     var csrfToken = $("#csrf_token").val();
     var horario =
-      diasHorario + "  " + intialTime.val() + " - " + finalTime.val();
+      daySchedule.val() + "  " + intialTime.val() + " - " + finalTime.val();
+
+    if (isNaN(commandId)) {
+      commandId = community.val();
+    }
 
     // Crear un objeto con los datos que deseas enviar
     var formData = {
@@ -175,7 +291,7 @@ $(document).ready(function () {
       horario: horario,
     };
 
-    btnCreateComunnity.prop("disabled", true);
+    btnCreateAutomation.prop("disabled", true);
 
     $.ajax({
       type: "POST",
@@ -194,15 +310,71 @@ $(document).ready(function () {
     });
   });
 
-  btnDeleteCommunity.click(function () {
-    console.log("fsdfsf");
-    // Mostrar el mensaje en la alerta
-    $(".alert-message").text("¡Comunidad eliminada correctamente!");
-    $(".alert-message-container").show("medium");
-    setTimeout(function () {
-      $(".alert-message-container").hide("medium");
-    }, 5000);
+  $('button[id^="btn-automatizacion"]').on("click", function (event) {
+    event.preventDefault();
+
+    var automatizacionId = $(this).attr("id").split("-", 3)[2];
+
+    var btn_status = $(this);
+    btn_status.prop("disabled", true);
+
+    $.ajax({
+      type: "GET",
+      url: "/desactivar_automatizacion",
+      data: { id: automatizacionId },
+      success: function (response) {
+        if (response.error) {
+          btn_status.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
+      },
+    });
   });
+
+  $('button[id^="delete-automatizacion"]').on("click", function (event) {
+    event.preventDefault();
+
+    var automatizacionId = $(this).attr("id").split("-", 3)[2];
+
+    var btn_status = $(this);
+    btn_status.prop("disabled", true);
+
+    $.ajax({
+      type: "GET",
+      url: "/eliminar_automatizacion",
+      data: { id: automatizacionId },
+      success: function (response) {
+        if (response.error) {
+          btn_status.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
+      },
+    });
+  });
+
+  function validarSelectContainer(contenedor, elemento, mensaje) {
+    if (
+      contenedor.css("display") !== "none" &&
+      validarMultiselectVacio(elemento)
+    ) {
+      $("#liveToast .toast-body").text(mensaje);
+      $("#liveToast").toast("show");
+      return true;
+    }
+    return false;
+  }
 
   function alertMessage(response) {
     $(".alert-message-container").show("medium");

@@ -2,6 +2,7 @@ import base64
 from datetime import datetime
 from io import BytesIO
 
+import os
 import shlex
 from flask import Response, flash, jsonify
 from flask_login import current_user, login_user
@@ -1353,11 +1354,23 @@ def create_automation(
     try:
         fecha_creacion = datetime.now()
 
-        restriccion = content_type
+        if content_type:
+            restriccion = content_type
+            file_restriction = f"/etc/squid/squid-restriction/contents/{automation_name.replace(' ', '_').lower()}_{restriccion}"
+        else:
+            restriccion = domain
+            file_restriction = f"/etc/squid/squid-restriction/contents/{automation_name.replace(' ', '_').lower()}_domain"
 
-        with open("/etc/squid/squid-restriction/blacklist", "a") as save:
-            for domain_content in domain_plataform:
-                save.write(domain_content + "\n")
+        with open(file_restriction, "a") as save:
+            if content_type:
+                for domain_content in domain_plataform:
+                    save.write(domain_content + "\n")
+            else:
+                domains = domain.split(",")
+                for dom in domains:
+                    save.write(dom.strip() + "\n")
+
+        comunidad = modelCommunity.getCommunityById(comunidad_id)
 
         dias_mapeo = {
             "Lunes": "M",
@@ -1377,32 +1390,49 @@ def create_automation(
         for dia, abreviatura in dias_mapeo.items():
             horario_format = horario_format.replace(dia, abreviatura).replace(", ", "")
 
-        horario_format = f"acl {automation_name.replace(" ", "_")} time {horario_format.replace(' - ', '-').replace('  ', ' ')}"
+        if "," in comunidad[3]:
+            ips = comunidad[3].split(",")
+            file_restriction_ip = f"/etc/squid/squid-restriction/ips/{automation_name.replace(' ', '_').lower()}_ips"
+
+            with open(file_restriction_ip, "a") as save:
+                for ip in ips:
+                    save.write(ip.strip() + "\n")
+
+            rango_restriccion = f"acl src_{comunidad[1].replace(' ', '_').lower()} src '{file_restriction_ip}'"
+        else:
+            rango_restriccion = f"acl src_{comunidad[1].replace(' ', '_').lower()} src {comunidad[3].replace(' - ', '-')}"
+
+        file_locate_restriction = f"acl {automation_name.replace(' ', '_').lower()}_list dstdomain '{file_restriction}'"
+        horario_format = f"acl {automation_name.replace(' ', '_').lower()}_schedule time {horario_format.replace(' - ', '-').replace('  ', ' ')}"
+        deny_chain = f"http_access deny src_{comunidad[1].replace(' ', '_').lower()} {automation_name.replace(' ', '_').lower()}_list {automation_name.replace(' ', '_').lower()}_schedule"
 
         # Leer el contenido del archivo squid.conf
         with open("/etc/squid/squid.conf", "r") as archivo:
             lineas = archivo.readlines()
 
-        indice_referencia = None
-        for i, linea in enumerate(lineas):
-            if "# Horario de restricciones" in linea:
-                indice_referencia = i
-                break
+        insert_at_line = {
+            "# ACL File restriction": file_locate_restriction,
+            "# ACL Horario de restricciones": horario_format,
+            "# ACL IPs restricciones": rango_restriccion,
+            "# Accesos denegados": deny_chain,
+        }
 
-        if indice_referencia:
-            lineas.insert(indice_referencia + 1, "\n")  # Inserta una línea en blanco
-            lineas.insert(indice_referencia + 2, horario_format)
+        for insert_tag, insert_line in insert_at_line.items():
+            for i, linea in enumerate(lineas):
+                if insert_tag in linea:
+                    lineas.insert(i + 1, "\n")
+                    lineas.insert(i + 2, insert_line)
+                    break
 
-            with open("/etc/squid/squid.conf", "w") as archivo:
-                archivo.writelines(lineas)
-
-        # subprocess.run(["systemctl", "restart", "squid"])
+        with open("/etc/squid/squid.conf", "w") as archivo:
+            archivo.writelines(lineas)
 
         automation = Automation(
             0,
             automation_name,
             automation_type,
             restriccion,
+            deny_chain,
             horario,
             1,
             fecha_creacion,
@@ -1411,9 +1441,17 @@ def create_automation(
         )
         automation = modelAutomation.insertAutomation(automation)
 
-        return jsonify({"message": "Automatizacion creada correctamente!"})
-    except subprocess.CalledProcessError:
-        return jsonify({"error": "Error al permitir el puerto."})
+        subprocess.run(
+            ["service", "squid", "reload"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        return jsonify({"message": "¡Automatizacion creada correctamente!"})
+
+    except Exception as e:
+        return f"Error al crear la automatización: {str(e)}"
 
 
 # Ejecutara unicamente dominios que las ips sean dinamicas
@@ -2342,21 +2380,34 @@ def load_comunnity():
             return comunidades
     except Exception as e:
         return f"Error al cargar el reporte: {str(e)}"
-    
-    
+
+
 def load_automation():
     try:
-        automatizaciones =  modelAutomation.getAutomation()
+        automatizaciones = modelAutomation.getAutomation()
 
         if automatizaciones:
-            print(automatizaciones)
             registros_modificados = []
-            for comunidad in automatizaciones:
-                registro_modificado = list(comunidad)
+            for automatizacion in automatizaciones:
+                comunidad = modelCommunity.getCommunityById(automatizacion[8])
+                registro_modificado = list(automatizacion)
                 registro_modificado[2] = (
                     registro_modificado[2].replace("_", " ").title()
                 )
-                registro_modificado[4] = registro_modificado[4].strftime("%d-%m-%Y")
+                if (
+                    "." not in registro_modificado[4]
+                    and "," not in registro_modificado[4]
+                ):
+                    registro_modificado[4] = (
+                        registro_modificado[4].replace("_", " ").title()
+                    )
+                elif "." in registro_modificado[4]:
+                    registro_modificado[4] = (
+                        registro_modificado[4].replace("_", " ").replace(",", ", ")
+                    )
+
+                registro_modificado[7] = registro_modificado[7].strftime("%d-%m-%Y")
+                registro_modificado.insert(10, comunidad[1])
                 registros_modificados.append(tuple(registro_modificado))
 
             return registros_modificados
@@ -2364,7 +2415,7 @@ def load_automation():
         else:
             return automatizaciones
     except Exception as e:
-        return f"Error al cargar el reporte: {str(e)}"
+        return f"Error al cargar la lista de automatizaciones: {str(e)}"
 
 
 def load_report():
@@ -2419,8 +2470,115 @@ def delete_filter(id_filter):
 
 def delete_community(id_community):
     try:
+        automation = modelAutomation.getCommunityById(id_community)
+        automation_id = automation[0]
+
+        delete_automation(automation_id)
+
         modelCommunity.deleteCommunity(id_community)
 
-        return "Comindad Eliminada"
+        return jsonify({"message": "¡Comunidad Eliminada Correctamente!"})
     except Exception as e:
-        return f"Error al obtener el número de la regla: {str(e)}"
+        return f"Error al obtener el id de comunidad: {str(e)}"
+
+
+def deactivate_activate_automation(id_automation):
+    try:
+        message = ""
+
+        automation = modelAutomation.getAutomationById(id_automation)
+        deny_chain = automation[4]
+        estado_detail = automation[5]
+
+        with open("/etc/squid/squid.conf", "r") as squid_file:
+            lines = squid_file.readlines()
+
+        if estado_detail == 1:
+            for i, line in enumerate(lines):
+                if deny_chain in line:
+                    lines[i] = "#" + line
+                    break
+            with open("/etc/squid/squid.conf", "w") as squid_file:
+                squid_file.writelines(lines)
+
+            modelAutomation.updateAutomation(0, id_automation)
+
+            message = "¡Automatizacion Desactivada Correctamente!"
+
+        elif estado_detail == 0:
+            for i, line in enumerate(lines):
+                if deny_chain in line:
+                    if line.startswith("#"):
+                        lines[i] = line[1:]
+                    break
+
+            with open("/etc/squid/squid.conf", "w") as squid_file:
+                squid_file.writelines(lines)
+
+            modelAutomation.updateAutomation(1, id_automation)
+
+            message = "¡Automatizacion Activada Correctamente!"
+
+        return jsonify({"message": message})
+
+    except subprocess.CalledProcessError as e:
+        return jsonify(
+            {"error": f"Error al obtener el número de la automatizacion: {e}"}
+        )
+
+
+def delete_automation(id_automation):
+    try:
+        automatizacion = modelAutomation.getAutomationById(id_automation)
+        deny_chain = automatizacion[4]
+        deny_chain_parts = deny_chain.split(" ")
+
+        acl_ips = deny_chain_parts[2]
+        acl_list = deny_chain_parts[3]
+        acl_schedule = deny_chain_parts[4]
+
+        pattern_ips = re.compile(r"(/etc/squid/squid-restriction/ips/[\w/.\-]+)")
+        pattern_contents = re.compile(
+            r"(/etc/squid/squid-restriction/contents/[\w/.\-]+)"
+        )
+
+        # Lee todas las lineas del squid.conf
+        with open("/etc/squid/squid.conf", "r") as squid_file:
+            lines = squid_file.readlines()
+
+        def remove_acl_and_file(lines, acl, pattern):
+            for i, line in enumerate(lines):
+                if acl in line:
+                    match = pattern.search(line)
+                    if match:
+                        path = match.group(1)
+                        if os.path.exists(path):
+                            os.remove(path)
+
+                    del lines[i]
+                    return True
+            return False
+
+        removed = False
+        removed |= remove_acl_and_file(lines, acl_ips, pattern_ips)
+        removed |= remove_acl_and_file(lines, acl_list, pattern_contents)
+
+        if removed:
+            with open("/etc/squid/squid.conf", "w") as squid_file:
+                squid_file.writelines(lines)
+
+        for acl in [acl_schedule, deny_chain]:
+            for i, line in enumerate(lines):
+                if acl in line:
+                    del lines[i]
+                    break
+
+        with open("/etc/squid/squid.conf", "w") as squid_file:
+            squid_file.writelines(lines)
+
+        modelAutomation.deleteAutomation(id_automation)
+
+        return jsonify({"message": "¡Automatizacion Eliminada Correctamente!"})
+
+    except Exception as e:
+        return f"Error al eliminar la automatización: {str(e)}"
