@@ -99,6 +99,7 @@ cert servervpn-sigcenter.crt
 key servervpn-sigcenter.key
 dh none
 topology subnet
+crl-verify /etc/openvpn/crl.pem
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist /var/log/openvpn/ipp.txt
 push "redirect-gateway def1 bypass-dhcp"
@@ -279,6 +280,9 @@ EOF
     sudo sed -i "/^$CLIENT,.*/d" /var/log/openvpn/ipp.txt
     sudo cp /etc/openvpn/easy-rsa/pki/index.txt{,.bk}
     sudo rm -f "/etc/openvpn/client/keys/$CLIENT.crt" "/etc/openvpn/client/keys/$CLIENT.key"
+
+    sudo systemctl restart openvpn-server@server.service
+    sudo systemctl restart openvpn
 
     echo ""
     echo "Certificados y cliente $CLIENT revocado."
