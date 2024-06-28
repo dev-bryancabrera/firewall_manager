@@ -33,6 +33,10 @@ setup_firewall_rules() {
     sudo iptables -I FORWARD 1 -i "$INTERFACE" -o tun0 -j ACCEPT
     sudo iptables -I FORWARD 1 -i tun0 -o "$INTERFACE" -j ACCEPT
     sudo iptables -I INPUT 1 -i "$INTERFACE" -p udp --dport 1194 -j ACCEPT
+
+    # Permitir el reenvío de tráfico desde la subred VPN a la interfaz de red externa
+    sudo iptables -I FORWARD 1 -m state --state RELATED,ESTABLISHED -j ACCEPT
+    sudo iptables -I FORWARD 1 -s 10.8.0.0/24 -j ACCEPT
 }
 
 # Configurar el servidor OpenVPN
@@ -315,6 +319,9 @@ function uninstall_openvpn() {
             sudo iptables -D FORWARD -i "$INTERFACE" -o tun0 -j ACCEPT
             sudo iptables -D FORWARD -i tun0 -o "$INTERFACE" -j ACCEPT
             sudo iptables -D INPUT -i "$INTERFACE" -p udp --dport 1194 -j ACCEPT
+
+            sudo iptables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+            sudo iptables -D FORWARD -s 10.8.0.0/24 -j ACCEPT
         fi
 
         # SELinux

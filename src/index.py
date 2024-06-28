@@ -27,6 +27,8 @@ if os.path.exists(file_path):
 # Habilitar ufw
 # subprocess.run(["/sbin/ufw", "enable"], input="y\n", universal_newlines=True)
 
+subprocess.run(["/sbin/ufw", "reload"], input="y\n", universal_newlines=True)
+
 # Bloquear todo con iptables
 # subprocess.run(["/sbin/iptables", "-P", "INPUT", "DROP"])
 # subprocess.run(["/sbin/iptables", "-P", "OUTPUT", "DROP"])
