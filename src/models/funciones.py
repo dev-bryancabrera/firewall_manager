@@ -4,7 +4,7 @@ from io import BytesIO
 
 import os
 import shlex
-from flask import Response, flash, jsonify
+from flask import Response, flash, jsonify, send_file
 from flask_login import current_user, login_user
 import pandas as pd
 
@@ -1452,6 +1452,175 @@ def create_automation(
 
     except Exception as e:
         return f"Error al crear la automatización: {str(e)}"
+
+
+def find_script(script_name):
+    for root, dirs, files in os.walk("/"):
+        if script_name in files:
+            script_path = os.path.join(root, script_name)
+            print(f"Script encontrado en: {script_path}")
+            return script_path
+    print(f"Script {script_name} no encontrado.")
+    return None
+
+
+def status_openvpn():
+    # Ruta del archivo donde se guardan las credenciales
+    SECRET_KEY_PATH = find_script("ovpnserver-info")
+    credentials = []
+    gateway = None
+
+    with open(SECRET_KEY_PATH, "r") as file:
+        for line in file:
+            vpn_name, vpn_asociation, vpn_secret_key = line.strip().split(", ")
+            credentials.append(
+                {
+                    "vpn_name": vpn_name,
+                    "vpn_asociation": vpn_asociation,
+                    "vpn_secret_key": vpn_secret_key,
+                }
+            )
+
+    # Función para comprobar si el servicio OpenVPN está activo
+    def is_openvpn_running():
+        return (
+            os.system("systemctl is-active --quiet openvpn-server@server.service") == 0
+        )
+
+    # Función para obtener la puerta de enlace
+    def get_vpn_gateway():
+        try:
+            # Ejecutar el comando para obtener la información de la interfaz tun0
+            result = subprocess.run(
+                ["ip", "route", "show", "dev", "tun0"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            # Parsear la salida para extraer la puerta de enlace
+            output_lines = result.stdout.splitlines()
+
+            for line in output_lines:
+                parts = line.split()
+                return parts[-1]
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error al ejecutar el comando: {e}")
+
+        return None
+
+    if is_openvpn_running():
+        gateway = get_vpn_gateway()
+        return {"status": "running", "credentials": credentials, "gateway": gateway}
+    else:
+        return {"status": "not running"}
+
+
+def setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key):
+    script_name = "openvpn.sh"
+    script_path = find_script(script_name)
+
+    try:
+        print(f"Ejecutando el script: {script_path}")
+        subprocess.run(["chmod", "711", script_path], check=True)
+        subprocess.run(
+            [
+                "bash",
+                script_path,
+                "setup_server",  # Ejecuta la función setup_server
+                vpn_name,
+                vpn_asociation,
+                vpn_secret_key,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        save_iptables_rules()
+
+        return jsonify({"message": "¡Servidor VPN creado correctamente!"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"¡Error al crear y configurar el servidor {e}!"})
+
+
+def setup_vpnclient(client_name, client_key, vpn_secret_key):
+    script_path = find_script("openvpn.sh")
+
+    try:
+        print(f"Ejecutando el script: {script_path}")
+        subprocess.run(
+            [
+                "bash",
+                script_path,
+                "create_client",
+                client_name,
+                client_key,
+                vpn_secret_key,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        ovpn_file = f"{client_name}.ovpn"
+        ovpn_file_path = find_script(ovpn_file)
+
+        if os.path.exists(ovpn_file_path):
+            return send_file(ovpn_file_path, as_attachment=True)
+        else:
+            return jsonify({"error": "¡Error al crear el archivo .ovpn!"}), 500
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"¡Error al crear y configurar el cliente {e}!"})
+
+
+def vpnclient_list():
+    index_file = "/etc/openvpn/easy-rsa/pki/index.txt"
+    ipp_file = "/var/log/openvpn/ipp.txt"
+    client_list_file = "/etc/openvpn/client/lista_clientes"
+
+    try:
+        clients = []
+        with open(index_file, "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                if "CN=" in line:
+                    parts = line.split("/")
+                    for part in parts:
+                        if part.startswith("CN=") and "server" not in part:
+                            client_name = part.split("=")[1].strip()
+                            clients.append(client_name)
+
+        # Leer el archivo ipp.txt
+        client_ips = {}
+        if os.path.exists(ipp_file):
+            with open(ipp_file, "r") as file:
+                lines = file.readlines()
+                for line in lines:
+                    parts = line.split(",")
+                    if len(parts) == 3:
+                        client_name = parts[0].strip()
+                        client_ip = parts[1].strip()
+                        client_ips[client_name] = client_ip
+
+        # Crear/Actualizar el archivo lista_clientes
+        with open(client_list_file, "w") as file:
+            for client in clients:
+                if client in client_ips:
+                    file.write(f"{client},{client_ips[client]}\n")
+                else:
+                    file.write(f"{client},\n")
+
+        client_list = []
+        for client in clients:
+            client_ip = client_ips.get(client, "")
+            client_list.append({"name": client, "ip": client_ip})
+
+        return client_list
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"¡Error al crear y configurar el cliente {e}!"})
 
 
 # Ejecutara unicamente dominios que las ips sean dinamicas

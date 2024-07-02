@@ -20,6 +20,9 @@ from models.funciones import (
     scan_network,
     allow_connections,
     allow_connections_detail,
+    setup_vpnclient,
+    setup_vpnserver,
+    status_openvpn,
     validar_ingreso,
     create_community,
     start_capture,
@@ -32,6 +35,7 @@ from models.funciones import (
     load_reportData,
     delete_report,
     delete_filter,
+    vpnclient_list,
 )
 
 
@@ -72,6 +76,19 @@ def configurar_rutas(app, login_manager_app):
     @login_required
     def home_page():
         return render_template("home-page.html")
+
+    @app.route("/server-vpn")
+    @login_required
+    def server_vpn():
+        lista_clientes = vpnclient_list()
+
+        return render_template("server-vpn.html", lista_clientes=lista_clientes)
+
+    @app.route("/status_openvpn", methods=["GET"])
+    @login_required
+    def api_status_openvpn():
+        status = status_openvpn()
+        return jsonify(status)
 
     @app.route("/community_management")
     @login_required
@@ -398,6 +415,32 @@ def configurar_rutas(app, login_manager_app):
                 community_id,
                 horario,
             )
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/add_vpn_server", methods=["POST"])
+    @login_required
+    def add_vpn_server():
+        try:
+            vpn_name = request.form.get("vpnName")
+            vpn_asociation = request.form.get("vpnAsociation")
+            vpn_secret_key = request.form.get("vpnSecretKey")
+
+            response = setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key)
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/add_vpn_client", methods=["POST"])
+    @login_required
+    def add_vpn_client():
+        try:
+            client_name = request.form.get("clientName")
+            client_key = request.form.get("clientKey")
+            vpn_secret_key = request.form.get("secretVpn")
+
+            response = setup_vpnclient(client_name, client_key, vpn_secret_key)
             return response
         except KeyError as e:
             return f"No se proporcionó el campo {e} en la solicitud POST."
