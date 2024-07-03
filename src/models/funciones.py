@@ -1352,6 +1352,7 @@ def create_automation(
     horario,
 ):
     try:
+        print("llego")
         fecha_creacion = datetime.now()
 
         if content_type:
@@ -2725,9 +2726,11 @@ def delete_filter(id_filter):
 def delete_community(id_community):
     try:
         automation = modelAutomation.getCommunityById(id_community)
-        automation_id = automation[0]
 
-        delete_automation(automation_id)
+        if automation:
+            automation_id = automation[0]
+
+            delete_automation(automation_id)
 
         modelCommunity.deleteCommunity(id_community)
 

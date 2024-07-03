@@ -203,7 +203,7 @@ $(document).ready(function () {
     $(".alert-message-container").show("medium");
     $(".alert-message").text(response);
     setTimeout(function () {
-      //   location.reload();
+      location.reload();
       $(".alert-message-container").hide("medium");
     }, 2000);
   }
