@@ -1352,7 +1352,6 @@ def create_automation(
     horario,
 ):
     try:
-        print("llego")
         fecha_creacion = datetime.now()
 
         if content_type:
@@ -1443,7 +1442,7 @@ def create_automation(
         automation = modelAutomation.insertAutomation(automation)
 
         subprocess.run(
-            ["service", "squid", "reload"],
+            ["systemctl", "reload", "squid"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -2776,6 +2775,13 @@ def deactivate_activate_automation(id_automation):
 
             message = "¡Automatizacion Activada Correctamente!"
 
+        subprocess.run(
+            ["systemctl", "reload", "squid"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
         return jsonify({"message": message})
 
     except subprocess.CalledProcessError as e:
@@ -2834,6 +2840,13 @@ def delete_automation(id_automation):
             squid_file.writelines(lines)
 
         modelAutomation.deleteAutomation(id_automation)
+
+        subprocess.run(
+            ["systemctl", "reload", "squid"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
         return jsonify({"message": "¡Automatizacion Eliminada Correctamente!"})
 
