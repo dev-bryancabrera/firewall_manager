@@ -16,6 +16,7 @@ $(document).ready(function () {
   var btnCreateClientvpn = $("#btn-create-clientvpn");
 
   clientvpnRestriction.prop("disabled", true);
+  $(".container-accordion").hide();
 
   function cleanDisabledInput(elements) {
     $.each(elements, function (key, value) {
@@ -165,6 +166,7 @@ $(document).ready(function () {
     success: function (response) {
       if (response.file_exists) {
         $(".form-servervpn").hide();
+        $(".container-accordion").show();
       }
 
       $("#estado_vpn").text("Estado: " + response.status);

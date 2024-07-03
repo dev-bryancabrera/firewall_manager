@@ -60,11 +60,13 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="selectFilterType">Tipo de Comunidad</label>
+                  <label for="community-type">Tipo de Comunidad</label>
                   <select
-                    class="form-select"
+                    class="selectpicker"
                     id="community-type"
                     name="communityType"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione"
                   >
                     <option value="" selected disabled>Seleccionar...</option>
                     <option value="red_local">Redes locales</option>

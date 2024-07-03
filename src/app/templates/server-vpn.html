@@ -177,11 +177,11 @@
                         <tr>
                           <td class="numero">{{ loop.index }}</td>
                           <td class="nombre">{{ cliente.name }}</td>
-                          <td class="tipo">{{ cliente.issuer }}</td>
-                          <td class="tipo">
+                          <td class="emisor">{{ cliente.issuer }}</td>
+                          <td class="fecha_validez">
                             {{ cliente.not_before ~ ' - ' ~ cliente.not_after }}
                           </td>
-                          <td class="tipo">{{ cliente.ip }}</td>
+                          <td class="ip_asignada">{{ cliente.ip }}</td>
                           <td class="ovpn_file">
                             {% if cliente.ovpn_file %}
                             <a

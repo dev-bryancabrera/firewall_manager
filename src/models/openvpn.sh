@@ -276,61 +276,6 @@ EOF
 }
 
 # Funcion para eliminar un cliente
-# function delete_client() {
-
-#     NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
-#     if [[ $NUMBEROFCLIENTS == '0' ]]; then
-#         echo ""
-#         echo "No tienes clientes registrados!"
-#         exit 1
-#     fi
-
-#     echo ""
-#     echo "Seleccione el cliente que se quiere eliminar"
-#     tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
-#     until [[ $CLIENTNUMBER -ge 1 && $CLIENTNUMBER -le $NUMBEROFCLIENTS ]]; do
-#         if [[ $CLIENTNUMBER == '1' ]]; then
-#             read -rp "Selecciona un cliente [1]: " CLIENTNUMBER
-#         else
-#             read -rp "Selecciona un cliente [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
-#         fi
-#     done
-
-#     CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
-#     cd /etc/openvpn/easy-rsa/ || return
-
-#     # Revocar un cliente usando expect
-#     sudo expect <<EOF
-# spawn sudo ./easyrsa --batch revoke "$CLIENT"
-# expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-# send "admin-openvpn\r"
-# expect eof
-# EOF
-
-#     # Generar el CRL
-#     sudo expect <<EOF
-# spawn sudo EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
-# expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-# send "admin-openvpn\r"
-# expect eof
-# EOF
-
-#     sudo rm -f /etc/openvpn/crl.pem
-#     sudo cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
-#     sudo chmod 644 /etc/openvpn/crl.pem
-#     sudo find /home/tecnico/openvpn/ -maxdepth 2 -name "$CLIENT.ovpn" -delete
-#     sudo rm -f "/etc/openvpn/client/files/$CLIENT.ovpn"
-#     sudo sed -i "/^$CLIENT,.*/d" /var/log/openvpn/ipp.txt
-#     sudo cp /etc/openvpn/easy-rsa/pki/index.txt{,.bk}
-#     sudo rm -f "/etc/openvpn/client/keys/$CLIENT.crt" "/etc/openvpn/client/keys/$CLIENT.key"
-
-#     sudo systemctl restart openvpn-server@server.service
-#     sudo systemctl restart openvpn
-
-#     echo ""
-#     echo "Certificados y cliente $CLIENT revocado."
-# }
-
 function delete_client() {
     CLIENT=$1
     VPN_SECRET_KEY=$2

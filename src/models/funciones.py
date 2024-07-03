@@ -9,7 +9,7 @@ from flask_login import current_user, login_user
 import pandas as pd
 
 import re
-
+import netifaces
 import subprocess
 
 # Models
@@ -292,10 +292,24 @@ def obtener_reglas_ufw_contenido():
         return {"error": f"Error al obtener reglas UFW: {e}"}
 
 
+def get_active_interface():
+    interfaces = netifaces.interfaces()
+    for iface in interfaces:
+        addrs = netifaces.ifaddresses(iface)
+        if netifaces.AF_INET in addrs:
+            ip_info = addrs[netifaces.AF_INET][0]
+            if "addr" in ip_info and ip_info["addr"] != "127.0.0.1":
+                return iface
+    return None
+
+
 def scan_network():
     try:
         # Comando arp-scan para escanear la red
-        command = "/sbin/arp-scan -l"
+        active_interface = get_active_interface()
+
+        command = f"/sbin/arp-scan -I {active_interface} -l"
+
         process = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -1532,7 +1546,10 @@ def setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key):
     script_path = find_script(script_name)
 
     try:
-        if " - CA" not in vpn_asociation:
+        if "server" not in vpn_name or "servidor" not in vpn_name:
+            vpn_name += " - servidor"
+
+        if " CA" not in vpn_asociation:
             vpn_asociation += " - CA"
 
         print(f"Ejecutando el script: {script_path}")
@@ -1617,7 +1634,7 @@ def delete_vpnclient(client_name, vpn_secret_key):
 def vpnclient_list():
     index_file = "/etc/openvpn/easy-rsa/pki/index.txt"
     ipp_file = "/var/log/openvpn/ipp.txt"
-    client_list_file = "/etc/openvpn/client/lista_clientes"
+    # client_list_file = "/etc/openvpn/client/lista_clientes"
 
     if not os.path.exists(index_file) or not os.path.exists(ipp_file):
         return []
@@ -1630,7 +1647,9 @@ def vpnclient_list():
                 if "CN=" in line and line.startswith("V"):
                     parts = line.split("/")
                     for part in parts:
-                        if part.startswith("CN=") and "server" not in part:
+                        if part.startswith("CN=") and (
+                            "server" not in part or "servidor" not in part
+                        ):
                             client_name = part.split("=")[1].strip()
                             clients.append(client_name)
 
@@ -1644,10 +1663,10 @@ def vpnclient_list():
                     client_ip = parts[1].strip()
                     client_ips[client_name] = client_ip
 
-        with open(client_list_file, "w") as file:
-            for client in clients:
-                client_ip = client_ips.get(client, "No se ha detectado una IP asignada")
-                file.write(f"{client},{client_ip}\n")
+        # with open(client_list_file, "w") as file:
+        #     for client in clients:
+        #         client_ip = client_ips.get(client, "No se ha detectado una IP asignada")
+        #         file.write(f"{client},{client_ip}\n")
 
         client_list = []
         for client in clients:
