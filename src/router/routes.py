@@ -1,4 +1,4 @@
-from flask import redirect, render_template, jsonify, request, url_for
+from flask import redirect, render_template, jsonify, request, send_file, url_for
 
 from flask_login import logout_user, login_required
 
@@ -10,6 +10,7 @@ from models.funciones import (
     deactivate_activate_automation,
     delete_automation,
     delete_community,
+    delete_vpnclient,
     get_plataforms,
     get_plataforms_domain,
     load_automation,
@@ -439,11 +440,16 @@ def configurar_rutas(app, login_manager_app):
             client_name = request.form.get("clientName")
             client_key = request.form.get("clientKey")
             vpn_secret_key = request.form.get("secretVpn")
-
+            print(client_name)
             response = setup_vpnclient(client_name, client_key, vpn_secret_key)
             return response
         except KeyError as e:
             return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/download_ovpn", methods=["GET"])
+    def download_ovpn():
+        ovpn_file = request.args.get("filename")
+        return send_file(ovpn_file, as_attachment=True)
 
     @app.route("/save_report", methods=["POST"])
     @login_required
@@ -552,6 +558,20 @@ def configurar_rutas(app, login_manager_app):
             id_automatizacion = request.args.get("id")
 
             response = delete_automation(id_automatizacion)
+
+            return response
+
+        except Exception as e:
+            return f"Error al eliminar la automatizacion: {e}"
+
+    @app.route("/eliminar_clientevpn", methods=["GET"])
+    @login_required
+    def eliminar_clientevpn():
+        try:
+            cliente_eliminar = request.args.get("client_name")
+            vpn_secret_key = request.args.get("secret_vpn")
+            
+            response = delete_vpnclient(cliente_eliminar, vpn_secret_key)
 
             return response
 

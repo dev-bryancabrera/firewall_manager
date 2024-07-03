@@ -8,49 +8,33 @@ $(document).ready(function () {
   var servervpnAssociation = $("#servervpn-association");
   var servervpnSecret = $("#servervpn-secret");
 
-  var btnCreateServervpn = $("#btn-create-servervpn");
+  var clientName = $("#client-name");
+  var clientvpnRestriction = $("#client_key");
+  var restrictionClt = $("#restriction-type");
 
-  /* contentType.prop("disabled", true);
-  contentType.selectpicker("refresh");
-  domainPlataform.prop("disabled", true);
-  domainPlataform.selectpicker("refresh"); */
+  var btnCreateServervpn = $("#btn-create-servervpn");
+  var btnCreateClientvpn = $("#btn-create-clientvpn");
+
+  clientvpnRestriction.prop("disabled", true);
 
   function cleanDisabledInput(elements) {
     $.each(elements, function (key, value) {
       value.val("");
-      value.tagsinput("removeAll");
       value.prop("disabled", true);
     });
   }
 
-  function cleanDisabledMultiselect(elements) {
-    $.each(elements, function (key, value) {
-      value.val([]);
-      value.prop("disabled", true);
-      value.selectpicker("refresh");
-    });
-  }
-
-  /* automationType.on("change", function () {
+  restrictionClt.on("change", function () {
     cleanDisabledInput({
-      domain: domain,
+      clientvpnRestriction: clientvpnRestriction,
     });
-    cleanDisabledMultiselect({
-      contentType: contentType,
-      domainPlataform: domainPlataform,
-    });
-    var selectedOption = automationType.val();
 
-    if (selectedOption === "contenido") {
-      contentType.prop("disabled", false);
-      domainPlataform.prop("disabled", false);
+    var selectedOption = restrictionClt.val();
 
-      contentType.selectpicker("refresh");
-      domainPlataform.selectpicker("refresh");
-    } else if (selectedOption === "dominio") {
-      domain.prop("disabled", false);
+    if (selectedOption === "yes") {
+      clientvpnRestriction.prop("disabled", false);
     }
-  }); */
+  });
 
   $servervpnTable.bootstrapTable({});
 
@@ -58,12 +42,15 @@ $(document).ready(function () {
     event.preventDefault();
 
     if (
-      mostrarAlerta(servervpnName, "Asignar un nombre a la automatizacion.") ||
+      mostrarAlerta(servervpnName, "Asignar un nombre al servidor vpn.") ||
       mostrarAlerta(
         servervpnAssociation,
-        "Asigne un valor del dominio a restringir."
+        "Asigne un valor del asociacion CA."
       ) ||
-      mostrarAlerta(servervpnSecret, "Asigne el o los dias a restringir.")
+      mostrarAlerta(
+        servervpnSecret,
+        "Asigne una clave secreta para el servidor."
+      )
     ) {
       return;
     }
@@ -90,21 +77,24 @@ $(document).ready(function () {
   $vpnclientForm.submit(function (event) {
     event.preventDefault();
 
-    // if (
-    //   mostrarAlerta(servervpnName, "Asignar un nombre a la automatizacion.") ||
-    //   mostrarAlerta(
-    //     servervpnAssociation,
-    //     "Asigne un valor del dominio a restringir."
-    //   ) ||
-    //   mostrarAlerta(servervpnSecret, "Asigne el o los dias a restringir.")
-    // ) {
-    //   return;
-    // }
+    if (
+      mostrarAlerta(clientName, "Asignar un nombre al usuario.") ||
+      mostrarAlertaSelect(
+        restrictionClt,
+        "Escoja una opcion sobre la restriccion del usuario."
+      ) ||
+      mostrarAlerta(
+        clientvpnRestriction,
+        "Asigne un valor a la clave del usuario."
+      )
+    ) {
+      return;
+    }
 
     // Crear un objeto con los datos que deseas enviar
     var formData = $(this).serialize();
 
-    // btnCreateServervpn.prop("disabled", true);
+    btnCreateClientvpn.prop("disabled", true);
 
     $.ajax({
       type: "POST",
@@ -144,21 +134,46 @@ $(document).ready(function () {
     });
   });
 
+  $("#deleteClientConfirm").on("click", function () {
+    var params = {
+      client_name: $("#client_vpn_delete").val(),
+      secret_vpn: $("#secret_vpn").val(),
+    };
+
+    $.ajax({
+      type: "GET",
+      url: "/eliminar_clientevpn",
+      data: params,
+      success: function (response) {
+        if (response.error) {
+          btn_status.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
+      },
+    });
+  });
+
   $.ajax({
     type: "GET",
     url: "/status_openvpn",
     success: function (response) {
-      // Mostrar estado del servidor VPN
-      $("#estado_vpn").text("Estado VPN: " + response.status);
+      if (response.file_exists) {
+        $(".form-servervpn").hide();
+      }
 
-      // Mostrar credenciales si el estado es "running"
-      if (response.status === "running") {
+      $("#estado_vpn").text("Estado: " + response.status);
+
+      if (response.status === "En ejecucion") {
         response.credentials.forEach(function (credential) {
-          $("#nombre_vpn").text("VPN Nombre: " + credential.vpn_name);
-          $("#asociacion_vpn").text(
-            "VPN Asociacion: " + credential.vpn_asociation
-          );
-          $("#secret_vpn").val(credential.vpn_secret_key);
+          $("#nombre_vpn").text("Nombre: " + credential.vpn_name);
+          $("#asociacion_vpn").text("Asociacion: " + credential.vpn_asociation);
+          $(".secretvpn").val(credential.vpn_secret_key);
         });
 
         // Mostrar puerta de enlace si está disponible
@@ -170,60 +185,6 @@ $(document).ready(function () {
     error: function (xhr, status, error) {
       console.error("Error al obtener el estado del servidor VPN:", error);
     },
-  });
-
-  $('button[id^="btn-automatizacion"]').on("click", function (event) {
-    event.preventDefault();
-
-    var automatizacionId = $(this).attr("id").split("-", 3)[2];
-
-    var btn_status = $(this);
-    btn_status.prop("disabled", true);
-
-    $.ajax({
-      type: "GET",
-      url: "/desactivar_automatizacion",
-      data: { id: automatizacionId },
-      success: function (response) {
-        if (response.error) {
-          btn_status.prop("disabled", false);
-          alertMessage(response.error, "danger");
-        } else {
-          alertMessage(response.message, "success");
-        }
-      },
-      error: function (textStatus, errorThrown) {
-        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
-        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
-      },
-    });
-  });
-
-  $('button[id^="delete-automatizacion"]').on("click", function (event) {
-    event.preventDefault();
-
-    var automatizacionId = $(this).attr("id").split("-", 3)[2];
-
-    var btn_status = $(this);
-    btn_status.prop("disabled", true);
-
-    $.ajax({
-      type: "GET",
-      url: "/eliminar_automatizacion",
-      data: { id: automatizacionId },
-      success: function (response) {
-        if (response.error) {
-          btn_status.prop("disabled", false);
-          alertMessage(response.error, "danger");
-        } else {
-          alertMessage(response.message, "success");
-        }
-      },
-      error: function (textStatus, errorThrown) {
-        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
-        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
-      },
-    });
   });
 
   function validarSelectContainer(contenedor, elemento, mensaje) {
@@ -242,7 +203,7 @@ $(document).ready(function () {
     $(".alert-message-container").show("medium");
     $(".alert-message").text(response);
     setTimeout(function () {
-      location.reload();
+      //   location.reload();
       $(".alert-message-container").hide("medium");
     }, 2000);
   }

@@ -112,6 +112,7 @@ EOF
 
     echo "90% - Copiando archivos al servidor OpenVPN"
     sudo cp /etc/openvpn/easy-rsa/pki/issued/$vpn_name.crt /etc/openvpn/server/
+    sudo cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/
     sudo cp /etc/openvpn/easy-rsa/pki/ca.crt /etc/openvpn/server/
     sudo cp /etc/openvpn/easy-rsa/pki/private/$vpn_name.key /etc/openvpn/server/
 
@@ -198,117 +199,6 @@ EOF
     exit 0
 }
 
-# Funcion para crear un nuevo cliente
-# function create_client() {
-
-#     echo ""
-#     echo "Asigna un nombre para el cliente."
-#     echo "El nombre debe constar de caracteres alfanuméricos. Sin caracteres especiales"
-
-#     until [[ $CLIENT =~ ^[a-zA-Z0-9_-]+$ ]]; do
-#         read -rp "Nombre del Cliente: " -e CLIENT
-#     done
-
-#     if echo $CLIENT | grep -q '-'; then
-#         echo "No ingrese caracteres especiales!"
-#         exit
-#     fi
-
-#     echo ""
-#     echo "Quieres asignar una contraseña al cliente?"
-#     echo "(por ejemplo, encriptar la clave privada con una contraseña)"
-#     echo "   1) Añadir un cliente sin contraseña"
-#     echo "   2) Usar una contraseña para el cliente"
-#     echo ""
-
-#     # Solicitar y validar la opcion de proteccion con contraseña
-#     until [[ $PASS =~ ^[1-2]$ ]]; do
-#         read -rp "Select an option [1-2]: " -e -i 1 PASS
-#     done
-
-#     # Verificar si el cliente ya existe en easy-rsa
-#     CLIENTEXISTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c -E "/CN=$CLIENT\$")
-#     if [[ $CLIENTEXISTS == '1' ]]; then
-#         echo ""
-#         echo "Ya existe un cliente registrado con ese nombre, seleccione otro"
-#         exit
-#     else
-#         cd /etc/openvpn/easy-rsa/ || return
-#         case $PASS in
-
-#         1)
-#             # Generar cliente sin contraseña usando expect
-#             sudo expect <<EOF
-# spawn sudo ./easyrsa --batch build-client-full "$CLIENT-sigcenter" nopass
-# expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-# send "admin-openvpn\r"
-# expect eof
-# EOF
-#             ;;
-#         2)
-#             # Generar cliente con contraseña usando expect
-#             echo "⚠️ Ingrese la contraseña para el cliente, recuérdela para establecer la conexion ⚠️"
-
-#             read -sp "Ingrese la contraseña para el cliente: " CLIENT_PASS
-#             echo
-
-#             # Usar expect para manejar ambos prompts
-#             sudo expect <<EOF
-# spawn sudo ./easyrsa --batch build-client-full "$CLIENT-sigcenter"
-# expect "Enter PEM pass phrase:"
-# send "$CLIENT_PASS\r"
-# expect "Verifying - Enter PEM pass phrase:"
-# send "$CLIENT_PASS\r"
-# expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-# send "admin-openvpn\r"
-# expect eof
-# EOF
-
-#             ;;
-#         esac
-
-#         if [[ $? -ne 0 ]]; then
-#             echo "Error al generar la solicitud de certificado para el cliente."
-#             exit 1
-#         fi
-
-#         # Firmar el certificado del cliente usando expect para manejar el prompt de passphrase
-#         #         sudo expect <<EOF
-#         # spawn sudo ./easyrsa sign-req client "$CLIENT-sigcenter"
-#         # expect "Confirm request details:"
-#         # send "yes\r"
-#         # expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-#         # send "admin-openvpn\r"
-#         # expect eof
-#         # EOF
-
-#         # Copiar el certificado y la clave privada al directorio de claves del cliente
-#         sudo cp /etc/openvpn/easy-rsa/pki/issued/"$CLIENT-sigcenter".crt /etc/openvpn/client/keys/
-#         sudo cp /etc/openvpn/easy-rsa/pki/private/"$CLIENT-sigcenter".key /etc/openvpn/client/keys/
-
-#         echo "Client $CLIENT added."
-#     fi
-
-#     # Crear archivo de configuracion para el cliente
-#     KEY_DIR=/etc/openvpn/client/keys
-#     OUTPUT_DIR=/etc/openvpn/client/files
-#     BASE_CONFIG=/etc/openvpn/client/plantilla.conf
-
-#     sudo mkdir -p $OUTPUT_DIR
-
-#     sudo bash -c "cat ${BASE_CONFIG} \
-#         <(echo -e '<ca>') \
-#         ${KEY_DIR}/ca.crt \
-#         <(echo -e '</ca>\n<cert>') \
-#         ${KEY_DIR}/$CLIENT-sigcenter.crt \
-#         <(echo -e '</cert>\n<key>') \
-#         ${KEY_DIR}/$CLIENT-sigcenter.key \
-#         <(echo -e '</key>\n<tls-crypt>') \
-#         ${KEY_DIR}/ta.key \
-#         <(echo -e '</tls-crypt>') \
-#         > ${OUTPUT_DIR}/$CLIENT-sigcenter.ovpn"
-# }
-
 function create_client() {
     CLIENT=$1
     CLIENT_PASS=$2
@@ -386,34 +276,82 @@ EOF
 }
 
 # Funcion para eliminar un cliente
-function delete_client() {
+# function delete_client() {
 
-    NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
-    if [[ $NUMBEROFCLIENTS == '0' ]]; then
-        echo ""
-        echo "No tienes clientes registrados!"
+#     NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
+#     if [[ $NUMBEROFCLIENTS == '0' ]]; then
+#         echo ""
+#         echo "No tienes clientes registrados!"
+#         exit 1
+#     fi
+
+#     echo ""
+#     echo "Seleccione el cliente que se quiere eliminar"
+#     tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
+#     until [[ $CLIENTNUMBER -ge 1 && $CLIENTNUMBER -le $NUMBEROFCLIENTS ]]; do
+#         if [[ $CLIENTNUMBER == '1' ]]; then
+#             read -rp "Selecciona un cliente [1]: " CLIENTNUMBER
+#         else
+#             read -rp "Selecciona un cliente [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
+#         fi
+#     done
+
+#     CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
+#     cd /etc/openvpn/easy-rsa/ || return
+
+#     # Revocar un cliente usando expect
+#     sudo expect <<EOF
+# spawn sudo ./easyrsa --batch revoke "$CLIENT"
+# expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
+# send "admin-openvpn\r"
+# expect eof
+# EOF
+
+#     # Generar el CRL
+#     sudo expect <<EOF
+# spawn sudo EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+# expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
+# send "admin-openvpn\r"
+# expect eof
+# EOF
+
+#     sudo rm -f /etc/openvpn/crl.pem
+#     sudo cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
+#     sudo chmod 644 /etc/openvpn/crl.pem
+#     sudo find /home/tecnico/openvpn/ -maxdepth 2 -name "$CLIENT.ovpn" -delete
+#     sudo rm -f "/etc/openvpn/client/files/$CLIENT.ovpn"
+#     sudo sed -i "/^$CLIENT,.*/d" /var/log/openvpn/ipp.txt
+#     sudo cp /etc/openvpn/easy-rsa/pki/index.txt{,.bk}
+#     sudo rm -f "/etc/openvpn/client/keys/$CLIENT.crt" "/etc/openvpn/client/keys/$CLIENT.key"
+
+#     sudo systemctl restart openvpn-server@server.service
+#     sudo systemctl restart openvpn
+
+#     echo ""
+#     echo "Certificados y cliente $CLIENT revocado."
+# }
+
+function delete_client() {
+    CLIENT=$1
+    VPN_SECRET_KEY=$2
+
+    if [[ -z "$CLIENT" ]]; then
+        echo "Debe proporcionar un nombre de cliente."
         exit 1
     fi
 
-    echo ""
-    echo "Seleccione el cliente que se quiere eliminar"
-    tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
-    until [[ $CLIENTNUMBER -ge 1 && $CLIENTNUMBER -le $NUMBEROFCLIENTS ]]; do
-        if [[ $CLIENTNUMBER == '1' ]]; then
-            read -rp "Selecciona un cliente [1]: " CLIENTNUMBER
-        else
-            read -rp "Selecciona un cliente [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
-        fi
-    done
+    if ! grep -q "^V.*CN=$CLIENT" /etc/openvpn/easy-rsa/pki/index.txt; then
+        echo "El cliente $CLIENT no está registrado o no es válido."
+        exit 1
+    fi
 
-    CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
     cd /etc/openvpn/easy-rsa/ || return
 
     # Revocar un cliente usando expect
     sudo expect <<EOF
 spawn sudo ./easyrsa --batch revoke "$CLIENT"
 expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-send "admin-openvpn\r"
+send "$VPN_SECRET_KEY\r"
 expect eof
 EOF
 
@@ -421,14 +359,13 @@ EOF
     sudo expect <<EOF
 spawn sudo EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 expect "Enter pass phrase for /etc/openvpn/easy-rsa/pki/private/ca.key:"
-send "admin-openvpn\r"
+send "$VPN_SECRET_KEY\r"
 expect eof
 EOF
 
     sudo rm -f /etc/openvpn/crl.pem
     sudo cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
     sudo chmod 644 /etc/openvpn/crl.pem
-    sudo find /home/tecnico/openvpn/ -maxdepth 2 -name "$CLIENT.ovpn" -delete
     sudo rm -f "/etc/openvpn/client/files/$CLIENT.ovpn"
     sudo sed -i "/^$CLIENT,.*/d" /var/log/openvpn/ipp.txt
     sudo cp /etc/openvpn/easy-rsa/pki/index.txt{,.bk}
@@ -439,6 +376,8 @@ EOF
 
     echo ""
     echo "Certificados y cliente $CLIENT revocado."
+
+    exit 0
 }
 
 # Funcion para desinstalar OpenVPN
@@ -498,5 +437,9 @@ if [ "$1" == "setup_server" ]; then
 elif [ "$1" == "create_client" ]; then
     shift
     create_client "$@"
+    exit 0
+elif [ "$1" == "delete_client" ]; then
+    shift
+    delete_client "$@"
     exit 0
 fi

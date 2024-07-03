@@ -1470,6 +1470,11 @@ def status_openvpn():
     credentials = []
     gateway = None
 
+    file_exists = os.path.exists(SECRET_KEY_PATH)
+
+    if not file_exists:
+        return {"status": "file not found", "file_exists": False}
+
     with open(SECRET_KEY_PATH, "r") as file:
         for line in file:
             vpn_name, vpn_asociation, vpn_secret_key = line.strip().split(", ")
@@ -1512,9 +1517,14 @@ def status_openvpn():
 
     if is_openvpn_running():
         gateway = get_vpn_gateway()
-        return {"status": "running", "credentials": credentials, "gateway": gateway}
+        return {
+            "status": "En ejecucion",
+            "file_exists": True,
+            "credentials": credentials,
+            "gateway": gateway,
+        }
     else:
-        return {"status": "not running"}
+        return {"status": "Detenido", "file_exists": True}
 
 
 def setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key):
@@ -1522,13 +1532,16 @@ def setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key):
     script_path = find_script(script_name)
 
     try:
+        if " - CA" not in vpn_asociation:
+            vpn_asociation += " - CA"
+
         print(f"Ejecutando el script: {script_path}")
         subprocess.run(["chmod", "711", script_path], check=True)
         subprocess.run(
             [
                 "bash",
                 script_path,
-                "setup_server",  # Ejecuta la función setup_server
+                "setup_server",
                 vpn_name,
                 vpn_asociation,
                 vpn_secret_key,
@@ -1538,7 +1551,7 @@ def setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key):
             check=True,
         )
 
-        save_iptables_rules()
+        # save_iptables_rules()
 
         return jsonify({"message": "¡Servidor VPN creado correctamente!"})
     except subprocess.CalledProcessError as e:
@@ -1547,6 +1560,9 @@ def setup_vpnserver(vpn_name, vpn_asociation, vpn_secret_key):
 
 def setup_vpnclient(client_name, client_key, vpn_secret_key):
     script_path = find_script("openvpn.sh")
+
+    if client_key is None:
+        client_key = ""
 
     try:
         print(f"Ejecutando el script: {script_path}")
@@ -1564,8 +1580,7 @@ def setup_vpnclient(client_name, client_key, vpn_secret_key):
             check=True,
         )
 
-        ovpn_file = f"{client_name}.ovpn"
-        ovpn_file_path = find_script(ovpn_file)
+        ovpn_file_path = f"/etc/openvpn/client/files/{client_name}.ovpn"
 
         if os.path.exists(ovpn_file_path):
             return send_file(ovpn_file_path, as_attachment=True)
@@ -1575,52 +1590,122 @@ def setup_vpnclient(client_name, client_key, vpn_secret_key):
         return jsonify({"error": f"¡Error al crear y configurar el cliente {e}!"})
 
 
+def delete_vpnclient(client_name, vpn_secret_key):
+    script_path = find_script("openvpn.sh")
+
+    try:
+        print(f"Ejecutando el script: {script_path}")
+        subprocess.run(
+            [
+                "bash",
+                script_path,
+                "delete_client",
+                client_name,
+                vpn_secret_key,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        return jsonify({"message": "¡Usuario VPN eliminado correctamente!"})
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({"message": f"¡Error al ejecutar el comando: {e.stderr}!"}), 500
+
+
 def vpnclient_list():
     index_file = "/etc/openvpn/easy-rsa/pki/index.txt"
     ipp_file = "/var/log/openvpn/ipp.txt"
     client_list_file = "/etc/openvpn/client/lista_clientes"
+
+    if not os.path.exists(index_file) or not os.path.exists(ipp_file):
+        return []
 
     try:
         clients = []
         with open(index_file, "r") as file:
             lines = file.readlines()
             for line in lines:
-                if "CN=" in line:
+                if "CN=" in line and line.startswith("V"):
                     parts = line.split("/")
                     for part in parts:
                         if part.startswith("CN=") and "server" not in part:
                             client_name = part.split("=")[1].strip()
                             clients.append(client_name)
 
-        # Leer el archivo ipp.txt
         client_ips = {}
-        if os.path.exists(ipp_file):
-            with open(ipp_file, "r") as file:
-                lines = file.readlines()
-                for line in lines:
-                    parts = line.split(",")
-                    if len(parts) == 3:
-                        client_name = parts[0].strip()
-                        client_ip = parts[1].strip()
-                        client_ips[client_name] = client_ip
+        with open(ipp_file, "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                parts = line.strip().split(",")
+                if len(parts) == 2:
+                    client_name = parts[0].strip()
+                    client_ip = parts[1].strip()
+                    client_ips[client_name] = client_ip
 
-        # Crear/Actualizar el archivo lista_clientes
         with open(client_list_file, "w") as file:
             for client in clients:
-                if client in client_ips:
-                    file.write(f"{client},{client_ips[client]}\n")
-                else:
-                    file.write(f"{client},\n")
+                client_ip = client_ips.get(client, "No se ha detectado una IP asignada")
+                file.write(f"{client},{client_ip}\n")
 
         client_list = []
         for client in clients:
-            client_ip = client_ips.get(client, "")
-            client_list.append({"name": client, "ip": client_ip})
+            client_ip = client_ips.get(client, "No se ha detectado una IP asignada")
+            ovpn_file_path = f"/etc/openvpn/client/files/{client}.ovpn"
+            crt_file_path = f"/etc/openvpn/easy-rsa/pki/issued/{client}.crt"
+
+            issuer, not_before, not_after = get_certificate_info(crt_file_path)
+
+            if os.path.exists(ovpn_file_path):
+                client_list.append(
+                    {
+                        "name": client,
+                        "ip": client_ip,
+                        "ovpn_file": ovpn_file_path,
+                        "issuer": issuer,
+                        "not_before": not_before,
+                        "not_after": not_after,
+                    }
+                )
+            else:
+                client_list.append(
+                    {
+                        "name": client,
+                        "ip": client_ip,
+                        "ovpn_file": "",
+                        "issuer": issuer,
+                        "not_before": not_before,
+                        "not_after": not_after,
+                    }
+                )
 
         return client_list
 
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": f"¡Error al crear y configurar el cliente {e}!"})
+    except Exception as e:
+        print(f"Error al procesar los clientes VPN: {e}")
+        return []
+
+
+def get_certificate_info(cert_path):
+    try:
+        # Comando para obtener la información del certificado
+        output = subprocess.check_output(
+            ["openssl", "x509", "-in", cert_path, "-noout", "-issuer", "-dates"],
+            text=True,
+        )
+        lines = output.splitlines()
+        issuer = (
+            lines[0].split("=", 1)[1].strip().replace("CN=", "")
+            if "CN=" in lines[0]
+            else lines[0].strip()
+        )
+        not_before = lines[1].split("=", 1)[1].strip().replace(" GMT", "")
+        not_after = lines[2].split("=", 1)[1].strip().replace(" GMT", "")
+        return issuer, not_before, not_after
+    except Exception as e:
+        print(f"Error al obtener la información del certificado: {e}")
+        return "N/A", "N/A", "N/A"
 
 
 # Ejecutara unicamente dominios que las ips sean dinamicas
