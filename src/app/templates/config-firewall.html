@@ -488,7 +488,7 @@
                         <select
                           class="form-select"
                           name="regla"
-                          id="formSelectRegla"
+                          id="selectRegla"
                         >
                           <option value="" selected disabled>
                             Seleccionar...
@@ -498,8 +498,8 @@
                           <option value="direccion ip y puerto">
                             Direcciones IP y Puertos
                           </option>
-                          <!-- <option value="dominio">Dominio</option>
-                          <option value="contenido">Contenido</option> -->
+                          <option value="dominio">Dominio</option>
+                          <option value="contenido">Contenido</option>
                         </select>
                       </div>
 
@@ -518,7 +518,7 @@
                         </select>
                       </div>
 
-                      <div class="form-group">
+                      <div class="form-group" id="directionContainer">
                         <label for="selectEntry">Dirección de la Regla</label>
                         <select
                           class="form-select"
@@ -537,6 +537,15 @@
                           <option value="" selected>Seleccionar...</option>
                           <option value="red_local">Red Local</option>
                           <option value="red_externa">Red Externa</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group" id="redTypeContainer">
+                        <label for="red_type"></label>
+                        <select class="form-select" id="red_type_select">
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="red_local_ip">Red Local IP</option>
+                          <option value="red_externa_mac">Red Local MAC</option>
                         </select>
                       </div>
 

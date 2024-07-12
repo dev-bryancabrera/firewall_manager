@@ -1,5 +1,5 @@
 /* Seleccionar Campos */
-var selectRegla = $("#formSelectRegla");
+var selectRegla = $("#selectRegla");
 var selectTypeRed = $("#red_type_select");
 var name_rule = $("#comment");
 var action = $("#formSelectAction");
@@ -21,6 +21,7 @@ var btnCreate = $("#btncreate");
 var domainContainer = $("#domainContainer");
 var redContainer = $("#redContainer");
 var redTypeContainer = $("#redTypeContainer");
+var directionContainer = $("#directionContainer");
 var ipContainer = $("#ipContainer");
 var portContainer = $("#portContainer");
 var protocolContainer = $("#protocolContainer");
@@ -112,6 +113,7 @@ $(document).ready(function () {
     cleanDisabledSelect({
       selectPortRange: selectPortRange,
       selectProtocol: selectProtocol,
+      selectEntry: selectEntry,
     });
     cleanDisabledMultiselect({
       content: content,
@@ -120,6 +122,7 @@ $(document).ready(function () {
     ocultarCampos({
       domainContainer: domainContainer,
       contentContainer: contentContainer,
+      directionContainer: directionContainer,
       ipContainer: ipContainer,
       portContainer: portContainer,
       rangePortContainer: rangePortContainer,
@@ -135,14 +138,17 @@ $(document).ready(function () {
     if (selectedOption === "direccion ip") {
       ipAddrInput.prop("disabled", false);
       selectProtocol.prop("disabled", false);
+      selectEntry.prop("disabled", false);
 
       redTypeContainer.css("display", "block");
       protocolContainer.css("display", "block");
+      directionContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", false);
     } else if (selectedOption === "puerto") {
       selectPortRange.prop("disabled", false);
       selectProtocol.prop("disabled", false);
+      selectEntry.prop("disabled", false);
       port.prop("disabled", false);
 
       label.textContent = "Rango de Puertos";
@@ -154,16 +160,17 @@ $(document).ready(function () {
       initPortContainer.css("display", "block");
       endPortContainer.css("display", "block");
       protocolContainer.css("display", "block");
-
-      // $("#selectEntry option[value='in']").prop("disabled", true);
+      directionContainer.css("display", "block");
     } else if (selectedOption === "direccion ip y puerto") {
       ipAddrInput.prop("disabled", false);
       selectProtocol.prop("disabled", false);
       port.prop("disabled", false);
+      selectEntry.prop("disabled", false);
 
       redTypeContainer.css("display", "block");
       portContainer.css("display", "block");
       protocolContainer.css("display", "block");
+      directionContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", false);
     } else if (selectedOption === "dominio") {
