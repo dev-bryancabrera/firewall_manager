@@ -1,6 +1,7 @@
 /* Seleccionar Campos */
 var selectRegla = $("#selectRegla");
 var selectTypeRed = $("#red_type_select");
+var selectLocalTypeSelect = $("#red_local_type_select");
 var name_rule = $("#comment");
 var action = $("#formSelectAction");
 var ipAddrInput = $("#ipaddr");
@@ -12,7 +13,10 @@ var portStart = $("#portStart");
 var portEnd = $("#portEnd");
 var selectEntry = $("#selectEntry");
 var selectProtocol = $("#selectProtocol");
+var typeIpRed = $("#type_ip_red");
+var typeMacRed = $("#type_mac_red");
 var typeRed = $("#type_red");
+var newEntry = $("#newEntry");
 
 var btnCancelar = $("#btnCancelar");
 var btnCreate = $("#btncreate");
@@ -21,6 +25,9 @@ var btnCreate = $("#btncreate");
 var domainContainer = $("#domainContainer");
 var redContainer = $("#redContainer");
 var redTypeContainer = $("#redTypeContainer");
+var redLocalTypeContainer = $("#redLocalTypeContainer");
+var redIpContainer = $("#redIpContainer");
+var redMacContainer = $("#redMacContainer");
 var directionContainer = $("#directionContainer");
 var ipContainer = $("#ipContainer");
 var portContainer = $("#portContainer");
@@ -29,6 +36,7 @@ var rangePortContainer = $("#rangePortContainer");
 var contentContainer = $("#contentContainer");
 var initPortContainer = $("#initPortContainer");
 var endPortContainer = $("#endPortContainer");
+var newEntryGroupContainer = $("#newEntryGroup");
 
 var domainContainerEdit = $("#domainContainerEdit");
 var ipContainerEdit = $("#ipContainerEdit");
@@ -62,12 +70,6 @@ var domainEdit = $("#editDomain");
 var $tablesFirewall = $(".table");
 
 $(document).ready(function () {
-  /* Ocultar campos iniciales */
-  domainContainer.css("display", "none");
-  contentContainer.css("display", "none");
-  redTypeContainer.css("display", "none");
-  redContainer.css("display", "none");
-
   ipAddrInput.prop("disabled", true);
   selectPortRange.prop("disabled", true);
   portStart.prop("disabled", true);
@@ -131,6 +133,7 @@ $(document).ready(function () {
       endPortContainer: endPortContainer,
       protocolContainer: protocolContainer,
       redTypeContainer: redTypeContainer,
+      redLocalTypeContainer: redLocalTypeContainer,
       redContainer: redContainer,
     });
 
@@ -178,11 +181,14 @@ $(document).ready(function () {
       selectProtocol.prop("disabled", false);
       port.prop("disabled", false);
 
+      redLocalTypeContainer.css("display", "block");
       domainContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", true);
     } else if (selectedOption === "contenido") {
       selectProtocol.prop("disabled", false);
+
+      redLocalTypeContainer.css("display", "block");
       contentContainer.css("display", "block");
 
       $("#selectEntry option[value='in']").prop("disabled", true);
@@ -244,39 +250,141 @@ $(document).ready(function () {
     }
   });
 
+  selectLocalTypeSelect.on("change", function () {
+    /* cleanDisabledInput({
+      ipAddrInput: ipAddrInput,
+    }); */
+    cleanDisabledMultiselect({
+      typeIpRed: typeIpRed,
+      typeMacRed: typeMacRed,
+    });
+    ocultarCampos({
+      redIpContainer: redIpContainer,
+      redMacContainer: redMacContainer,
+    });
+
+    var selectedTypeLocalOption = selectLocalTypeSelect.val();
+    if (selectedTypeLocalOption === "red_local_ip") {
+      typeIpRed.prop("disabled", false);
+
+      redIpContainer.css("display", "block");
+    } else if (selectedTypeLocalOption === "red_externa_mac") {
+      typeMacRed.prop("disabled", false);
+
+      redMacContainer.css("display", "block");
+    }
+  });
+
+  let currentSelect = null;
+
+  // AGREGAR UN NUEVO REGISTRO EN EL SELECT
+  $(".selectpicker").on(
+    "changed.bs.select",
+    function (e, clickedIndex, isSelected, previousValue) {
+      var selectedValue = $(this).val();
+      if (selectedValue === "addNewOption") {
+        currentSelect = $(this);
+        newEntryGroupContainer.css("display", "flex");
+        $("#newEntry").focus();
+      } else {
+        newEntryGroupContainer.css("display", "none");
+      }
+    }
+  );
+
+  function addNewEntry() {
+    var newEntry = $("#newEntry").val();
+    if (newEntry && currentSelect) {
+      // Inserta antes de la opción "Agregar nueva"
+      var newOption = new Option(newEntry, newEntry);
+      currentSelect.find("option[value='addNewOption']").before(newOption);
+
+      currentSelect.selectpicker("refresh");
+      currentSelect.selectpicker("val", newEntry);
+
+      $("#newEntry").val("");
+      newEntryGroupContainer.css("display", "none");
+    }
+  }
+
+  $("#newEntry").keypress(function (event) {
+    if (event.which === 13) {
+      addNewEntry();
+      event.preventDefault();
+    }
+  });
+
+  // Agrega el nuevo dato al hacer clic en el botón
+  $("#addEntryButton").click(function () {
+    addNewEntry();
+  });
+
   $tablesFirewall.bootstrapTable({});
 
   $("#formFirewall").submit(function (event) {
     event.preventDefault();
 
     if (
-      validarSelect(selectRegla, "Seleccione que tipo de regla desea crear") ||
       mostrarAlerta(name_rule, "Se debe asignar un nombre a la Regla") ||
+      validarSelect(selectRegla, "Seleccione que tipo de regla desea crear") ||
       validarSelect(action, "Se debe asignar una accion para la Regla") ||
-      mostrarAlerta(ipAddrInput, "El campo de dirección IP es requerido.") ||
       mostrarAlerta(selectEntry, "El campo de entrada es requerido.") ||
-      mostrarAlerta(domain, "El campo de dominio es requerido") ||
+      validarCampoInput(
+        ipAddrInput,
+        ipContainer,
+        "El campo de dirección IP es requerido."
+      ) ||
       validarSelectContainer(
         redTypeContainer,
         selectTypeRed,
-        "Seleccione que tipo de red se establecera"
+        "Seleccione que tipo de red se establecera."
+      ) ||
+      validarCampoInput(
+        newEntry,
+        newEntryGroupContainer,
+        "Ingrese el nuevo dato para la lista de ip o mac."
+      ) ||
+      validarEntryContainer(
+        newEntryGroupContainer,
+        "Presione enter o el + para agregar el valor a la lista"
+      ) ||
+      validarCampoInput(
+        domain,
+        domainContainer,
+        "El campo de dominio es requerido"
+      ) ||
+      validarSelectContainer(
+        redLocalTypeContainer,
+        selectLocalTypeSelect,
+        "Seleccione que tipo de red se establecera."
       ) ||
       validarSelectContainer(
         redContainer,
         typeRed,
-        "Seleccione una red para crear la regla"
+        "Seleccione una red para crear la regla."
+      ) ||
+      validarSelectContainer(
+        redIpContainer,
+        typeIpRed,
+        "Seleccione una direccion IP del equipo al que se realizara la restriccion."
+      ) ||
+      validarSelectContainer(
+        redMacContainer,
+        typeMacRed,
+        "Seleccione una direccion MAC del equipo al que se realizara la restriccion."
       ) ||
       validarSelectContainer(
         contentContainer,
         content,
         "Seleccione un tipo de contenido"
       ) ||
-      validarCampoDomain(port, "El campo de puerto es requerido.") ||
-      validarCampoDomain(
-        portStart,
-        "El campo de puerto de inicio es requerido."
+      validarCampoInput(
+        port,
+        portContainer,
+        "El campo de puerto es requerido."
       ) ||
-      validarCampoDomain(portEnd, "El campo de puerto de fin es requerido.") ||
+      /*  mostrarAlerta(portStart, "El campo de puerto de inicio es requerido.") ||
+      mostrarAlerta(portEnd, "El campo de puerto de fin es requerido.") || */
       validarSelectContainer(
         protocolContainer,
         selectProtocol,
@@ -480,12 +588,21 @@ $(document).ready(function () {
     );
   }
 
-  function validarCampoDomain(elemento, mensaje) {
+  function validarCampoInput(elemento, contenedor, mensaje) {
     if (
       !elemento.prop("disabled") &&
       elemento.val().trim() === "" &&
-      domainContainer.css("display") === "none"
+      contenedor.css("display") !== "none"
     ) {
+      $("#liveToast .toast-body").text(mensaje);
+      $("#liveToast").toast("show");
+      return true;
+    }
+    return false;
+  }
+
+  function validarEntryContainer(contenedor, mensaje) {
+    if (contenedor.css("display") !== "none") {
       $("#liveToast .toast-body").text(mensaje);
       $("#liveToast").toast("show");
       return true;

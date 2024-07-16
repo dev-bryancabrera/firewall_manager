@@ -157,6 +157,22 @@ td {
   gap: 35px;
 }
 
+#newEntryGroup {
+  display: flex;
+  flex-direction: row;
+}
+
+#domainContainer,
+#contentContainer,
+#redTypeContainer,
+#redLocalTypeContainer,
+#redContainer,
+#redIpContainer,
+#redMacContainer,
+#redLocalTypeContainer {
+  display: none;
+}
+
 h2 {
   text-align: center;
   font-weight: bold;

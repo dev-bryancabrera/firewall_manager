@@ -244,6 +244,8 @@ def configurar_rutas(app, login_manager_app):
             type_rule = request.form.get("regla")
             ip_addr = request.form.get("ip_addr")
             local_red = request.form.get("localRed")
+            local_ip_red = request.form.get("localIpRed")
+            local_mac_red = request.form.get("localMacRed")
             domain = request.form.get("domain")
             direction = request.form.get("fromto")
             netmask = request.form.get("netmask")
@@ -262,6 +264,8 @@ def configurar_rutas(app, login_manager_app):
                 type_rule,
                 ip_addr,
                 local_red,
+                local_ip_red,
+                local_mac_red,
                 domain,
                 port,
                 protocol,

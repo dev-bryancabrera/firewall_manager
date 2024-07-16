@@ -531,21 +531,95 @@
                         </select>
                       </div>
 
+                      <div class="form-group" id="redLocalTypeContainer">
+                        <label for="red_local_type_select"
+                          >Tipo de red local</label
+                        >
+                        <select class="form-select" id="red_local_type_select">
+                          <option value="" selected>Seleccionar...</option>
+                          <option value="red_local_ip">
+                            Red Local basada en IP
+                          </option>
+                          <option value="red_externa_mac">
+                            Red Local basada en MAC
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="form-group" id="redIpContainer">
+                        <label for="type_ip_red">IP de Red Local</label>
+                        <select
+                          class="selectpicker w-100"
+                          name="localIpRed"
+                          id="type_ip_red"
+                          aria-label="Seleccione un red local"
+                          data-none-selected-text="Seleccione un red local"
+                          data-live-search="true"
+                        >
+                          <option value="" hidden selected>
+                            Seleccione un red local
+                          </option>
+                          <option value="all">Todos los dispositivos</option>
+                          {% for device in devices %}
+                          <option value="{{ device['ip'] }}">
+                            {{ device['ip'] }}
+                          </option>
+                          {% endfor %}
+                          <option value="addNewOption">Agregar IP</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group" id="redMacContainer">
+                        <label for="type_mac_red">Mac de Red Local</label>
+                        <select
+                          class="selectpicker w-100"
+                          name="localMacRed"
+                          id="type_mac_red"
+                          aria-label="Seleccione un red local"
+                          data-none-selected-text="Seleccione un red local"
+                          data-live-search="true"
+                        >
+                          <option value="" hidden selected>
+                            Seleccione un red local
+                          </option>
+                          <option value="all">Todos los dispositivos</option>
+                          {% for device in devices %}
+                          <option value="{{ device['mac'] }}">
+                            {{ device['mac'] }}
+                          </option>
+                          {% endfor %}
+                          <option value="addNewOption">Agregar MAC</option>
+                        </select>
+                      </div>
+
+                      <div
+                        class="form-group"
+                        id="newEntryGroup"
+                        style="display: none"
+                      >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="newEntry"
+                          placeholder="Ingrese el nuevo dato"
+                        />
+                        <div class="input-group-append">
+                          <button
+                            class="btn btn-outline-primary"
+                            type="button"
+                            id="addEntryButton"
+                          >
+                            <i class="fa-solid fa-plus"></i>
+                          </button>
+                        </div>
+                      </div>
+
                       <div class="form-group" id="redTypeContainer">
                         <label for="red_type">Tipo de red</label>
                         <select class="form-select" id="red_type_select">
                           <option value="" selected>Seleccionar...</option>
                           <option value="red_local">Red Local</option>
                           <option value="red_externa">Red Externa</option>
-                        </select>
-                      </div>
-
-                      <div class="form-group" id="redTypeContainer">
-                        <label for="red_type"></label>
-                        <select class="form-select" id="red_type_select">
-                          <option value="" selected>Seleccionar...</option>
-                          <option value="red_local_ip">Red Local IP</option>
-                          <option value="red_externa_mac">Red Local MAC</option>
                         </select>
                       </div>
 
@@ -793,6 +867,7 @@
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="https://kit.fontawesome.com/35088f7cdf.js"></script>
     <script src="{{ url_for('static', filename='js/firewall-config.js') }}"></script>
 
     {% endblock %}

@@ -160,7 +160,9 @@ def obtener_reglas_ufw():
                     if "in" in rule_detail_command or "INPUT" in rule_detail_command:
                         entry = "ENTRADA"
                     elif (
-                        "out" in rule_detail_command or "OUTPUT" in rule_detail_command
+                        "out" in rule_detail_command
+                        or "OUTPUT" in rule_detail_command
+                        or "FORWARD" in rule_detail_command
                     ):
                         entry = "SALIDA"
                     else:
@@ -308,7 +310,7 @@ def scan_network():
         # Comando arp-scan para escanear la red
         active_interface = get_active_interface()
 
-        command = f"/sbin/arp-scan -I {active_interface} -l"
+        command = f"/sbin/arp-scan -I {active_interface} -l | awk '!seen[$2]++'"
 
         process = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -364,25 +366,17 @@ def delete_rule(regla_content_id, id_regla):
             )
 
             if estado_detail == 1:
-                if "INPUT" in rule_string:
-                    direccion = "INPUT"
-                elif "OUTPUT" in rule_string:
-                    direccion = "OUTPUT"
-
                 salida_iptables = subprocess.check_output(
                     [
                         "/sbin/iptables",
                         "-L",
-                        direccion,
+                        "FORWARD",
                         "--line-numbers",
                         "-n",
                     ]
                 )
 
-                iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
-
-                if "REJECT" in rule_string:
-                    remove_domain_from_hosts(rule_detail_name)
+                iptables_rules_matched(salida_iptables, rule_detail_name)
 
             rule_details_copy = rule_details.copy()
 
@@ -408,15 +402,9 @@ def delete_rule(regla_content_id, id_regla):
                     rule_string = detail_rule[1]
 
                     if (
-                        tipo_regla in ["contenido", "dominio"]
-                        or "iptables" in rule_string
+                        tipo_regla not in ["contenido", "dominio"]
+                        or "iptables" not in rule_string
                     ):
-                        if "INPUT" in rule_string:
-                            direccion = "INPUT"
-                        elif "OUTPUT" in rule_string:
-                            direccion = "OUTPUT"
-
-                    else:
                         rule_delete = (
                             f"{rule_string.replace('/sbin/ufw ', '/sbin/ufw delete ')}"
                         )
@@ -435,19 +423,13 @@ def delete_rule(regla_content_id, id_regla):
                         [
                             "/sbin/iptables",
                             "-L",
-                            direccion,
+                            "FORWARD",
                             "--line-numbers",
                             "-n",
                         ]
                     )
 
-                    iptables_rules_matched(salida_iptables, rule_name, direccion)
-
-                    if (
-                        tipo_regla in ["contenido", "dominio"]
-                        and "REJECT" in rule_string
-                    ):
-                        remove_domain_from_hosts(rule_name)
+                    iptables_rules_matched(salida_iptables, rule_name)
 
             modelFirewallDetail.deleteRuleDetail(id_regla)
             modelFirewall.deleteRule(id_regla)
@@ -492,25 +474,20 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                     del rule_details[rule_detail_id]
 
             if estado_detail == 1:
-                if "INPUT" in rule_string:
-                    direccion = "INPUT"
-                elif "OUTPUT" in rule_string:
-                    direccion = "OUTPUT"
-
                 salida_iptables = subprocess.check_output(
                     [
                         "/sbin/iptables",
                         "-L",
-                        direccion,
+                        "FORWARD",
                         "--line-numbers",
                         "-n",
                     ]
                 )
 
-                iptables_rules_matched(salida_iptables, rule_detail_name, direccion)
+                iptables_rules_matched(salida_iptables, rule_detail_name)
 
-                if "REJECT" in rule_string:
-                    remove_domain_from_hosts(rule_detail_name)
+                # if "REJECT" in rule_string:
+                #     remove_domain_from_hosts(rule_detail_name)
 
                 for rule_detail_id, _ in rule_details.items():
                     modelFirewallDetail.updateDetail(0, rule_detail_id)
@@ -575,7 +552,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                                     count_hyphens
                                 ].strip()
 
-                                add_domain_to_hosts(domain, rule_detail_domain)
+                                # add_domain_to_hosts(domain, rule_detail_domain)
                                 domains_duplicated.append(rule_detail_domain)
 
                 detail_rules_status = modelFirewallDetail.getRulesDetailsById(
@@ -659,7 +636,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                             subprocess.run(shlex.split(f"{rule}"))
 
                         if rule_detail_domain not in domains_duplicated:
-                            add_domain_to_hosts(domain, rule_detail_domain)
+                            # add_domain_to_hosts(domain, rule_detail_domain)
                             domains_duplicated.append(rule_detail_domain)
 
                     else:
@@ -704,14 +681,9 @@ def deactivate_activate_rule(id_regla, regla_content_id):
             if numero_data == 1:
                 if tipo_regla in ["contenido", "dominio"] or "iptables" in rule_string:
                     salida_iptables = subprocess.check_output(
-                        ["/sbin/iptables", "-L", direccion, "--line-numbers", "-n"]
+                        ["/sbin/iptables", "-L", "FORWARD", "--line-numbers", "-n"]
                     )
-                    iptables_rules_matched(salida_iptables, rule_name, direccion)
-                    if (
-                        tipo_regla in ["contenido", "dominio"]
-                        and "REJECT" in rule_string
-                    ):
-                        remove_domain_from_hosts(rule_name)
+                    iptables_rules_matched(salida_iptables, rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
                 message = "¡Regla Desactivada Correctamente!"
@@ -728,7 +700,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
         return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
 
 
-def iptables_rules_matched(salida_iptables, name_iptable, direccion):
+def iptables_rules_matched(salida_iptables, name_iptable):
     reglas = salida_iptables.decode("utf-8").splitlines()
     id_iptable_delete = None
 
@@ -740,7 +712,7 @@ def iptables_rules_matched(salida_iptables, name_iptable, direccion):
             if id_iptable_delete is None:
                 id_iptable_delete = id_iptable_rule
 
-            rule_delete = f"/sbin/iptables -D {direccion} {id_iptable_delete}"
+            rule_delete = f"/sbin/iptables -D FORWARD {id_iptable_delete}"
 
             subprocess.run(
                 shlex.split(f"{rule_delete}"),
@@ -1037,6 +1009,8 @@ def allow_connections(
     rule_type,
     ip_addr,
     local_red,
+    local_ip_red,
+    local_mac_red,
     domain,
     port,
     protocol,
@@ -1073,9 +1047,12 @@ def allow_connections(
         rules_protocols = []
 
         if rule_type in ("dominio", "contenido") or local_red:
+            if local_ip_red == "all" or local_mac_red == "all":
+                ip_mac_src = ""
+            else:
+                local_ip_mac_red = local_ip_red if local_ip_red else local_mac_red
+                ip_mac_src = f"-s {local_ip_mac_red}"
             action_rule = "ACCEPT" if action_rule == "allow" else "REJECT"
-            entry = "INPUT" if entry == "in" else "OUTPUT"
-            direction = "-s" if entry == "INPUT" else "-d"
 
         if content_tp:
             reglas_contenido = modelFirewall.getRulesContent()
@@ -1105,21 +1082,21 @@ def allow_connections(
                             else domain_platform
                         )
 
-                        comment_with_domain = f"{comment_content} - {domain_platform}"
+                        # comment_with_domain = f"{comment_content} - {domain_platform}"
 
                         if isinstance(ip_domain, list):
                             for ip in ip_domain:
-                                rule = f"/sbin/iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
+                                rule = f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {ip} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
                                 rules_content.append(rule)
                                 subprocess.run(shlex.split(rule))
 
                         elif isinstance(ip_domain, str):
-                            rule = f"/sbin/iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
+                            rule = f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {ip_domain} -j {action_rule} -m comment --comment '{comment_content} - {domain_platform}'"
                             rules_content.append(rule)
                             subprocess.run(shlex.split(rule))
 
-                        if action_rule == "REJECT":
-                            add_domain_to_hosts(domain_platform, comment_with_domain)
+                        # if action_rule == "REJECT":
+                        #     add_domain_to_hosts(domain_platform, comment_with_domain)
 
                     rulesTypeContent.append((rules_content, comment_content))
                 else:
@@ -1135,23 +1112,23 @@ def allow_connections(
 
                 if isinstance(ip_domain, list):
                     rules_domain_dynamic = [
-                        f"/sbin/iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                        f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
                         for ip in ip_domain
                     ]
                 elif isinstance(ip_domain, str):
                     rules_domain_dynamic = [
-                        f"/sbin/iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                        f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
                     ]
             else:
                 rules_domain_dynamic = [
-                    f"/sbin/iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
                 ]
 
             for rule in rules_domain_dynamic:
                 subprocess.run(shlex.split(rule))
 
-            if action_rule == "REJECT":
-                add_domain_to_hosts(domain, comment_domain)
+            # if action_rule == "REJECT":
+            #     add_domain_to_hosts(domain, comment_domain)
 
         elif port and (ip_addr or local_red):
             if ip_addr:
@@ -1766,13 +1743,18 @@ def allow_connections_detail(
     id_regla,
     regla_name,
     action_rule,
-    entry,
+    local_ip_red,
+    local_mac_red,
     domain,
 ):
     try:
         saved_domains = []
 
-        direction = "-s" if entry == "INPUT" else "-d"
+        if local_ip_red == "all" or local_mac_red == "all":
+            ip_mac_src = ""
+        else:
+            local_ip_mac_red = local_ip_red if local_ip_red else local_mac_red
+            ip_mac_src = f"-s {local_ip_mac_red}"
 
         comment_domain = f"{regla_name} - {domain}"
 
@@ -1781,16 +1763,16 @@ def allow_connections_detail(
 
             if isinstance(ip_domain, list):
                 rules_domain_dynamic = [
-                    f"/sbin/iptables -I {entry} 1 {direction} {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {ip} -j {action_rule} -m comment --comment '{comment_domain}'"
                     for ip in ip_domain
                 ]
             elif isinstance(ip_domain, str):
                 rules_domain_dynamic = [
-                    f"/sbin/iptables -I {entry} 1 {direction} {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                    f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {ip_domain} -j {action_rule} -m comment --comment '{comment_domain}'"
                 ]
         else:
             rules_domain_dynamic = [
-                f"/sbin/iptables -I {entry} 1 {direction} {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
+                f"/sbin/iptables -I FORWARD 1 {ip_mac_src} -d {domain} -j {action_rule} -m comment --comment '{comment_domain}'"
             ]
 
         rule_details = modelFirewallDetail.getRulesDetailsById(id_regla)
@@ -1830,8 +1812,8 @@ def allow_connections_detail(
                 {"error": "El dominio ya esta presente en este tipo de contenido"}
             )
 
-        if action_rule == "REJECT":
-            add_domain_to_hosts(domain, comment_domain)
+        # if action_rule == "REJECT":
+        #     add_domain_to_hosts(domain, comment_domain)
 
         save_iptables_rules()
 
@@ -2225,7 +2207,8 @@ def save_filter(
 
 def pre_start_capture():
     # Comando arp-scan para escanear la red
-    command = "/sbin/arp-scan -l"
+    active_interface = get_active_interface()
+    command = f"/sbin/arp-scan -I {active_interface} -l | awk '!seen[$2]++'"
     process = subprocess.Popen(
         command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -2350,7 +2333,8 @@ def pre_start_capture():
 
 def start_capture(command_id, command_filter, count_packets):
     # Comando arp-scan para escanear la red
-    command_networks = "/sbin/arp-scan -l"
+    active_interface = get_active_interface()
+    command_networks = f"/sbin/arp-scan -I {active_interface} -l | awk '!seen[$2]++'"
     process_networks = subprocess.Popen(
         command_networks, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
