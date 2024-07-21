@@ -3,7 +3,7 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    MYSQL_HOST = "192.168.0.115"
+    MYSQL_HOST = "192.168.0.165"
     MYSQL_USER = "root"
     MYSQL_PASSWORD = ""
     MYSQL_DB = "sigcenter"

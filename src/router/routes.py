@@ -165,41 +165,21 @@ def configurar_rutas(app, login_manager_app):
     def obtener_reglas_ufw_route():
         devices = scan_network()
 
-        resultado = obtener_reglas_ufw()
+        reglas_in, reglas_out, reglas_forward, reglas_default = obtener_reglas_ufw()
 
-        reglas_in, reglas_out, reglas_default = resultado
+        reglas_in = reglas_in or []
+        reglas_out = reglas_out or []
+        reglas_forward = reglas_forward or []
+        reglas_default = reglas_default or []
 
-        if reglas_in and reglas_out:
-            return render_template(
-                "config-firewall.html",
-                reglas_in=reglas_in,
-                reglas_out=reglas_out,
-                reglas_default=reglas_default,
-                devices=devices,
-            )
-
-        elif reglas_in:
-            return render_template(
-                "config-firewall.html",
-                reglas_in=reglas_in,
-                reglas_default=reglas_default,
-                devices=devices,
-            )
-
-        elif reglas_out:
-            return render_template(
-                "config-firewall.html",
-                reglas_out=reglas_out,
-                reglas_default=reglas_default,
-                devices=devices,
-            )
-
-        elif reglas_default:
-            return render_template(
-                "config-firewall.html",
-                reglas_default=reglas_default,
-                devices=devices,
-            )
+        return render_template(
+            "config-firewall.html",
+            reglas_in=reglas_in,
+            reglas_out=reglas_out,
+            reglas_forward=reglas_forward,
+            reglas_default=reglas_default,
+            devices=devices,
+        )
 
     @app.route("/rules-content-manager")
     @login_required
@@ -291,14 +271,12 @@ def configurar_rutas(app, login_manager_app):
             regla_name = request.form.get("name_detail_rule")
             # comment = request.form.get("comment")
             accion_regla = request.form.get("action_rule")
-            entry = request.form.get("entry")
             domain = request.form.get("domain")
 
             response = allow_connections_detail(
                 id_regla,
                 regla_name,
                 accion_regla,
-                entry,
                 domain,
             )
             return response
@@ -574,7 +552,7 @@ def configurar_rutas(app, login_manager_app):
         try:
             cliente_eliminar = request.args.get("client_name")
             vpn_secret_key = request.args.get("secret_vpn")
-            
+
             response = delete_vpnclient(cliente_eliminar, vpn_secret_key)
 
             return response

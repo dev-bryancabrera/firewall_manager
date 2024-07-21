@@ -4,7 +4,6 @@ $(document).ready(function () {
   );
 
   var selectAction = $("#selectAction");
-  var selectEntry = $("#selectEntry");
   var domain = $("#domain");
 
   /* Modal eliminar regla */
@@ -84,7 +83,6 @@ $(document).ready(function () {
 
     if (
       validarSelect(selectAction, "Se debe asignar una accion para la Regla") ||
-      mostrarAlerta(selectEntry, "El campo de entrada es requerido.") ||
       mostrarAlerta(domain, "El campo de dominio es requerido")
     ) {
       return;

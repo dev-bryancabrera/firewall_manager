@@ -478,9 +478,9 @@ $(document).ready(function () {
   /* Carga los datos al modal para visualizar */
   visuzalizarReglaModal.on("show.bs.modal", function (event) {
     var button = $(event.relatedTarget);
-    var reglaNombre = button.data("regla-nombre");
-    var filaTablaEntrada = button.data("regla-fila-in");
-    var filaTablaSalida = button.data("regla-fila-out");
+    var reglaNombre = button.data("reglaNombre");
+    var filaTabla = button.data("reglaFila");
+    var reglaId = button.data("reglaId");
 
     var nameCommentlb = $("#editComment");
 
@@ -497,10 +497,16 @@ $(document).ready(function () {
     selectProtocolEdit.prop("disabled", true).val("");
     domainEdit.prop("disabled", true).val("");
 
-    if (filaTablaEntrada) {
-      var fila = $("#tableFirewallIn").find("tr").eq(filaTablaEntrada);
-    } else {
-      var fila = $("#tableFirewallOut").find("tr").eq(filaTablaSalida);
+    var fila;
+    
+    if ($("#tableFirewallIn").find("tr").eq(filaTabla).length) {
+      fila = $("#tableFirewallIn").find("tr").eq(filaTabla);
+    } else if ($("#tableFirewallOut").find("tr").eq(filaTabla).length) {
+      fila = $("#tableFirewallOut").find("tr").eq(filaTabla);
+    } else if ($("#tableFirewallForward").find("tr").eq(filaTabla).length) {
+      fila = $("#tableFirewallForward").find("tr").eq(filaTabla);
+    } else if ($("#tableFirewallDefault").find("tr").eq(filaTabla).length) {
+      fila = $("#tableFirewallDefault").find("tr").eq(filaTabla);
     }
 
     var protocolo = fila.find(".protocolo").text();

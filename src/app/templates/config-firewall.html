@@ -34,7 +34,7 @@
     <section class="container-form">
       <div class="tables-content">
         <div class="title-form">
-          <h1 class="title">Administrador de Firewall</h1>
+          <h1 class="title">Gestor de Firewall para la Red</h1>
         </div>
 
         <div class="button-create">
@@ -49,9 +49,224 @@
           </button>
         </div>
 
-        <div class="table-firewall-data">
+        <div class="container-accordion">
+          <div id="accordion" class="py-5">
+            {% set secciones = [ {"titulo": "Políticas de Entrada", "id":
+            "collapseIn", "reglas": reglas_in, "tabla_id": "tableFirewallIn"},
+            {"titulo": "Políticas de Salida", "id": "collapseOut", "reglas":
+            reglas_out, "tabla_id": "tableFirewallOut"}, {"titulo": "Políticas
+            de Restricción de Acceso a la Web", "id": "collapseForward",
+            "reglas": reglas_forward, "tabla_id": "tableFirewallForward",
+            "forward": true}, {"titulo": "Políticas Básicas que Vienen con el
+            Firewall", "id": "collapseDefault", "reglas": reglas_default,
+            "tabla_id": "tableFirewallDefault", "predefinidas": true} ] %} {%
+            for seccion in secciones %}
+            <div class="card border-0">
+              <div
+                class="card-header p-0 border-0"
+                id="heading{{ loop.index }}"
+              >
+                <button
+                  class="btn btn-link accordion-title border-0 collapse d-flex justify-content-between align-items-center"
+                  id="btn-collapse{{ loop.index }}"
+                  data-toggle="collapse"
+                  data-target="#{{ seccion.id }}"
+                  aria-expanded="false"
+                  aria-controls="{{ seccion.id }}"
+                >
+                  <span>{{ seccion.titulo }}</span>
+                  <i
+                    class="fas fa-plus text-center d-flex align-items-center justify-content-center h-100"
+                  ></i>
+                </button>
+              </div>
+
+              <div
+                id="{{ seccion.id }}"
+                class="collapse"
+                aria-labelledby="heading{{ loop.index }}"
+                data-parent="#accordion"
+              >
+                <div class="card-body accordion-body">
+                  <div class="table-firewall-data">
+                    <div class="firewall-rules-content">
+                      {% if seccion.predefinidas %}
+                      <table
+                        id="tableFirewallDefault"
+                        class="table"
+                        data-locale="es-ES"
+                      >
+                        <thead>
+                          <tr>
+                            <th data-field="number" data-sortable="true">
+                              N° Regla
+                            </th>
+                            <th data-field="name" data-sortable="true">
+                              Nombre de la Regla
+                            </th>
+                            <th data-field="type_rule" data-sortable="true">
+                              Tipo de Regla
+                            </th>
+                            <th data-field="domain" data-sortable="true">
+                              Datos de la Regla
+                            </th>
+                            <th data-field="action" data-sortable="true">
+                              Acción del Firewall
+                            </th>
+                            <th data-field="protocol" data-sortable="true">
+                              Protocolo
+                            </th>
+                            <th data-field="entry" data-sortable="true">
+                              Dirección de la regla
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for regla in reglas_default %}
+                          <tr class="regla-row">
+                            <td class="numero">{{ loop.index }}</td>
+                            <td class="nombre">{{ regla['nombre'] }}</td>
+                            <td class="tipo_regla">
+                              {{ regla['tipo_regla'] }}
+                            </td>
+                            <td class="domain">{{ regla['rule_data'] }}</td>
+                            <td class="accion">{{ regla['accion'] }}</td>
+                            <td class="protocolo">{{ regla['protocolo'] }}</td>
+                            <td class="entrada">{{ regla['entrada'] }}</td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                      {% else %}
+                      <table
+                        id="{{ seccion.tabla_id }}"
+                        class="table"
+                        data-locale="es-ES"
+                      >
+                        <thead>
+                          <tr>
+                            <th data-field="number" data-sortable="true">
+                              N° Regla
+                            </th>
+                            <th data-field="name" data-sortable="true">
+                              Nombre de la Regla
+                            </th>
+                            <th data-field="type_rule" data-sortable="true">
+                              Tipo de Regla
+                            </th>
+                            <th data-field="created_date" data-sortable="true">
+                              Fecha de Creacion
+                            </th>
+                            {% if seccion.forward %}
+                            <th data-field="source" data-sortable="true">
+                              Dispositivos Restringidos
+                            </th>
+                            <th data-field="domain" data-sortable="true">
+                              Sitios restringidos
+                            </th>
+                            <th data-field="action" data-sortable="true">
+                              Acción del Firewall
+                            </th>
+                            <th data-field="protocol" data-sortable="true">
+                              Protocolo
+                            </th>
+                            {% else %}
+                            <th data-field="domain" data-sortable="true">
+                              Datos de la Regla
+                            </th>
+                            <th data-field="action" data-sortable="true">
+                              Acción del Firewall
+                            </th>
+                            <th data-field="protocol" data-sortable="true">
+                              Protocolo
+                            </th>
+                            <th data-field="entry" data-sortable="true">
+                              Dirección de la regla
+                            </th>
+                            {% endif %}
+                            <th data-field="en/dis"></th>
+                            <th data-field="delete"></th>
+                            <th data-field="see"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for regla in seccion.reglas %}
+                          <tr>
+                            <td class="numero">{{ loop.index }}</td>
+                            <td class="nombre">{{ regla['nombre'] }}</td>
+                            <td class="tipo_regla">
+                              {{ regla['tipo_regla'] }}
+                            </td>
+                            <td class="fecha_creacion">
+                              {{ regla['fecha_creacion'] }}
+                            </td>
+                            {% if seccion.forward %}
+                            <td class="origen">{{ regla['source'] }}</td>
+                            <td class="dominio">{{ regla['dominio'] }}</td>
+                            <td class="accion">{{ regla['accion'] }}</td>
+                            <td class="protocolo">{{ regla['protocolo'] }}</td>
+                            {% else %}
+                            <td class="dominio">{{ regla['dominio'] }}</td>
+                            <td class="accion">{{ regla['accion'] }}</td>
+                            <td class="protocolo">{{ regla['protocolo'] }}</td>
+                            <td class="entrada">{{ regla['entrada'] }}</td>
+                            {% endif %}
+                            <td>
+                              <button
+                                id="btn-regla-{{ regla['id_regla'] }}"
+                                class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
+                              >
+                                {{ 'Desactivar' if regla['estado'] == 1 else
+                                'Activar' }}
+                              </button>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                class="btn btn-danger"
+                                id="btn-delete-rule"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmarEliminar"
+                                data-regla-id="{{ regla['id_regla'] }}"
+                              >
+                                Eliminar Regla
+                              </button>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                class="btn btn-primary"
+                                id="editarReglaBtn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editarRegla"
+                                data-regla-id="{{ regla['id_regla'] }}"
+                                data-regla-nombre="{{ regla['nombre'] }}"
+                                data-regla-fila="{{ loop.index }}"
+                              >
+                                Visualizar Regla
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %} {% if secciones|length == 0 %}
+            <h2 class="accordion-header" id="flush-heading">
+              <span>No hay datos disponibles.</span>
+            </h2>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- <div class="table-firewall-data">
           <div class="firewall-rules in-rules">
-            <!-- Mostras las reglas del ufw -->
+          
             <div class="subtitle-tables">
               <h2>Reglas Firewall de Entrada</h2>
             </div>
@@ -149,7 +364,6 @@
           </div>
 
           <div class="firewall-rules out-rules">
-            <!-- Mostras las reglas del ufw -->
             <div class="subtitle-tables">
               <h2>Reglas Firewall de Salida</h2>
             </div>
@@ -157,37 +371,21 @@
               <thead>
                 <tr>
                   <th data-field="number" data-sortable="true">N° REGLA</th>
-                  <th
-                    data-field="name"
-                    data-sortable="true"
-                    style="min-width: 180px"
-                  >
+                  <th data-field="name" data-sortable="true">
                     NOMBRE DE REGLA
                   </th>
-                  <th
-                    data-field="type_rule"
-                    data-sortable="true"
-                    style="min-width: 180px"
-                  >
+                  <th data-field="type_rule" data-sortable="true">
                     TIPO DE REGLA
                   </th>
                   <th data-field="created_date" data-sortable="true">
                     FECHA DE CREACION
                   </th>
                   <th data-field="domain" data-sortable="true">DATOS REGLA</th>
-                  <th
-                    data-field="action"
-                    data-sortable="true"
-                    style="min-width: 150px"
-                  >
+                  <th data-field="action" data-sortable="true">
                     ACCION DE FIREWALL
                   </th>
                   <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
-                  <th
-                    data-field="entry"
-                    data-sortable="true"
-                    style="min-width: 150px"
-                  >
+                  <th data-field="entry" data-sortable="true">
                     DIRECCION DE REGLA
                   </th>
                   <th data-field="en/dis"></th>
@@ -248,8 +446,91 @@
             </table>
           </div>
 
+          <div class="firewall-rules forward-rules">
+            <div class="subtitle-tables">
+              <h2>Reglas Firewall de Salida</h2>
+            </div>
+            <table id="tableFirewallForward" class="table" data-locale="es-ES">
+              <thead>
+                <tr>
+                  <th data-field="number" data-sortable="true">N° REGLA</th>
+                  <th data-field="name" data-sortable="true">
+                    NOMBRE DE REGLA
+                  </th>
+                  <th data-field="type_rule" data-sortable="true">
+                    TIPO DE REGLA
+                  </th>
+                  <th data-field="created_date" data-sortable="true">
+                    FECHA DE CREACION
+                  </th>
+                  <th data-field="domain" data-sortable="true">DATOS REGLA</th>
+                  <th data-field="action" data-sortable="true">
+                    ACCION DE FIREWALL
+                  </th>
+                  <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
+                  <th data-field="entry" data-sortable="true">
+                    DIRECCION DE REGLA
+                  </th>
+                  <th data-field="en/dis"></th>
+                  <th data-field="delete"></th>
+                  <th data-field="see"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for regla in reglas_forward %}
+                <tr class="regla-row">
+                  <td class="numero">{{ loop.index }}</td>
+                  <td class="nombre">{{ regla['nombre'] }}</td>
+                  <td class="tipo_regla">{{ regla['tipo_regla'] }}</td>
+                  <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
+                  <td class="dominio">
+                    <span class="dominio2">{{ regla['dominio'] }}</span>
+                  </td>
+                  <td class="accion">{{ regla['accion'] }}</td>
+                  <td class="protocolo">{{ regla['protocolo'] }}</td>
+                  <td class="entrada">{{ regla['entrada'] }}</td>
+                  <td>
+                    <button
+                      id="btn-regla-{{ regla['id_regla'] }}"
+                      class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
+                    >
+                      {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      id="btn-delete-rule"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmarEliminar"
+                      data-regla-id="{{ regla['id_regla'] }}"
+                    >
+                      Eliminar Regla
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      id="editarReglaBtn"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editarRegla"
+                      data-regla-id="{{ regla['id_regla'] }}"
+                      data-regla-nombre="{{ regla['nombre'] }}"
+                      data-regla-fila-out="{{ loop.index }}"
+                    >
+                      Visualizar Regla
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
           <div class="firewall-rules default-rules">
-            <!-- Mostras las reglas del ufw -->
+   
             <div class="subtitle-tables">
               <h2>Reglas de Firewall Predefinidas</h2>
             </div>
@@ -280,7 +561,7 @@
               </tbody>
             </table>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <!-- Modal Editar Regla -->
