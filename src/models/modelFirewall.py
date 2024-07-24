@@ -2,7 +2,6 @@ from .db.connectDB import get_connection
 
 
 class modelFirewall:
-
     @classmethod
     def insertRule(self, firewall):
         try:

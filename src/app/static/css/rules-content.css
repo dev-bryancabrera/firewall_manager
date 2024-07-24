@@ -131,6 +131,10 @@ td {
   top: 2px;
 }
 
+.bootstrap-table .search input {
+  border: 2px solid #1b1b1b;
+}
+
 /* Formularios */
 .container-form {
   padding-top: 40px;
@@ -149,9 +153,13 @@ td {
   text-align: center;
 }
 
-.rule-name {
+.top-row {
   width: 90%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .form-content {
@@ -164,12 +172,8 @@ td {
   gap: 10px;
 }
 
-.form-inputs {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 35px;
+.form-group {
+  width: 100%;
 }
 
 h2 {
@@ -206,6 +210,15 @@ h2 {
   padding-bottom: 10px;
 }
 
+#footerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
 .form-group > label {
   display: block;
   font-size: 18px;
@@ -229,8 +242,42 @@ h2 {
   font-weight: 500;
 }
 
+#confirmarEliminar .modal-dialog .modal-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 #confirmDelete {
   text-align: center !important;
+}
+
+.title-accordion-content {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.content-list-details {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  justify-content: space-between;
+}
+
+#content_name,
+#status {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#status {
+  margin-right: 40px;
 }
 
 /* Alerts */
@@ -294,7 +341,7 @@ tr:nth-child(n + 5) {
 /* Acordion */
 #accordion {
   .card-header {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
   .accordion-title {
     position: relative;
@@ -351,4 +398,167 @@ tr:nth-child(n + 5) {
   .accordion-body {
     padding: 40px 55px;
   }
+}
+
+/* Style timer and days */
+.input-group-addon {
+  cursor: pointer;
+}
+
+.input-group.date {
+  text-transform: uppercase;
+}
+
+.form-control {
+  border: 1px solid #ccc;
+  box-shadow: none;
+  &:hover,
+  &:focus,
+  &:active {
+    box-shadow: none;
+  }
+  &:focus {
+    border: 1px solid #34495e;
+  }
+}
+
+#community-list,
+.days-popup {
+  display: none;
+}
+
+.content {
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.075), 0 2px 4px rgba(0, 0, 0, 0.0375);
+  padding: 30px 30px 20px;
+}
+
+#icon-day {
+  cursor: pointer;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu {
+  border: 1px solid #34495e;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 10px 0 0 0;
+  padding: 0;
+  min-width: 300px;
+  max-width: 100%;
+  width: auto;
+  &.bottom:before,
+  &.bottom:after {
+    display: none;
+  }
+  .datepicker-months tbody tr td,
+  .datepicker-years tbody tr td,
+  .datepicker-decades tbody tr td {
+    padding: 0;
+  }
+
+  .datepicker-decades tbody tr td {
+    height: 27px;
+    line-height: 27px;
+
+    span {
+      display: block;
+      float: left;
+      width: 50%;
+      height: 46px;
+      line-height: 46px !important;
+      padding: 0;
+      &:not(.decade) {
+        display: none;
+      }
+    }
+  }
+  .timepicker-picker table td {
+    padding: 0;
+    width: 30%;
+    height: 20px;
+    line-height: 20px;
+    &:nth-child(2) {
+      width: 10%;
+    }
+    a,
+    span,
+    button {
+      border: none;
+      border-radius: 0;
+      height: 56px;
+      line-height: 56px;
+      padding: 0;
+      width: 100%;
+    }
+    span {
+      color: #333;
+      margin-top: -1px;
+    }
+    button {
+      background-color: #fff;
+      color: #333;
+      font-weight: bold;
+      font-size: 1.2em;
+      &:hover {
+        background-color: #eee;
+      }
+    }
+  }
+}
+.bootstrap-datetimepicker-widget.dropdown-menu .picker-switch table td {
+  border-top: 1px solid #34495e;
+  a,
+  span {
+    display: block;
+    height: 40px;
+    line-height: 40px;
+    padding: 0;
+    width: 100%;
+  }
+}
+.todayText:before {
+  content: "Today's Date";
+}
+
+.floating-input {
+  position: absolute;
+  display: none;
+  margin-top: 10px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  z-index: 1000;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Checkbox days */
+.weekDays-selector input {
+  display: none !important;
+}
+
+.weekDays-selector input[type="checkbox"] + label {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #dddddd;
+  height: 40px;
+  width: 100px;
+  margin-right: 3px;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+}
+
+#daysPopup {
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.weekDays-selector input[type="checkbox"]:checked + label {
+  background: #2ad705;
+  color: #ffffff;
 }

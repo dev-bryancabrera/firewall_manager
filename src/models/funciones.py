@@ -2,7 +2,6 @@ import base64
 from datetime import datetime
 from io import BytesIO
 
-import logging
 import os
 import shlex
 from flask import Response, flash, jsonify, send_file
@@ -98,14 +97,17 @@ def obtener_reglas_ufw():
                     source = "Todos los dispositivos"
 
                     detail_status = detail_domain[2]
-                    if tipo_regla in ["contenido", "dominio"] and detail_status == 1:
+                    if tipo_regla in ["contenido", "dominio"]:
                         rule_detail_parts = detail_domain[1].split(
                             " -m comment --comment "
                         )
                         rule_detail_command = rule_detail_parts[0].split()
                         rule_detail_domain = rule_detail_parts[1].replace("'", "")
 
-                        if rule_detail_domain not in domains_duplicated:
+                        if (
+                            rule_detail_domain not in domains_duplicated
+                            and detail_status == 1
+                        ):
                             count_hyphens = rule_detail_domain.count("-")
 
                             domain = rule_detail_domain.split("-", count_hyphens)[
@@ -123,6 +125,9 @@ def obtener_reglas_ufw():
                             source = rule_detail_command[source_index]
                         elif "-m mac --mac-source" in " ".join(rule_detail_command):
                             source_index = rule_detail_command.index("--mac-source") + 1
+                            source = rule_detail_command[source_index]
+                        elif "-m iprange --src-range" in " ".join(rule_detail_command):
+                            source_index = rule_detail_command.index("--src-range") + 1
                             source = rule_detail_command[source_index]
 
                     else:
@@ -156,6 +161,9 @@ def obtener_reglas_ufw():
                             source = rule_detail_command[source_index]
                         elif "-m mac --mac-source" in " ".join(rule_detail_command):
                             source_index = rule_detail_command.index("--mac-source") + 1
+                            source = rule_detail_command[source_index]
+                        elif "-m iprange --src-range" in " ".join(rule_detail_command):
+                            source_index = rule_detail_command.index("--src-range") + 1
                             source = rule_detail_command[source_index]
 
                     if (
@@ -206,7 +214,7 @@ def obtener_reglas_ufw():
                         "nombre": assigned_name,
                         "fecha_creacion": created_date,
                         "tipo_regla": tipo_regla.title(),
-                        "dominio": "No hay dominios habilitados"
+                        "dominio": "No hay sitios restringidos"
                         if not rule_data
                         else rule_data,
                         "accion": permiso,
@@ -232,15 +240,37 @@ def obtener_reglas_ufw_contenido():
     try:
         reglas_contenido = {}
         reglas_contenido_sorted = {}
-
         domains_duplicated = []
+        matches_list = []
 
         rule_db = modelFirewall.getRulesContent()
+
+        # Obtener el contenido actual del crontab
+        try:
+            resultado = subprocess.run(
+                ["crontab", "-l"], capture_output=True, text=True, check=True
+            )
+            crontab_actual = resultado.stdout
+        except subprocess.CalledProcessError:
+            crontab_actual = ""
 
         if rule_db:
             for rule_tuple in rule_db:
                 id_regla = rule_tuple[0]
                 name_rule = rule_tuple[1]
+
+                in_crontab = False
+                automatizacion_name = None
+                automatizacion_content_name = None
+
+                # Extraer el nombre de la regla de la primera línea
+                for match in re.finditer(
+                    r"# Automatización: (.+?) - Regla: (.+?)(?= - Creacion:|$)",
+                    crontab_actual,
+                ):
+                    automatizacion_name = match.group(1).strip()
+                    rule_name_cron = match.group(2).strip()
+                    matches_list.append((automatizacion_name, rule_name_cron))
 
                 assigned_name = (
                     name_rule.split(" - ")[1].strip().replace("_", " ").lower().title()
@@ -259,9 +289,21 @@ def obtener_reglas_ufw_contenido():
 
                     rule_command = rule_parts[0].split()
                     rule_name = rule_parts[1]
+                    source = "Todos los dispositivos"
 
                     if rule_name not in domains_duplicated:
                         domain = rule_name.split("-", 2)[2].strip().replace("'", "")
+
+                        # Validación adicional para -s y -m mac --mac-source
+                        if "-s" in rule_command:
+                            source_index = rule_command.index("-s") + 1
+                            source = rule_command[source_index]
+                        elif "-m mac --mac-source" in " ".join(rule_command):
+                            source_index = rule_command.index("--mac-source") + 1
+                            source = rule_command[source_index]
+                        elif "-m iprange --src-range" in " ".join(rule_command):
+                            source_index = rule_command.index("--src-range") + 1
+                            source = rule_command[source_index]
 
                         if "ACCEPT" in rule_command:
                             permiso = "PERMITIDO"
@@ -275,44 +317,67 @@ def obtener_reglas_ufw_contenido():
                             if "udp" in rule_command
                             else "TCP/UDP"
                         )
-                        entry = (
-                            "ENTRADA"
-                            if "INPUT" in rule_command
-                            else "SALIDA"
-                            if "OUTPUT" in rule_command
-                            else "ENTRADA"
-                        )
+
+                        # Validar si rule_name está en crontab_actual
+                        for automatizacion_name, rule_name_cron in matches_list:
+                            if rule_name_cron.strip() in rule_name.strip():
+                                in_crontab = True
+                                automatizacion_content_name = automatizacion_name
+                                break
 
                         # Crear un diccionario con los valores
                         regla = {
                             "id_rule": id_regla,
                             "nombre_regla_contenido": name_rule,
                             "id_rule_detail": rule_datail_id,
+                            "source": source,
                             "nombre": domain,
                             "fecha_creacion": created_date,
                             "accion": permiso,
                             "protocolo": protocolo,
-                            "entrada": entry,
                             "estado": rule_status,
+                            "en_crontab": in_crontab,
+                            "automation_name": automatizacion_content_name,
                         }
 
                         # Agregar el diccionario al contenido correspondiente en el diccionario reglas_contenido
-                        if (assigned_name, id_regla, name_rule) not in reglas_contenido:
-                            reglas_contenido[(assigned_name, id_regla, name_rule)] = [
-                                regla
-                            ]
+                        if (
+                            assigned_name,
+                            id_regla,
+                            name_rule,
+                            in_crontab,
+                            automatizacion_content_name,
+                        ) not in reglas_contenido:
+                            reglas_contenido[
+                                (
+                                    assigned_name,
+                                    id_regla,
+                                    name_rule,
+                                    in_crontab,
+                                    automatizacion_content_name,
+                                )
+                            ] = [regla]
                         else:
                             reglas_contenido[
-                                (assigned_name, id_regla, name_rule)
+                                (
+                                    assigned_name,
+                                    id_regla,
+                                    name_rule,
+                                    in_crontab,
+                                    automatizacion_content_name,
+                                )
                             ].append(regla)
 
                         domains_duplicated.append(rule_name)
+
+            # Ordenar el contenido
             reglas_contenido_sorted = {}
             for key, value in reglas_contenido.items():
                 sorted_value = sorted(value, key=lambda x: x["nombre"])
                 reglas_contenido_sorted[key] = sorted_value
 
         return reglas_contenido_sorted
+
     except subprocess.CalledProcessError as e:
         return {"error": f"Error al obtener reglas UFW: {e}"}
 
@@ -366,7 +431,11 @@ def scan_network():
         return [{"error": f"Error al procesar la línea: {line}, {e}"}]
 
 
-def iptables_rules_matched(salida_iptables, name_iptable):
+def iptables_rules_matched(name_iptable):
+    salida_iptables = subprocess.check_output(
+        ["/sbin/iptables", "-L", "FORWARD", "--line-numbers", "-n"]
+    )
+
     reglas = salida_iptables.decode("utf-8").splitlines()
     id_iptable_delete = None
 
@@ -698,10 +767,18 @@ def activate_domain_iptables_list(name_domain):
     with open(file_path, "r") as list_file:
         lines = list_file.readlines()
 
+    rules_set = set()
     with open(file_path, "w") as list_file:
         for line in lines:
-            if name_domain in line and line.strip().startswith("#"):
-                list_file.write(line.lstrip("#"))
+            stripped_line = line.strip()
+            if name_domain in stripped_line:
+                # Si la línea está comentada y contiene name_domain, descomentar
+                if stripped_line.startswith("#"):
+                    stripped_line = stripped_line.lstrip("#").strip()
+                # Si la línea no está comentada, agregarla al conjunto de reglas
+                if stripped_line not in rules_set:
+                    list_file.write(stripped_line + "\n")
+                    rules_set.add(stripped_line)
             else:
                 list_file.write(line)
 
@@ -711,6 +788,7 @@ def allow_connections(
     rule_type,
     ip_addr,
     local_red,
+    local_ip_mac_red,
     local_ip_red,
     local_mac_red,
     domain,
@@ -745,20 +823,24 @@ def allow_connections(
         rulesTypeContent = []
         rules_protocols = []
 
-        if local_red:
+        if local_red or local_ip_mac_red:
             action_rule = "ACCEPT" if action_rule == "allow" else "REJECT"
             entry = "INPUT" if entry == "in" else "OUTPUT"
 
         if rule_type in ("dominio", "contenido"):
-            if local_ip_red == "all" or local_mac_red == "all":
+            if local_ip_mac_red == "all":
                 ip_mac_src = ""
             else:
                 if local_ip_red:
-                    local_ip_mac_red = local_ip_red if local_ip_red else local_mac_red
-                    ip_mac_src = f"-s {local_ip_mac_red}"
+                    if "-" in local_ip_red:
+                        ip_mac_red = local_ip_red if local_ip_red else local_mac_red
+                        ip_mac_src = f"-m iprange --src-range {ip_mac_red}"
+                    else:
+                        ip_mac_red = local_ip_red if local_ip_red else local_mac_red
+                        ip_mac_src = f"-s {ip_mac_red}"
                 else:
-                    local_ip_mac_red = local_ip_red if local_ip_red else local_mac_red
-                    ip_mac_src = f"-m mac --mac-source {local_ip_mac_red}"
+                    ip_mac_red = local_ip_red if local_ip_red else local_mac_red
+                    ip_mac_src = f"-m mac --mac-source {ip_mac_red}"
 
         if content_tp:
             reglas_contenido = modelFirewall.getRulesContent()
@@ -953,6 +1035,36 @@ def allow_connections(
 
             subprocess.run(shlex.split(f"{rule}"))
 
+        if rulesTypeContent or domain:
+            script_refresh = find_script("refresh_rules.py")
+
+            # Crear expresión de cron para la actualización
+            cron_refresh = f"0 * * * * /usr/local/bin/python3.11 {script_refresh}\n"
+
+            # Crear comentario de cron
+            comentario_cron = "# Actualización de dominios bloqueados\n"
+
+            # Obtener el contenido actual del crontab
+            try:
+                resultado = subprocess.run(
+                    ["crontab", "-l"], capture_output=True, text=True, check=True
+                )
+                crontab_actual = resultado.stdout
+            except subprocess.CalledProcessError:
+                # Si no hay crontab existente, comenzamos con un crontab vacío
+                crontab_actual = ""
+
+            # Verificar si la entrada ya existe en el crontab
+            if comentario_cron + cron_refresh not in crontab_actual:
+                # Añadir el comentario y la nueva línea cron
+                nuevo_crontab = crontab_actual + comentario_cron + cron_refresh
+
+                # Escribir el nuevo crontab
+                proceso = subprocess.Popen(
+                    ["crontab", "-"], stdin=subprocess.PIPE, text=True
+                )
+                proceso.communicate(input=nuevo_crontab)
+
         if rulesTypeContent:
             for rulesContentPlatform in rulesTypeContent:
                 firewall = Firewall(
@@ -1131,17 +1243,7 @@ def delete_rule(regla_content_id, id_regla):
             )
 
             if estado_detail == 1:
-                salida_iptables = subprocess.check_output(
-                    [
-                        "/sbin/iptables",
-                        "-L",
-                        "FORWARD",
-                        "--line-numbers",
-                        "-n",
-                    ]
-                )
-
-                iptables_rules_matched(salida_iptables, rule_detail_name)
+                iptables_rules_matched(rule_detail_name)
 
             remove_domain_iptables_list(rule_detail_name)
 
@@ -1186,17 +1288,7 @@ def delete_rule(regla_content_id, id_regla):
                         )
 
                 if tipo_regla in ["contenido", "dominio"] or "iptables" in rule_string:
-                    salida_iptables = subprocess.check_output(
-                        [
-                            "/sbin/iptables",
-                            "-L",
-                            "FORWARD",
-                            "--line-numbers",
-                            "-n",
-                        ]
-                    )
-
-                    iptables_rules_matched(salida_iptables, rule_name)
+                    iptables_rules_matched(rule_name)
             remove_domain_iptables_list(rule_name)
 
             modelFirewallDetail.deleteRuleDetail(id_regla)
@@ -1207,87 +1299,6 @@ def delete_rule(regla_content_id, id_regla):
         return jsonify({"message": "¡Regla Eliminada Correctamente!"})
     except subprocess.CalledProcessError as e:
         return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
-
-
-# Configuración del logging
-refresh_rule_logger = logging.getLogger("refresh_rule")
-refresh_rule_logger.setLevel(logging.INFO)
-
-# Configura un handler para escribir en un archivo
-file_handler = logging.FileHandler("/var/log/refresh_rule.log")
-file_handler.setLevel(logging.INFO)  # Ajusta el nivel de logging para el archivo
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
-
-refresh_rule_logger.addHandler(file_handler)
-
-
-def refresh_rule():
-    file_path = "/etc/iptables-rules/rules-list"
-    rules = []
-
-    if os.path.exists(file_path):
-        try:
-            subprocess.check_output(["/sbin/iptables", "-F", "FORWARD"])
-            refresh_rule_logger.info(
-                "Todas las reglas FORWARD han sido eliminadas correctamente."
-            )
-        except subprocess.CalledProcessError as e:
-            refresh_rule_logger.error(f"Error al eliminar las reglas FORWARD: {e}")
-
-        with open(file_path, "r") as rules_file:
-            lines = rules_file.readlines()
-            for line in lines:
-                # Extraer las partes usando expresiones regulares
-                match = re.match(
-                    r"1:\s*(.*?)\s*2:\s*(.*?)\s*3:\s*(.*?)\s*4:\s*(.*)", line.strip()
-                )
-
-                if match:
-                    source = match.group(1).strip()
-                    domain = match.group(2).strip()
-                    action = match.group(3).strip()
-                    comment = match.group(4).strip()
-
-                    rule = {
-                        "source": source,
-                        "domain": domain,
-                        "action": action,
-                        "comment": comment,
-                    }
-                    rules.append(rule)
-                    logging.info(f"Procesando regla: {rule}")
-
-                    source = "" if source == "Todos los dispositivos" else source
-
-                    if domain in plataformas_dinamicas_dominio:
-                        ip_domain = verify_domain_dynamic(domain)
-                        if isinstance(ip_domain, list):
-                            rules_domain_dynamic = [
-                                f"/sbin/iptables -I FORWARD 1 {source} -d {ip} -j {action} -m comment --comment '{comment}'"
-                                for ip in ip_domain
-                            ]
-                        elif isinstance(ip_domain, str):
-                            rules_domain_dynamic = [
-                                f"/sbin/iptables -I FORWARD 1 {source} -d {ip_domain} -j {action} -m comment --comment '{comment}'"
-                            ]
-                    else:
-                        rules_domain_dynamic = [
-                            f"/sbin/iptables -I FORWARD 1 {source} -d {domain} -j {action} -m comment --comment '{comment}'"
-                        ]
-
-                    for rule in rules_domain_dynamic:
-                        try:
-                            subprocess.run(shlex.split(rule), check=True)
-                            refresh_rule_logger.info(
-                                f"Regla ejecutada correctamente: {rule}"
-                            )
-                        except subprocess.CalledProcessError as e:
-                            refresh_rule_logger.error(
-                                f"Error al ejecutar la regla: {rule} - {e}"
-                            )
-
-        return rules
 
 
 def deactivate_activate_rule(id_regla, regla_content_id):
@@ -1323,17 +1334,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                     del rule_details[rule_detail_id]
 
             if estado_detail == 1:
-                salida_iptables = subprocess.check_output(
-                    [
-                        "/sbin/iptables",
-                        "-L",
-                        "FORWARD",
-                        "--line-numbers",
-                        "-n",
-                    ]
-                )
-
-                iptables_rules_matched(salida_iptables, rule_detail_name)
+                iptables_rules_matched(rule_detail_name)
                 deactivate_domain_iptables_list(rule_detail_name)
 
                 for rule_detail_id, _ in rule_details.items():
@@ -1388,16 +1389,15 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
                         modelFirewallDetail.updateDetail(1, rule_detail_id)
 
-                        if "REJECT" in rule_string_items:
-                            if rule_detail_domain not in domains_duplicated:
-                                count_hyphens = rule_detail_domain.count("-")
+                        if rule_detail_domain not in domains_duplicated:
+                            count_hyphens = rule_detail_domain.count("-")
 
-                                domain = rule_detail_domain.split("-", count_hyphens)[
-                                    count_hyphens
-                                ].strip()
+                            domain = rule_detail_domain.split("-", count_hyphens)[
+                                count_hyphens
+                            ].strip()
 
-                                domains_duplicated.append(rule_detail_domain)
-                                activate_domain_iptables_list(rule_detail_name)
+                            domains_duplicated.append(rule_detail_domain)
+                            activate_domain_iptables_list(rule_detail_name)
 
                 detail_rules_status = modelFirewallDetail.getRulesDetailsById(
                     id_regla_detalle
@@ -1474,7 +1474,6 @@ def deactivate_activate_rule(id_regla, regla_content_id):
                             subprocess.run(shlex.split(f"{rule}"))
 
                         if rule_detail_domain not in domains_duplicated:
-                            activate_domain_iptables_list(rule_name)
                             domains_duplicated.append(rule_detail_domain)
 
                     else:
@@ -1516,10 +1515,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
             if numero_data == 1:
                 if tipo_regla in ["contenido", "dominio"] or "iptables" in rule_string:
-                    salida_iptables = subprocess.check_output(
-                        ["/sbin/iptables", "-L", "FORWARD", "--line-numbers", "-n"]
-                    )
-                    iptables_rules_matched(salida_iptables, rule_name)
+                    iptables_rules_matched(rule_name)
                     deactivate_domain_iptables_list(rule_name)
 
                 modelFirewall.updateRule(0, id_regla)
@@ -1527,6 +1523,7 @@ def deactivate_activate_rule(id_regla, regla_content_id):
 
             elif numero_data == 0:
                 modelFirewall.updateRule(1, id_regla)
+                activate_domain_iptables_list(rule_name)
                 message = "¡Regla Activada Correctamente!"
 
             # save_iptables_rules()
@@ -1567,6 +1564,214 @@ def create_community(
         return jsonify({"message": "¡Comunidad creada correctamente!"})
     except subprocess.CalledProcessError:
         return jsonify({"error": "Error al permitir el puerto."})
+
+
+def create_automation_content(
+    automation_name,
+    domain_plataform,
+    horario,
+    id_regla,
+    nombre_regla,
+):
+    try:
+        fecha_creacion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        base_directory = "/etc/iptables-rules/"
+        sub_directory = "automations"
+
+        automation_file_path = automation_name.replace(" ", "-")
+        directory = os.path.join(base_directory, sub_directory)
+        file_path = os.path.join(directory, automation_file_path)
+
+        # Verificar y crear el directorio base si no existe
+        if not os.path.exists(base_directory):
+            os.makedirs(base_directory)
+
+        # Verificar y crear el subdirectorio si no existe
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Leer el archivo rules-list
+        rules_list_path = os.path.join(base_directory, "rules-list")
+        if not os.path.exists(rules_list_path):
+            raise FileNotFoundError(f"El archivo {rules_list_path} no existe")
+
+        filtered_lines = []
+        with open(rules_list_path, "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                if any(domain in line for domain in domain_plataform):
+                    filtered_lines.append(line)
+
+        # Escribir el encabezado, una línea en blanco, y el contenido filtrado en el archivo de automatización
+        with open(file_path, "a") as automation_file:
+            # Escribir el encabezado en mayúsculas
+            automation_file.write(
+                f"Automatizacion: {automation_name.upper()}\tHorario: {horario.upper()}\tNombre de la Regla: {nombre_regla.upper()}\n"
+            )
+            # Escribir una línea en blanco
+            automation_file.write("\n")
+            # Escribir las líneas filtradas
+            automation_file.writelines(filtered_lines)
+
+        dias_mapeo = {
+            "Lunes": "1",
+            "Martes": "2",
+            "Miércoles": "3",
+            "Miercoles": "3",
+            "Jueves": "4",
+            "Viernes": "5",
+            "Sábado": "6",
+            "Sabado": "6",
+            "Domingo": "0",
+        }
+
+        # Convertir días a números
+        for dia, numero in dias_mapeo.items():
+            horario = re.sub(r"\b" + dia + r"\b", numero, horario, flags=re.IGNORECASE)
+
+        # Eliminar espacios extras y reemplazar ', ' por ','
+        horario = re.sub(r"\s+", " ", horario).replace(", ", ",").strip()
+
+        # Separar días y horas
+        match = re.match(r"([0-9,]+)\s+(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})", horario)
+
+        if match:
+            dias = match.group(1)
+            hora_inicio = match.group(2)
+            hora_fin = match.group(3)
+        else:
+            dias = "No encontrado"
+            hora_inicio = "No encontrado"
+
+        # Extraer hora y minutos
+        hora_inicio, minutos_inicio = map(int, hora_inicio.split(":"))
+        hora_fin, minutos_fin = map(int, hora_fin.split(":"))
+
+        # Encontrar las rutas de los scripts
+        script_iniciar = find_script("automation_rule.py")
+        script_detener = find_script("automation_stop.py")
+        script_refresh = find_script("refresh_rules_automation.py")
+
+        # Crear expresiones de cron para iniciar y detener la automatización
+        cron_inicio = f"{minutos_inicio} {hora_inicio} * * {dias} /usr/local/bin/python3.11 {script_iniciar}\n"
+        cron_detener = f"{minutos_fin} {hora_fin} * * {dias} /usr/local/bin/python3.11 {script_detener}\n"
+        cron_refresh = f"0 * * * * /usr/local/bin/python3.11 {script_refresh}\n"
+
+        # Crear comentario de cron
+        comentario_cron_refresh = "# Actualizacion de automatizaciones aplicadas\n"
+
+        # Crear comentario de cron
+        comentario_cron = f"\n# Automatización: {automation_file_path} - Regla: {nombre_regla} - Creacion: {fecha_creacion}\n"
+
+        # Obtener el contenido actual del crontab
+        try:
+            resultado = subprocess.run(
+                ["crontab", "-l"], capture_output=True, text=True, check=True
+            )
+            crontab_actual = resultado.stdout
+        except subprocess.CalledProcessError:
+            crontab_actual = ""
+
+        # Eliminar cualquier línea existente para refresh_rules_automation.py
+        lines = crontab_actual.splitlines()
+        lines = [
+            line
+            for line in lines
+            if not (script_refresh in line or comentario_cron_refresh.strip() in line)
+        ]
+
+        # Añadir el comentario y las nuevas líneas cron
+        nuevo_crontab = (
+            "\n".join(lines)
+            + "\n"
+            + comentario_cron
+            + cron_inicio
+            + cron_detener
+            + "\n"
+            + comentario_cron_refresh
+            + cron_refresh
+        )
+
+        # Escribir el nuevo crontab
+        proceso = subprocess.Popen(["crontab", "-"], stdin=subprocess.PIPE, text=True)
+        proceso.communicate(input=nuevo_crontab)
+
+        return jsonify({"message": "¡Automatización creada correctamente!"})
+
+    except Exception as e:
+        return jsonify({"error": f"Ocurrió un error al escribir en el crontab: {e}"})
+
+
+def delete_automation_content(regla_id, regla_nombre, automatizacion_nombre):
+    try:
+        automations_dir = "/etc/iptables-rules/automations/"
+        automation_file = os.path.join(automations_dir, automatizacion_nombre)
+
+        # Verificar si el archivo existe
+        if not os.path.isfile(automation_file):
+            print(f"Archivo {automation_file} no encontrado.")
+            return jsonify({"error": f"Archivo {automation_file} no encontrado."})
+
+        # Eliminar el archivo de automatizaciones
+        os.remove(automation_file)
+
+        try:
+            resultado = subprocess.run(
+                ["crontab", "-l"], capture_output=True, text=True, check=True
+            )
+            crontab_actual = resultado.stdout
+        except subprocess.CalledProcessError:
+            crontab_actual = ""
+
+        # Buscar y eliminar las líneas asociadas con la automatización
+        pattern = re.compile(r"# Automatización: " + re.escape(automatizacion_nombre))
+        lines = crontab_actual.splitlines()
+
+        new_lines = []
+        skip = False
+
+        for line in lines:
+            if pattern.match(line):
+                skip = True
+            elif skip and line.startswith("#"):
+                skip = False
+
+            if not skip:
+                print(line)
+                new_lines.append(line)
+
+        if not any("# Automatización:" in line for line in new_lines):
+            updated_lines = []
+            i = 0
+            while i < len(new_lines):
+                if new_lines[i].startswith(
+                    "# Actualizacion de automatizaciones aplicadas"
+                ):
+                    # Omite la línea que contiene "# Actualizacion de automatizaciones aplicadas" y la siguiente línea
+                    i += 2
+                else:
+                    updated_lines.append(new_lines[i])
+                    i += 1
+            new_lines = updated_lines
+
+        # Aplicar el nuevo crontab
+        new_crontab = "\n".join(new_lines) + "\n"
+
+        with subprocess.Popen(
+            ["crontab", "-"], stdin=subprocess.PIPE, text=True
+        ) as process:
+            process.communicate(input=new_crontab)
+
+        activate_domain_iptables_list(regla_nombre)
+
+        # save_iptables_rules()
+
+        return jsonify({"message": "¡Automatización Eliminada Correctamente!"})
+    except subprocess.CalledProcessError as e:
+        return jsonify(
+            {"error": f"Error al obtener el número de la automatización: {e}"}
+        )
 
 
 def create_automation(
@@ -1686,7 +1891,6 @@ def find_script(script_name):
     for root, dirs, files in os.walk("/"):
         if script_name in files:
             script_path = os.path.join(root, script_name)
-            print(f"Script encontrado en: {script_path}")
             return script_path
     print(f"Script {script_name} no encontrado.")
     return None
@@ -1796,7 +2000,6 @@ def setup_vpnclient(client_name, client_key, vpn_secret_key):
         client_key = ""
 
     try:
-        print(f"Ejecutando el script: {script_path}")
         subprocess.run(
             [
                 "bash",
@@ -1825,7 +2028,6 @@ def delete_vpnclient(client_name, vpn_secret_key):
     script_path = find_script("openvpn.sh")
 
     try:
-        print(f"Ejecutando el script: {script_path}")
         subprocess.run(
             [
                 "bash",
@@ -1877,11 +2079,6 @@ def vpnclient_list():
                     client_ip = parts[1].strip()
                     client_ips[client_name] = client_ip
 
-        # with open(client_list_file, "w") as file:
-        #     for client in clients:
-        #         client_ip = client_ips.get(client, "No se ha detectado una IP asignada")
-        #         file.write(f"{client},{client_ip}\n")
-
         client_list = []
         for client in clients:
             client_ip = client_ips.get(client, "No se ha detectado una IP asignada")
@@ -1916,8 +2113,7 @@ def vpnclient_list():
         return client_list
 
     except Exception as e:
-        print(f"Error al procesar los clientes VPN: {e}")
-        return []
+        return f"Error al procesar los clientes VPN: {e}"
 
 
 def get_certificate_info(cert_path):
@@ -1937,8 +2133,7 @@ def get_certificate_info(cert_path):
         not_after = lines[2].split("=", 1)[1].strip().replace(" GMT", "")
         return issuer, not_before, not_after
     except Exception as e:
-        print(f"Error al obtener la información del certificado: {e}")
-        return "N/A", "N/A", "N/A"
+        return f"Error al obtener la información del certificado: {e}"
 
 
 # Ejecutara unicamente dominios que las ips sean dinamicas

@@ -7,8 +7,10 @@ from models.modelUser import modelUser
 
 from models.funciones import (
     create_automation,
+    create_automation_content,
     deactivate_activate_automation,
     delete_automation,
+    delete_automation_content,
     delete_community,
     delete_vpnclient,
     get_plataforms,
@@ -224,6 +226,7 @@ def configurar_rutas(app, login_manager_app):
             type_rule = request.form.get("regla")
             ip_addr = request.form.get("ip_addr")
             local_red = request.form.get("localRed")
+            local_ip_mac_red = request.form.get("localIpMacRed")
             local_ip_red = request.form.get("localIpRed")
             local_mac_red = request.form.get("localMacRed")
             domain = request.form.get("domain")
@@ -244,6 +247,7 @@ def configurar_rutas(app, login_manager_app):
                 type_rule,
                 ip_addr,
                 local_red,
+                local_ip_mac_red,
                 local_ip_red,
                 local_mac_red,
                 domain,
@@ -278,6 +282,27 @@ def configurar_rutas(app, login_manager_app):
                 regla_name,
                 accion_regla,
                 domain,
+            )
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/add_automation_content", methods=["POST"])
+    @login_required
+    def allow_add_automation_content():
+        try:
+            automation_name = request.form.get("automationName")
+            domain_plataform = request.form.getlist("domainPlataform")
+            horario = request.form.get("horario")
+            id_regla = request.form.get("id_regla")
+            nombre_regla = request.form.get("nombre_regla")
+
+            response = create_automation_content(
+                automation_name,
+                domain_plataform,
+                horario,
+                id_regla,
+                nombre_regla,
             )
             return response
         except KeyError as e:
@@ -569,6 +594,25 @@ def configurar_rutas(app, login_manager_app):
             id_regla = request.args.get("id_regla")
 
             response = delete_rule(regla, id_regla)
+
+            return response
+
+        except Exception as e:
+            return f"Error al eliminar la regla: {e}"
+
+    @app.route("/eliminar_automatizacion_content", methods=["GET"])
+    @login_required
+    def eliminar_automatizacion_content():
+        try:
+            regla_id = request.args.get("regla_id")
+            regla_nombre = request.args.get("regla_nombre")
+            automatizacion_nombre = request.args.get("automatizacion_nombre")
+
+            print(automatizacion_nombre)
+
+            response = delete_automation_content(
+                regla_id, regla_nombre, automatizacion_nombre
+            )
 
             return response
 

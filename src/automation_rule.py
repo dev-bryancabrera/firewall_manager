@@ -1,21 +1,30 @@
-import os
 import re
-import subprocess
 import shlex
-import logging
 import sys
+import logging
+import subprocess
+from datetime import datetime
+import os
 
-# Configuración del logger
+# Configuración del logging para automation_rule
+automation_rule_logger = logging.getLogger("automation_rule")
+automation_rule_logger.setLevel(logging.INFO)
+
+# Configura un handler para escribir en un archivo
+file_handler = logging.FileHandler("/var/log/automation_rule.log")
+file_handler.setLevel(logging.INFO)  # Ajusta el nivel de logging para el archivo
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+
+automation_rule_logger.addHandler(file_handler)
+
+# Configuración del logger principal
 logging.basicConfig(
-    filename="/var/log/refresh_rule.log",
+    filename="/var/log/call_automation_rule.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-# Crear un logger específico para refresh_rule
-refresh_rule_logger = logging.getLogger("refresh_rule")
-
-# Plataformas con ips estaticas
 plataformas = {
     "redes_sociales": [
         "www.facebook.com",
@@ -201,29 +210,60 @@ def verify_domain_dynamic(domain):
         return ips_sorted
 
 
-def refresh_rule():
+def deactivate_domain_iptables_list(name_domain):
     file_path = "/etc/iptables-rules/rules-list"
-    rules = []
+
+    with open(file_path, "r") as list_file:
+        lines = list_file.readlines()
+
+    with open(file_path, "w") as list_file:
+        for line in lines:
+            if name_domain.lower() in line.lower() and not line.strip().startswith("#"):
+                list_file.write(f"#{line}")
+            else:
+                list_file.write(line)
+
+
+def activate_domain_iptables_list(name_domain, file_path):
+    with open(file_path, "r") as list_file:
+        lines = list_file.readlines()
+
+    with open(file_path, "w") as list_file:
+        for line in lines:
+            if name_domain in line and line.strip().startswith("#"):
+                list_file.write(line.lstrip("#"))
+            else:
+                list_file.write(line)
+
+
+def automation_rule(automation_script):
+    file_path = f"/etc/iptables-rules/automations/{automation_script}"
 
     if os.path.exists(file_path):
         try:
-            # Limpiar las reglas de iptables FORWARD
-            subprocess.check_output(["/sbin/iptables", "-F", "FORWARD"])
-            refresh_rule_logger.info(
-                "Todas las reglas FORWARD han sido eliminadas correctamente."
-            )
-        except subprocess.CalledProcessError as e:
-            refresh_rule_logger.error(f"Error al eliminar las reglas FORWARD: {e}")
+            with open(file_path, "r") as file:
+                primera_linea = file.readline().strip()
 
-        try:
-            # Leer las reglas del archivo
-            with open(file_path, "r") as rules_file:
-                lines = rules_file.readlines()
-                for line in lines:
+                # Extraer el nombre de la regla de la primera línea
+                match = re.search(r"Nombre de la Regla: (.+)", primera_linea)
+                if match:
+                    nombre_regla = match.group(1)
+                    deactivate_domain_iptables_list(nombre_regla)
+                    activate_domain_iptables_list(nombre_regla, file_path)
+                else:
+                    automation_rule_logger.warning(
+                        "No se encontró el nombre de la regla en la primera línea."
+                    )
+
+                file.readline()
+
+                # Leer y procesar desde la tercera línea
+                rules = []
+                for line in file:
+                    line = line.strip()
                     # Extraer las partes usando expresiones regulares
                     match = re.match(
-                        r"1:\s*(.*?)\s*2:\s*(.*?)\s*3:\s*(.*?)\s*4:\s*(.*)",
-                        line.strip(),
+                        r"1:\s*(.*?)\s*2:\s*(.*?)\s*3:\s*(.*?)\s*4:\s*(.*)", line
                     )
 
                     if match:
@@ -239,7 +279,8 @@ def refresh_rule():
                             "comment": comment,
                         }
                         rules.append(rule)
-                        refresh_rule_logger.info(f"Procesando regla: {rule}")
+
+                        automation_rule_logger.info(f"Procesando regla: {rule}")
 
                         source = "" if source == "Todos los dispositivos" else source
 
@@ -262,25 +303,100 @@ def refresh_rule():
                         for rule in rules_domain_dynamic:
                             try:
                                 subprocess.run(shlex.split(rule), check=True)
-                                refresh_rule_logger.info(
+                                automation_rule_logger.info(
                                     f"Regla ejecutada correctamente: {rule}"
                                 )
                             except subprocess.CalledProcessError as e:
-                                refresh_rule_logger.error(
+                                automation_rule_logger.error(
                                     f"Error al ejecutar la regla: {rule} - {e}"
                                 )
+
         except Exception as e:
-            refresh_rule_logger.error(f"Error al procesar el archivo: {e}")
+            automation_rule_logger.error(f"Error al procesar el archivo: {e}")
+    else:
+        automation_rule_logger.warning(f"El archivo {file_path} no existe.")
+
+
+def obtener_automatizacion_actual():
+    try:
+        logging.info("Iniciando obtención de la automatización actual.")
+
+        # Obtener el contenido actual del crontab
+        resultado = subprocess.run(
+            ["crontab", "-l"], capture_output=True, text=True, check=True
+        )
+        crontab_actual = resultado.stdout
+        logging.info("Contenido del crontab obtenido correctamente.")
+
+        # Obtener la hora actual
+        ahora = datetime.now()
+        minuto_actual = ahora.minute
+        hora_actual = ahora.hour
+        dia_actual = ahora.weekday() + 1
+
+        # Convertir dia_actual a formato cron
+        dia_actual_cron = str(dia_actual)
+
+        logging.info(
+            f"Hora actual: {hora_actual}, Minuto actual: {minuto_actual}, Día actual: {dia_actual_cron}"
+        )
+
+        comentario = ""
+        # Analizar cada línea del crontab
+        for linea in crontab_actual.split("\n"):
+            logging.debug(f"Procesando línea: {linea}")
+            if linea.startswith("# Automatización"):
+                comentario = linea
+                logging.debug(f"Comentario encontrado: {comentario}")
+            else:
+                match = re.match(r"(\d+)\s+(\d+)\s+\*\s+\*\s+([\d,]+)\s+(.+)", linea)
+                if match:
+                    minutos = int(match.group(1))
+                    horas = int(match.group(2))
+                    dias = match.group(3).split(
+                        ","
+                    )  # Dividir por comas para manejar múltiples días
+                    comando = match.group(4)
+
+                    logging.debug(
+                        f"Minutos: {minutos}, Horas: {horas}, Días: {dias}, Comando: {comando}"
+                    )
+
+                    if (
+                        minutos == minuto_actual
+                        and horas == hora_actual
+                        and dia_actual_cron in dias
+                    ):
+                        # Extraer el nombre de la automatización del comentario anterior
+                        nombre_automatizacion = re.search(
+                            r"# Automatización (.+) - ", comentario
+                        ).group(1)
+                        logging.info(
+                            f"Nombre de la automatización encontrado: {nombre_automatizacion}"
+                        )
+                        return nombre_automatizacion
+
+        logging.info("No se encontró ninguna automatización coincidente.")
+        return None
+    except Exception as e:
+        logging.error(f"Error al obtener la automatización actual: {e}")
+        return None
 
 
 def main():
     try:
-        result = refresh_rule()
-        refresh_rule_logger.info(
-            f"refresh_rule ejecutado con éxito. Resultado: {result}"
-        )
+        nombre_automatizacion = obtener_automatizacion_actual()
+        if nombre_automatizacion:
+            automation_rule(nombre_automatizacion)
+            logging.info(
+                f"automation_rule ejecutado con éxito para: {nombre_automatizacion}"
+            )
+        else:
+            logging.warning(
+                f"No se pudo determinar la automatización actual.{nombre_automatizacion}"
+            )
     except Exception as e:
-        refresh_rule_logger.error(f"Error al ejecutar refresh_rule: {e}")
+        logging.error(f"Error al ejecutar automation_rule: {e}")
         sys.exit(1)
 
 

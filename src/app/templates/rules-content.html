@@ -10,11 +10,19 @@
     />
     <link
       rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css"
+    />
+    <link
+      rel="stylesheet"
       href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css"
     />
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css"
     />
     <link
       rel="stylesheet"
@@ -49,7 +57,27 @@
                   aria-expanded="false"
                   aria-controls="#collapse{{ loop.index }}"
                 >
-                  <span>{{ contenido[0] }}</span>
+                  <div class="title-accordion-content">
+                    <div class="content-list-details">
+                      <div id="content_name">
+                        <span>{{ contenido[0] }}</span>
+                      </div>
+
+                      {% if contenido[3] %}
+                      <div class="detail" id="status">
+                        <span id="estado_automatizacion"
+                          >Automatizacion: Habilitado</span
+                        >
+                      </div>
+                      {% else %}
+                      <div class="detail" id="status">
+                        <span id="estado_automatizacion"
+                          >Automatizacion: Inhabilitada</span
+                        >
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
                   <i
                     class="fas fa-plus text-center d-flex align-items-center justify-content-center h-100"
                   ></i>
@@ -69,7 +97,7 @@
                         <button
                           type="button"
                           class="btn btn-primary"
-                          id="btn-agree-rule"
+                          id="btn-agree-domain"
                           data-bs-toggle="modal"
                           data-bs-target="#modalDomain"
                           data-regla-id="{{ contenido[1] }}"
@@ -77,41 +105,78 @@
                         >
                           <i class="fas fa-plus"></i> Agregar Dominio
                         </button>
+
+                        {% if contenido[3] %}
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          id="btn-delete-automation"
+                          data-bs-toggle="modal"
+                          data-bs-target="#confirmarEliminar"
+                          data-regla-nombre-accordion="{{ contenido[0] }}"
+                          data-regla-id="{{ contenido[1] }}"
+                          data-regla-nombre="{{ contenido[2] }}"
+                          data-automation-nombre="{{ contenido[4] }}"
+                          data-row-index="{{ loop.index }}"
+                          data-action-type="deleteAutomation"
+                        >
+                          <i class="fas fa-robot"></i> Eliminar Automatizacion
+                        </button>
+                        {% else %}
+                        <button
+                          type="button"
+                          class="btn btn-primary set-automation"
+                          id="btn-agree-automation"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalAutomation"
+                          data-regla-id="{{ contenido[1] }}"
+                          data-regla-nombre="{{ contenido[2] }}"
+                          data-row-index="{{ loop.index }}"
+                        >
+                          <i class="fas fa-robot"></i> Establecer Automatizacion
+                        </button>
+                        {% endif %}
+
+                        <!-- <button
+                          type="button"
+                          class="btn btn-primary set-automation"
+                          id="btn-agree-rule"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalAutomation"
+                          data-regla-id="{{ contenido[1] }}"
+                          data-regla-nombre="{{ contenido[2] }}"
+                          data-row-index="{{ loop.index }}"
+                        >
+                          <i class="fas fa-robot"></i> Establecer Automatizacion
+                        </button> -->
                       </div>
 
                       <table
                         id="tableFirewallContent_{{ loop.index }}"
                         class="table"
+                        data-search="true"
+                        data-show-columns="false"
+                        data-locale="es-ES"
                       >
                         <!-- El encabezado de la tabla -->
                         <caption class="ticket-type"></caption>
                         <thead class="thead-dark">
                           <tr>
                             <th data-field="number" data-sortable="true">
-                              N° REGLA
+                              N° Regla
                             </th>
-                            <th data-field="name" style="min-width: 180px">
-                              DOMINOS DE CONTENIDO
+                            <th data-field="source" data-sortable="true">
+                              Dispositivos Restringidos
                             </th>
+                            <th data-field="name">Sitio restringido</th>
                             <th data-field="created_date" data-sortable="true">
-                              FECHA DE CREACION
+                              Fecha de Creacion
                             </th>
-                            <th
-                              data-field="action"
-                              data-sortable="true"
-                              style="min-width: 150px"
-                            >
-                              ACCION DE FIREWALL
+                            <th data-field="action" data-sortable="true">
+                              Acción del Firewall
                             </th>
                             <th data-field="protocol" data-sortable="true">
-                              PROTOCOLO
-                            </th>
-                            <th
-                              data-field="entry"
-                              data-sortable="true"
-                              style="min-width: 150px"
-                            >
-                              DIRECCION DE REGLA
+                              Protocolo
                             </th>
                             <th data-field="en/dis"></th>
                             <th data-field="delete"></th>
@@ -122,13 +187,13 @@
                           <!-- Filas de la tabla -->
                           <tr>
                             <td class="numero">{{ loop.index }}</td>
-                            <td class="nombre">{{ regla['nombre'] }}</td>
+                            <td class="source">{{ regla['source'] }}</td>
+                            <td class="site-blocked">{{ regla['nombre'] }}</td>
                             <td class="fecha_creacion">
                               {{ regla['fecha_creacion'] }}
                             </td>
                             <td class="accion">{{ regla['accion'] }}</td>
                             <td class="protocolo">{{ regla['protocolo'] }}</td>
-                            <td class="entrada">{{ regla['entrada'] }}</td>
                             <td>
                               <button
                                 id="btn-regla-{{ regla['id_rule_detail'] }}"
@@ -147,6 +212,7 @@
                                 data-bs-target="#confirmarEliminar"
                                 data-regla-detail-id="{{ regla['id_rule_detail'] }}"
                                 data-regla-nombre="{{ regla['nombre_regla_contenido'] }}"
+                                data-action-type="deleteRule"
                               >
                                 Eliminar Regla
                               </button>
@@ -226,7 +292,7 @@
 
       <!-- Modal Crear Regla -->
       <div
-        class="modal fade left"
+        class="modal fade left modalForm"
         id="modalDomain"
         tabindex="-1"
         aria-labelledby="modalReglasLabel"
@@ -271,11 +337,11 @@
                       value="{{ rule_id }}"
                     />
 
-                    <div class="rule-name">
+                    <div class="top-row">
                       <div class="form-group">
                         <label for="regla">Accion de la regla</label>
                         <select
-                          class="form-select"
+                          class="selectpicker w-100"
                           name="action_rule"
                           id="selectAction"
                         >
@@ -298,22 +364,235 @@
                       </div>
                     </div>
 
-                    <div class="form-group" id="footerBtn">
-                      <button
-                        type="button"
-                        id="btnCancelar"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                      >
-                        Cerrar
-                      </button>
-                      <button
-                        type="submit"
-                        id="btnSave"
-                        class="btn btn-primary"
-                      >
-                        Crear Regla
-                      </button>
+                    <div class="top-row">
+                      <div class="form-group" id="footerBtn">
+                        <button
+                          type="button"
+                          id="btnCancelar"
+                          class="btn btn-secondary"
+                          data-bs-dismiss="modal"
+                        >
+                          Cerrar
+                        </button>
+                        <button
+                          type="submit"
+                          id="btnSave"
+                          class="btn btn-primary"
+                        >
+                          Crear Regla
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Crear Automatizacion -->
+      <div
+        class="modal fade left modalForm"
+        id="modalAutomation"
+        tabindex="-1"
+        aria-labelledby="modalReglasLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered modal-notify modal-info">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalReglasLabel">
+                Crear Nueva Regla
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="container-ssh">
+                <div class="subtitle">
+                  <h2>Regla</h2>
+                </div>
+
+                <div class="form-wrap">
+                  <form class="form-content" id="formAutomation">
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      id="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <input
+                      type="hidden"
+                      id="rule-automation-name"
+                      class="name-rule"
+                      name="name_detail_rule"
+                      value="{{ name_detail_rule }}"
+                    />
+                    <input
+                      type="hidden"
+                      id="rule-id-automation"
+                      class="id-rule"
+                      name="rule_id"
+                      value="{{ rule_id }}"
+                    />
+
+                    <div class="top-row">
+                      <div class="form-group">
+                        <label for="comment">Nombre de la Automatizacion</label>
+                        <input
+                          id="automation-name"
+                          class="form-control"
+                          name="comment"
+                          placeholder="Ingrese el nombre de la automatizacion"
+                          oninput="formatoNombre(this)"
+                        />
+                      </div>
+
+                      <div class="form-group">
+                        <label for="regla">Sitios Restringidos</label>
+                        <select
+                          class="selectpicker w-100"
+                          multiple
+                          name="regla"
+                          id="siteRestriction"
+                          aria-label="Seleccione un dominio"
+                          data-none-selected-text="Seleccione un dominio"
+                          data-live-search="true"
+                        >
+                          <option value="" hidden selected disabled>
+                            Seleccione
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="daypicker"
+                          >Dias a aplicar la restriccion</label
+                        >
+                        <div class="input-group">
+                          <input
+                            type="text"
+                            id="daypicker"
+                            class="form-control"
+                            readonly
+                          />
+                          <div class="input-group-append" id="icon-day">
+                            <span class="input-group-text">
+                              <i class="fa fa-calendar" id="daypickerIcon"></i>
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          class="days-popup weekDays-selector"
+                          id="daysPopup"
+                        >
+                          <input
+                            type="checkbox"
+                            id="weekday-mon"
+                            class="weekday"
+                          />
+                          <label for="weekday-mon">Lunes</label>
+                          <input
+                            type="checkbox"
+                            id="weekday-tue"
+                            class="weekday"
+                          />
+                          <label for="weekday-tue">Martes</label>
+                          <input
+                            type="checkbox"
+                            id="weekday-wed"
+                            class="weekday"
+                          />
+                          <label for="weekday-wed">Miercoles</label>
+                          <input
+                            type="checkbox"
+                            id="weekday-thu"
+                            class="weekday"
+                          />
+                          <label for="weekday-thu">Jueves</label>
+                          <input
+                            type="checkbox"
+                            id="weekday-fri"
+                            class="weekday"
+                          />
+                          <label for="weekday-fri">Viernes</label>
+                          <input
+                            type="checkbox"
+                            id="weekday-sat"
+                            class="weekday"
+                          />
+                          <label for="weekday-sat">Sabado</label>
+                          <input
+                            type="checkbox"
+                            id="weekday-sun"
+                            class="weekday"
+                          />
+                          <label for="weekday-sun">Domingo</label>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="timepicker"
+                          >Horas y minutos de inicio</label
+                        >
+                        <div id="timepicker" class="input-group timepicker">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="initial-time"
+                            readonly
+                          />
+                          <div class="input-group-append input-group-addon">
+                            <span class="input-group-text">
+                              <i class="fa fa-clock" id="timepickerIcon"></i>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="timepicker"
+                          >Horas y minutos de finalizacion</label
+                        >
+                        <div id="timepicker" class="input-group timepicker">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="final-time"
+                            readonly
+                          />
+                          <div class="input-group-append input-group-addon">
+                            <span class="input-group-text">
+                              <i class="fa fa-clock" id="timepickerIcon"></i>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="top-row">
+                      <div class="form-group" id="footerBtn">
+                        <button
+                          type="button"
+                          id="btnCancelar"
+                          class="btn btn-secondary"
+                          data-bs-dismiss="modal"
+                        >
+                          Cerrar
+                        </button>
+                        <button
+                          type="submit"
+                          id="btn-create-automation"
+                          class="btn btn-primary"
+                        >
+                          Crear Automatizacion
+                        </button>
+                      </div>
                     </div>
                   </form>
                 </div>
@@ -364,20 +643,23 @@
     </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
     {% include 'includes/js-imports.html' %}
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/tableexport.jquery.plugin/tableExport.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
     <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/eonasdan-bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+
+    <!-- Cargar Bootstrap 4 para los componentes específicos -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
+
     <script src="{{ url_for('static', filename='js/rules-content.js') }}"></script>
 
     {% endblock %}

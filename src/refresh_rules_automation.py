@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 import subprocess
@@ -202,75 +203,84 @@ def verify_domain_dynamic(domain):
 
 
 def refresh_rule():
-    file_path = "/etc/iptables-rules/rules-list"
+    directory_path = "/etc/iptables-rules/automations/"
     rules = []
 
-    if os.path.exists(file_path):
-        try:
-            # Limpiar las reglas de iptables FORWARD
-            subprocess.check_output(["/sbin/iptables", "-F", "FORWARD"])
-            refresh_rule_logger.info(
-                "Todas las reglas FORWARD han sido eliminadas correctamente."
-            )
-        except subprocess.CalledProcessError as e:
-            refresh_rule_logger.error(f"Error al eliminar las reglas FORWARD: {e}")
+    # Obtener todos los archivos en el directorio especificado
+    file_paths = glob.glob(os.path.join(directory_path, "*"))
 
-        try:
-            # Leer las reglas del archivo
-            with open(file_path, "r") as rules_file:
-                lines = rules_file.readlines()
-                for line in lines:
-                    # Extraer las partes usando expresiones regulares
-                    match = re.match(
-                        r"1:\s*(.*?)\s*2:\s*(.*?)\s*3:\s*(.*?)\s*4:\s*(.*)",
-                        line.strip(),
-                    )
+    # Procesar cada archivo en el directorio
+    for file_path in file_paths:
+        if os.path.exists(file_path):
+            try:
+                # Limpiar las reglas de iptables FORWARD
+                subprocess.check_output(["/sbin/iptables", "-F", "FORWARD"])
+                refresh_rule_logger.info(
+                    "Todas las reglas FORWARD han sido eliminadas correctamente."
+                )
+            except subprocess.CalledProcessError as e:
+                refresh_rule_logger.error(f"Error al eliminar las reglas FORWARD: {e}")
 
-                    if match:
-                        source = match.group(1).strip()
-                        domain = match.group(2).strip()
-                        action = match.group(3).strip()
-                        comment = match.group(4).strip()
+            try:
+                # Leer las reglas del archivo
+                with open(file_path, "r") as rules_file:
+                    lines = rules_file.readlines()
+                    for line in lines:
+                        # Extraer las partes usando expresiones regulares
+                        match = re.match(
+                            r"1:\s*(.*?)\s*2:\s*(.*?)\s*3:\s*(.*?)\s*4:\s*(.*)",
+                            line.strip(),
+                        )
 
-                        rule = {
-                            "source": source,
-                            "domain": domain,
-                            "action": action,
-                            "comment": comment,
-                        }
-                        rules.append(rule)
-                        refresh_rule_logger.info(f"Procesando regla: {rule}")
+                        if match:
+                            source = match.group(1).strip()
+                            domain = match.group(2).strip()
+                            action = match.group(3).strip()
+                            comment = match.group(4).strip()
 
-                        source = "" if source == "Todos los dispositivos" else source
+                            rule = {
+                                "source": source,
+                                "domain": domain,
+                                "action": action,
+                                "comment": comment,
+                            }
+                            rules.append(rule)
+                            refresh_rule_logger.info(f"Procesando regla: {rule}")
 
-                        if domain in plataformas_dinamicas_dominio:
-                            ip_domain = verify_domain_dynamic(domain)
-                            if isinstance(ip_domain, list):
+                            source = (
+                                "" if source == "Todos los dispositivos" else source
+                            )
+
+                            if domain in plataformas_dinamicas_dominio:
+                                ip_domain = verify_domain_dynamic(domain)
+                                if isinstance(ip_domain, list):
+                                    rules_domain_dynamic = [
+                                        f"/sbin/iptables -I FORWARD 1 {source} -d {ip} -j {action} -m comment --comment '{comment}'"
+                                        for ip in ip_domain
+                                    ]
+                                elif isinstance(ip_domain, str):
+                                    rules_domain_dynamic = [
+                                        f"/sbin/iptables -I FORWARD 1 {source} -d {ip_domain} -j {action} -m comment --comment '{comment}'"
+                                    ]
+                            else:
                                 rules_domain_dynamic = [
-                                    f"/sbin/iptables -I FORWARD 1 {source} -d {ip} -j {action} -m comment --comment '{comment}'"
-                                    for ip in ip_domain
+                                    f"/sbin/iptables -I FORWARD 1 {source} -d {domain} -j {action} -m comment --comment '{comment}'"
                                 ]
-                            elif isinstance(ip_domain, str):
-                                rules_domain_dynamic = [
-                                    f"/sbin/iptables -I FORWARD 1 {source} -d {ip_domain} -j {action} -m comment --comment '{comment}'"
-                                ]
-                        else:
-                            rules_domain_dynamic = [
-                                f"/sbin/iptables -I FORWARD 1 {source} -d {domain} -j {action} -m comment --comment '{comment}'"
-                            ]
 
-                        for rule in rules_domain_dynamic:
-                            try:
-                                subprocess.run(shlex.split(rule), check=True)
-                                refresh_rule_logger.info(
-                                    f"Regla ejecutada correctamente: {rule}"
-                                )
-                            except subprocess.CalledProcessError as e:
-                                refresh_rule_logger.error(
-                                    f"Error al ejecutar la regla: {rule} - {e}"
-                                )
-        except Exception as e:
-            refresh_rule_logger.error(f"Error al procesar el archivo: {e}")
+                            for rule in rules_domain_dynamic:
+                                try:
+                                    subprocess.run(shlex.split(rule), check=True)
+                                    refresh_rule_logger.info(
+                                        f"Regla ejecutada correctamente: {rule}"
+                                    )
+                                except subprocess.CalledProcessError as e:
+                                    refresh_rule_logger.error(
+                                        f"Error al ejecutar la regla: {rule} - {e}"
+                                    )
+            except Exception as e:
+                refresh_rule_logger.error(
+                    f"Error al procesar el archivo {file_path}: {e}"
+                )
 
 
 def main():

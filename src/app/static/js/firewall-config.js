@@ -70,6 +70,10 @@ var domainEdit = $("#editDomain");
 var $tablesFirewall = $(".table");
 
 $(document).ready(function () {
+  $(".ticket-type").append(
+    '<button class="show-full-response">Mostrar</button>'
+  );
+
   ipAddrInput.prop("disabled", true);
   selectPortRange.prop("disabled", true);
   portStart.prop("disabled", true);
@@ -480,9 +484,11 @@ $(document).ready(function () {
     var button = $(event.relatedTarget);
     var reglaNombre = button.data("reglaNombre");
     var filaTabla = button.data("reglaFila");
-    var reglaId = button.data("reglaId");
+    var tablaId = button.data("tablaId");
 
     var nameCommentlb = $("#editComment");
+
+    console.log(button.data());
 
     nameCommentlb.text(reglaNombre);
 
@@ -497,16 +503,10 @@ $(document).ready(function () {
     selectProtocolEdit.prop("disabled", true).val("");
     domainEdit.prop("disabled", true).val("");
 
-    var fila;
-    
-    if ($("#tableFirewallIn").find("tr").eq(filaTabla).length) {
-      fila = $("#tableFirewallIn").find("tr").eq(filaTabla);
-    } else if ($("#tableFirewallOut").find("tr").eq(filaTabla).length) {
-      fila = $("#tableFirewallOut").find("tr").eq(filaTabla);
-    } else if ($("#tableFirewallForward").find("tr").eq(filaTabla).length) {
-      fila = $("#tableFirewallForward").find("tr").eq(filaTabla);
-    } else if ($("#tableFirewallDefault").find("tr").eq(filaTabla).length) {
-      fila = $("#tableFirewallDefault").find("tr").eq(filaTabla);
+    var tabla = $("#" + tablaId);
+
+    if (tabla.find("tr").eq(filaTabla).length) {
+      fila = tabla.find("tr").eq(filaTabla);
     }
 
     var protocolo = fila.find(".protocolo").text();
@@ -641,8 +641,96 @@ $(document).ready(function () {
     return false;
   }
 
-  scrollPos();
+  // Toma y Restaurar el estado del botón de expansión de la tabla
+  $(".show-full-response").on("click", function () {
+    const $table = $(this).closest("div").find("table");
+    const tableId = $table.attr("id");
+    const statusExpand = $table
+      .toggleClass("full-response")
+      .hasClass("full-response");
+
+    // Guardar el estado en sessionStorage
+    const datos = obtenerDatosAlmacenados();
+    datos.tablas = datos.tablas || {};
+    datos.tablas[tableId] = statusExpand;
+    guardarDatosAlmacenados(datos);
+  });
+
+  abrirUltimoPanelAbierto();
+  restaurarEstadoBoton();
+  $(window).on("load", function () {
+    setTimeout(scrollPos, 600);
+  });
 });
+
+// Obtener los datos almacenados en sessionStorage y combinarlos en un solo objeto
+function obtenerDatosAlmacenados() {
+  const estadoGeneral = sessionStorage.getItem("estadoFirewall");
+  return estadoGeneral ? JSON.parse(estadoGeneral) : {};
+}
+
+// Guardar los datos en sessionStorage bajo una sola clave
+function guardarDatosAlmacenados(datos) {
+  sessionStorage.setItem("estadoFirewall", JSON.stringify(datos));
+}
+
+// Función para obtener el ID del último panel abierto
+function obtenerUltimoPanelAbierto() {
+  const datos = obtenerDatosAlmacenados();
+  return datos.ultimoPanelAbierto || null;
+}
+
+// Función para abrir el último panel abierto al cargar la página
+function abrirUltimoPanelAbierto() {
+  const ultimoPanelId = obtenerUltimoPanelAbierto();
+  if (ultimoPanelId) {
+    $("#" + ultimoPanelId).collapse("show");
+    $("#btn-" + ultimoPanelId).attr("aria-expanded", "true");
+  }
+}
+
+// Guardar el ID del panel abierto y el estado de las tablas al mostrar un panel del acordeón
+$("#accordion").on("shown.bs.collapse", function (e) {
+  const idPanel = $(e.target).attr("id");
+  const datos = obtenerDatosAlmacenados();
+  datos.ultimoPanelAbierto = idPanel;
+  guardarDatosAlmacenados(datos);
+});
+
+// Eliminar el ID del panel abierto al ocultar todos los paneles del acordeón
+$("#accordion").on("hidden.bs.collapse", function () {
+  if ($("#accordion .collapse.show").length === 0) {
+    const datos = obtenerDatosAlmacenados();
+    delete datos.ultimoPanelAbierto;
+    guardarDatosAlmacenados(datos);
+  }
+});
+
+// Restaurar el estado de los botones de expansión de las tablas
+function restaurarEstadoBoton() {
+  const datos = obtenerDatosAlmacenados();
+  if (datos.tablas) {
+    for (const [tableId, statusExpand] of Object.entries(datos.tablas)) {
+      if (statusExpand) {
+        $("#" + tableId).addClass("full-response");
+      }
+    }
+  }
+}
+
+// Tomar y Restaurar la posición del scroll
+window.addEventListener("beforeunload", function () {
+  const datos = obtenerDatosAlmacenados();
+  datos.scrollPositionFirewall = window.scrollY;
+  guardarDatosAlmacenados(datos);
+});
+
+function scrollPos() {
+  const datos = obtenerDatosAlmacenados();
+  if (datos.scrollPositionFirewall !== undefined) {
+    window.scrollTo(0, datos.scrollPositionFirewall);
+  }
+}
 
 // Función para limpiar el formulario
 function limpiarFormulario() {
@@ -703,6 +791,11 @@ function formatoPuerto(input) {
   input.value = input.value.replace(/[^\d]/g, "");
 }
 
+function formatoIpAdded(input) {
+  // Reemplaza cualquier carácter que no sea dígito, guion o punto
+  input.value = input.value.replace(/[^0-9.-]/g, "");
+}
+
 function formatoNombreRegla(input) {
   input.value = input.value.replace(/-/g, "");
 }
@@ -710,15 +803,3 @@ function formatoNombreRegla(input) {
 // LimpiarFormulario cuando se presiona cualquier boton
 btnCancelar.on("click", limpiarFormulario);
 btnCreate.on("click", limpiarFormulario);
-
-window.addEventListener("beforeunload", function () {
-  sessionStorage.setItem("scrollPositionFirewall", window.scrollY);
-});
-
-// Restaurar la posición del scroll al cargar la página
-function scrollPos() {
-  var scrollPosition = sessionStorage.getItem("scrollPositionFirewall");
-  if (scrollPosition !== null) {
-    window.scrollTo(0, scrollPosition);
-  }
-}

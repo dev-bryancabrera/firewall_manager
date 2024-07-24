@@ -68,7 +68,7 @@
               >
                 <button
                   class="btn btn-link accordion-title border-0 collapse d-flex justify-content-between align-items-center"
-                  id="btn-collapse{{ loop.index }}"
+                  id="btn-{{ seccion.id }}"
                   data-toggle="collapse"
                   data-target="#{{ seccion.id }}"
                   aria-expanded="false"
@@ -94,8 +94,11 @@
                       <table
                         id="tableFirewallDefault"
                         class="table"
+                        data-search="true"
+                        data-show-columns="false"
                         data-locale="es-ES"
                       >
+                        <caption class="ticket-type"></caption>
                         <thead>
                           <tr>
                             <th data-field="number" data-sortable="true">
@@ -141,8 +144,11 @@
                       <table
                         id="{{ seccion.tabla_id }}"
                         class="table"
+                        data-search="true"
+                        data-show-columns="false"
                         data-locale="es-ES"
                       >
+                        <caption class="ticket-type"></caption>
                         <thead>
                           <tr>
                             <th data-field="number" data-sortable="true">
@@ -242,6 +248,7 @@
                                 data-regla-id="{{ regla['id_regla'] }}"
                                 data-regla-nombre="{{ regla['nombre'] }}"
                                 data-regla-fila="{{ loop.index }}"
+                                data-tabla-id="{{ seccion.tabla_id }}"
                               >
                                 Visualizar Regla
                               </button>
@@ -767,7 +774,7 @@
                       <div class="form-group">
                         <label for="regla">Tipo de regla</label>
                         <select
-                          class="form-select"
+                          class="selectpicker w-100"
                           name="regla"
                           id="selectRegla"
                         >
@@ -787,7 +794,7 @@
                       <div class="form-group">
                         <label for="regla">Accion de la regla</label>
                         <select
-                          class="form-select"
+                          class="selectpicker w-100"
                           name="action_rule"
                           id="formSelectAction"
                         >
@@ -802,7 +809,7 @@
                       <div class="form-group" id="directionContainer">
                         <label for="selectEntry">Dirección de la Regla</label>
                         <select
-                          class="form-select"
+                          class="selectpicker w-100"
                           name="entry"
                           id="selectEntry"
                         >
@@ -814,15 +821,26 @@
 
                       <div class="form-group" id="redLocalTypeContainer">
                         <label for="red_local_type_select"
-                          >Tipo de red local</label
+                          >Tipo de Red Local</label
                         >
-                        <select class="form-select" id="red_local_type_select">
-                          <option value="" selected>Seleccionar...</option>
+                        <select
+                          class="selectpicker w-100"
+                          name="localIpMacRed"
+                          id="red_local_type_select"
+                          aria-label="Tipo de Red Local"
+                          data-none-selected-text="Tipo de Red Local"
+                        >
+                          <option value="" hidden selected>
+                            Seleccione una IP local
+                          </option>
                           <option value="red_local_ip">
-                            Red Local basada en IP
+                            Red Local (Basada en IP)
                           </option>
                           <option value="red_externa_mac">
-                            Red Local basada en MAC
+                            Red Local (Basada en MAC)
+                          </option>
+                          <option value="all">
+                            Aplicar a Todos los Dispositivos
                           </option>
                         </select>
                       </div>
@@ -838,9 +856,8 @@
                           data-live-search="true"
                         >
                           <option value="" hidden selected>
-                            Seleccione un red local
+                            Seleccione una IP local
                           </option>
-                          <option value="all">Todos los dispositivos</option>
                           {% for device in devices %}
                           <option value="{{ device['ip'] }}">
                             {{ device['ip'] }}
@@ -861,9 +878,8 @@
                           data-live-search="true"
                         >
                           <option value="" hidden selected>
-                            Seleccione un red local
+                            Seleccione una MAC local
                           </option>
-                          <option value="all">Todos los dispositivos</option>
                           {% for device in devices %}
                           <option value="{{ device['mac'] }}">
                             {{ device['mac'] }}
@@ -883,6 +899,7 @@
                           class="form-control"
                           id="newEntry"
                           placeholder="Ingrese el nuevo dato"
+                          oninput="formatoIpAdded(this)"
                         />
                         <div class="input-group-append">
                           <button
@@ -897,7 +914,7 @@
 
                       <div class="form-group" id="redTypeContainer">
                         <label for="red_type">Tipo de red</label>
-                        <select class="form-select" id="red_type_select">
+                        <select class="selectpicker w-100" id="red_type_select">
                           <option value="" selected>Seleccionar...</option>
                           <option value="red_local">Red Local</option>
                           <option value="red_externa">Red Externa</option>
@@ -1008,7 +1025,7 @@
                       <div class="form-group" id="protocolContainer">
                         <label for="selectProtocol">Protocolo</label>
                         <select
-                          class="form-select"
+                          class="selectpicker w-100"
                           name="protocol"
                           id="selectProtocol"
                         >
@@ -1027,7 +1044,7 @@
                             >Establecer Rango de Puertos</label
                           >
                           <select
-                            class="form-select"
+                            class="selectpicker w-100"
                             name="rangePorts"
                             id="selectPortRange"
                           >
