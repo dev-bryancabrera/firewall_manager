@@ -21,9 +21,16 @@ i {
   padding: 0px;
 }
 #navbarSupportedContent {
+  display: flex;
+  justify-content: space-between;
   overflow: hidden;
   position: relative;
 }
+
+.menu-items {
+  margin-left: 20px;
+}
+
 #navbarSupportedContent ul {
   padding: 0px;
   margin: 0px;
@@ -115,20 +122,43 @@ i {
   left: -25px;
 }
 
-.collapse > .btn {
+.info-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.notification {
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 100px;
+  background-color: white;
+  box-shadow: 1px 1px 33px 0px rgba(0, 0, 0, 0.37);
+  transition: 1s;
+}
+
+.collapse > .info-actions .btn {
   margin-left: 25px !important;
   margin-right: 45px !important;
   border-color: #181818;
   z-index: 2;
 }
 
-.collapse > .btn:hover {
+.collapse > .info-actions .btn:hover {
   font-weight: 700;
   background-color: #fff;
   border-color: #181818;
 }
 
-.collapse > .btn > a {
+.collapse > .info-actions .btn > a {
   text-decoration: none;
   color: rgb(0, 0, 0);
   text-decoration: none;
@@ -162,7 +192,7 @@ i {
 }
 
 @media (max-width: 991px) {
-  .collapse > .btn {
+  .collapse > .info-actions .btn {
     margin-top: 15px !important;
   }
   #navbarSupportedContent ul li a {

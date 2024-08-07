@@ -124,6 +124,10 @@ $(document).ready(function () {
     cleanDisabledMultiselect({
       content: content,
       typeRed: typeRed,
+      typeIpRed: typeIpRed,
+      typeMacRed: typeMacRed,
+      selectTypeRed: selectTypeRed,
+      selectLocalTypeSelect: selectLocalTypeSelect,
     });
     ocultarCampos({
       domainContainer: domainContainer,
@@ -139,6 +143,8 @@ $(document).ready(function () {
       redTypeContainer: redTypeContainer,
       redLocalTypeContainer: redLocalTypeContainer,
       redContainer: redContainer,
+      redIpContainer: redIpContainer,
+      redMacContainer: redMacContainer,
     });
 
     var selectedOption = selectRegla.val();
@@ -255,9 +261,6 @@ $(document).ready(function () {
   });
 
   selectLocalTypeSelect.on("change", function () {
-    /* cleanDisabledInput({
-      ipAddrInput: ipAddrInput,
-    }); */
     cleanDisabledMultiselect({
       typeIpRed: typeIpRed,
       typeMacRed: typeMacRed,
@@ -322,6 +325,97 @@ $(document).ready(function () {
   $("#addEntryButton").click(function () {
     addNewEntry();
   });
+
+  // Actualizar lista de ips o macs
+
+  function actualizarSelects() {
+    // Añadir clase de animación al icono
+    $(".reloadButton i").addClass("spinner");
+
+    $.ajax({
+      url: "/get_devices",
+      method: "GET",
+      success: function (data) {
+        if (Array.isArray(data)) {
+          // Limpiar las opciones actuales de ambos selects
+          $("#type_ip_red").empty();
+          $("#type_mac_red").empty();
+          $("##reload-ip-mac").empty();
+
+          // Agregar la opción predeterminada
+          $("#type_ip_red").append(
+            '<option value="" hidden selected>Seleccione una IP local</option>'
+          );
+          $("#type_mac_red").append(
+            '<option value="" hidden selected>Seleccione una MAC local</option>'
+          );
+          $("#type_red").append(
+            '<option value="" hidden selected>Seleccione una red local</option>'
+          );
+
+          // Agregar las nuevas opciones
+          data.forEach(function (device) {
+            $("#type_ip_red").append(
+              '<option value="' + device.ip + '">' + device.ip + "</option>"
+            );
+            $("#type_mac_red").append(
+              '<option value="' + device.mac + '">' + device.mac + "</option>"
+            );
+            $("#type_red").append(
+              '<option value="' +
+                device.mac +
+                '">' +
+                device.ip +
+                " - " +
+                device.mac +
+                "</option>"
+            );
+          });
+
+          // Agregar la opción para agregar una nueva IP o MAC
+          $("#type_ip_red").append(
+            '<option value="addNewOption">Agregar IP</option>'
+          );
+          $("#type_mac_red").append(
+            '<option value="addNewOption">Agregar MAC</option>'
+          );
+          $("#type_red").append(
+            '<option value="addNewOption">Agregar MAC</option>'
+          );
+
+          // Refrescar el selectpicker para mostrar las nuevas opciones
+          $("#type_ip_red").selectpicker("refresh");
+          $("#type_mac_red").selectpicker("refresh");
+          $("#type_red").selectpicker("refresh");
+        } else {
+          console.error("Error: La respuesta no es un array");
+        }
+
+        // Remover clase de animación al icono
+        $(".reloadButton i").removeClass("spinner");
+      },
+      error: function (xhr, status, error) {
+        console.error("Error al obtener dispositivos:", error);
+
+        // Remover clase de animación al icono en caso de error
+        $(".reloadButton i").removeClass("spinner");
+      },
+    });
+  }
+
+  // Asociar la función a ambos botones de recarga
+  $("#reload-ip, #reload-mac, #reload-ip-mac").click(function () {
+    actualizarSelects();
+  });
+
+  // Ventana de carga
+  function showLoading() {
+    $("#loading-overlay").css("display", "flex");
+  }
+
+  function hideLoading() {
+    $("#loading-overlay").css("display", "none");
+  }
 
   $tablesFirewall.bootstrapTable({});
 
@@ -400,6 +494,8 @@ $(document).ready(function () {
 
     var formData = $(this).serialize();
     btnSaveRule.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "POST",
@@ -580,7 +676,10 @@ $(document).ready(function () {
     $(".alert-message-container").show("medium");
     setTimeout(function () {
       if (alertType === "success") {
+        hideLoading();
         location.reload();
+      } else {
+        hideLoading();
       }
       $(".alert-message-container").hide("medium");
     }, 1500);
@@ -750,6 +849,9 @@ function limpiarFormulario() {
   selectProtocol.prop("disabled", true);
   port.prop("disabled", true);
 
+  redLocalTypeContainer.css("display", "none");
+  redMacContainer.css("display", "none");
+  redIpContainer.css("display", "none");
   redTypeContainer.css("display", "none");
   domainContainer.css("display", "none");
   contentContainer.css("display", "none");

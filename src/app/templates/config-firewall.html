@@ -32,6 +32,13 @@
     {% extends 'navbar.html' %} {% block content %}
     <!-- Estructura -->
     <section class="container-form">
+      <div id="loading-overlay">
+        <div id="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando...</p>
+        </div>
+      </div>
+
       <div class="tables-content">
         <div class="title-form">
           <h1 class="title">Gestor de Firewall para la Red</h1>
@@ -270,305 +277,6 @@
             {% endif %}
           </div>
         </div>
-
-        <!-- <div class="table-firewall-data">
-          <div class="firewall-rules in-rules">
-          
-            <div class="subtitle-tables">
-              <h2>Reglas Firewall de Entrada</h2>
-            </div>
-            <table id="tableFirewallIn" class="table" data-locale="es-ES">
-              <thead>
-                <tr>
-                  <th data-field="number" data-sortable="true">N° REGLA</th>
-                  <th
-                    data-field="name"
-                    data-sortable="true"
-                    style="min-width: 180px"
-                  >
-                    NOMBRE DE REGLA
-                  </th>
-                  <th
-                    data-field="type_rule"
-                    data-sortable="true"
-                    style="min-width: 180px"
-                  >
-                    TIPO DE REGLA
-                  </th>
-                  <th data-field="created_date" data-sortable="true">
-                    FECHA DE CREACION
-                  </th>
-                  <th data-field="domain" data-sortable="true">DATOS REGLA</th>
-                  <th
-                    data-field="action"
-                    data-sortable="true"
-                    style="min-width: 150px"
-                  >
-                    ACCION DE FIREWALL
-                  </th>
-                  <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
-                  <th
-                    data-field="entry"
-                    data-sortable="true"
-                    style="min-width: 150px"
-                  >
-                    DIRECCION DE REGLA
-                  </th>
-                  <th data-field="en/dis"></th>
-                  <th data-field="delete"></th>
-                  <th data-field="see"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% if reglas_in %} {% for regla in reglas_in %}
-                <tr>
-                  <td class="numero">{{ loop.index }}</td>
-                  <td class="nombre">{{ regla['nombre'] }}</td>
-                  <td class="tipo_regla">{{ regla['tipo_regla'] }}</td>
-                  <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
-                  <td class="dominio">{{ regla['dominio'] }}</td>
-                  <td class="accion">{{ regla['accion'] }}</td>
-                  <td class="protocolo">{{ regla['protocolo'] }}</td>
-                  <td class="entrada">{{ regla['entrada'] }}</td>
-                  <td>
-                    <button
-                      id="btn-regla-{{ regla['id_regla'] }}"
-                      class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
-                    >
-                      {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-danger"
-                      id="btn-delete-rule"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmarEliminar"
-                      data-regla-id="{{ regla['id_regla'] }}"
-                    >
-                      Eliminar Regla
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      id="editarReglaBtn"
-                      data-bs-toggle="modal"
-                      data-bs-target="#editarRegla"
-                      data-regla-id="{{ regla['id_regla'] }}"
-                      data-regla-nombre="{{ regla['nombre'] }}"
-                      data-regla-fila-in="{{ loop.index }}"
-                    >
-                      Visualizar Regla
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %} {% endif %}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="firewall-rules out-rules">
-            <div class="subtitle-tables">
-              <h2>Reglas Firewall de Salida</h2>
-            </div>
-            <table id="tableFirewallOut" class="table" data-locale="es-ES">
-              <thead>
-                <tr>
-                  <th data-field="number" data-sortable="true">N° REGLA</th>
-                  <th data-field="name" data-sortable="true">
-                    NOMBRE DE REGLA
-                  </th>
-                  <th data-field="type_rule" data-sortable="true">
-                    TIPO DE REGLA
-                  </th>
-                  <th data-field="created_date" data-sortable="true">
-                    FECHA DE CREACION
-                  </th>
-                  <th data-field="domain" data-sortable="true">DATOS REGLA</th>
-                  <th data-field="action" data-sortable="true">
-                    ACCION DE FIREWALL
-                  </th>
-                  <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
-                  <th data-field="entry" data-sortable="true">
-                    DIRECCION DE REGLA
-                  </th>
-                  <th data-field="en/dis"></th>
-                  <th data-field="delete"></th>
-                  <th data-field="see"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for regla in reglas_out %}
-                <tr class="regla-row">
-                  <td class="numero">{{ loop.index }}</td>
-                  <td class="nombre">{{ regla['nombre'] }}</td>
-                  <td class="tipo_regla">{{ regla['tipo_regla'] }}</td>
-                  <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
-                  <td class="dominio">
-                    <span class="dominio2">{{ regla['dominio'] }}</span>
-                  </td>
-                  <td class="accion">{{ regla['accion'] }}</td>
-                  <td class="protocolo">{{ regla['protocolo'] }}</td>
-                  <td class="entrada">{{ regla['entrada'] }}</td>
-                  <td>
-                    <button
-                      id="btn-regla-{{ regla['id_regla'] }}"
-                      class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
-                    >
-                      {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-danger"
-                      id="btn-delete-rule"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmarEliminar"
-                      data-regla-id="{{ regla['id_regla'] }}"
-                    >
-                      Eliminar Regla
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      id="editarReglaBtn"
-                      data-bs-toggle="modal"
-                      data-bs-target="#editarRegla"
-                      data-regla-id="{{ regla['id_regla'] }}"
-                      data-regla-nombre="{{ regla['nombre'] }}"
-                      data-regla-fila-out="{{ loop.index }}"
-                    >
-                      Visualizar Regla
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="firewall-rules forward-rules">
-            <div class="subtitle-tables">
-              <h2>Reglas Firewall de Salida</h2>
-            </div>
-            <table id="tableFirewallForward" class="table" data-locale="es-ES">
-              <thead>
-                <tr>
-                  <th data-field="number" data-sortable="true">N° REGLA</th>
-                  <th data-field="name" data-sortable="true">
-                    NOMBRE DE REGLA
-                  </th>
-                  <th data-field="type_rule" data-sortable="true">
-                    TIPO DE REGLA
-                  </th>
-                  <th data-field="created_date" data-sortable="true">
-                    FECHA DE CREACION
-                  </th>
-                  <th data-field="domain" data-sortable="true">DATOS REGLA</th>
-                  <th data-field="action" data-sortable="true">
-                    ACCION DE FIREWALL
-                  </th>
-                  <th data-field="protocol" data-sortable="true">PROTOCOLO</th>
-                  <th data-field="entry" data-sortable="true">
-                    DIRECCION DE REGLA
-                  </th>
-                  <th data-field="en/dis"></th>
-                  <th data-field="delete"></th>
-                  <th data-field="see"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for regla in reglas_forward %}
-                <tr class="regla-row">
-                  <td class="numero">{{ loop.index }}</td>
-                  <td class="nombre">{{ regla['nombre'] }}</td>
-                  <td class="tipo_regla">{{ regla['tipo_regla'] }}</td>
-                  <td class="fecha_creacion">{{ regla['fecha_creacion'] }}</td>
-                  <td class="dominio">
-                    <span class="dominio2">{{ regla['dominio'] }}</span>
-                  </td>
-                  <td class="accion">{{ regla['accion'] }}</td>
-                  <td class="protocolo">{{ regla['protocolo'] }}</td>
-                  <td class="entrada">{{ regla['entrada'] }}</td>
-                  <td>
-                    <button
-                      id="btn-regla-{{ regla['id_regla'] }}"
-                      class="btn {{ 'btn-success' if regla['estado'] == 1 else 'btn-secondary' }}"
-                    >
-                      {{ 'Desactivar' if regla['estado'] == 1 else 'Activar' }}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-danger"
-                      id="btn-delete-rule"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmarEliminar"
-                      data-regla-id="{{ regla['id_regla'] }}"
-                    >
-                      Eliminar Regla
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      id="editarReglaBtn"
-                      data-bs-toggle="modal"
-                      data-bs-target="#editarRegla"
-                      data-regla-id="{{ regla['id_regla'] }}"
-                      data-regla-nombre="{{ regla['nombre'] }}"
-                      data-regla-fila-out="{{ loop.index }}"
-                    >
-                      Visualizar Regla
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="firewall-rules default-rules">
-   
-            <div class="subtitle-tables">
-              <h2>Reglas de Firewall Predefinidas</h2>
-            </div>
-            <table id="tableFirewallDefault" class="table" data-locale="es-ES">
-              <thead>
-                <tr>
-                  <th data-field="number">N° REGLA</th>
-                  <th data-field="name">NOMBRE DE REGLA</th>
-                  <th data-field="type_rule">TIPO DE REGLA</th>
-                  <th data-field="data_rule">DATOS REGLA</th>
-                  <th data-field="action">ACCION DE FIREWALL</th>
-                  <th data-field="protocol">PROTOCOLO</th>
-                  <th data-field="entry">DIRECCION DE REGLA</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for regla in reglas_default %}
-                <tr class="regla-row">
-                  <td class="numero">{{ loop.index }}</td>
-                  <td class="nombre">{{ regla['nombre'] }}</td>
-                  <td class="tipo_regla">{{ regla['tipo_regla'] }}</td>
-                  <td class="domain">{{ regla['rule_data'] }}</td>
-                  <td class="accion">{{ regla['accion'] }}</td>
-                  <td class="protocolo">{{ regla['protocolo'] }}</td>
-                  <td class="entrada">{{ regla['entrada'] }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div> -->
       </div>
 
       <!-- Modal Editar Regla -->
@@ -830,7 +538,7 @@
                           aria-label="Tipo de Red Local"
                           data-none-selected-text="Tipo de Red Local"
                         >
-                          <option value="" hidden selected>
+                          <option value="" selected disabled hidden>
                             Seleccione una IP local
                           </option>
                           <option value="red_local_ip">
@@ -847,46 +555,117 @@
 
                       <div class="form-group" id="redIpContainer">
                         <label for="type_ip_red">IP de Red Local</label>
-                        <select
-                          class="selectpicker w-100"
-                          name="localIpRed"
-                          id="type_ip_red"
-                          aria-label="Seleccione un red local"
-                          data-none-selected-text="Seleccione un red local"
-                          data-live-search="true"
-                        >
-                          <option value="" hidden selected>
-                            Seleccione una IP local
-                          </option>
-                          {% for device in devices %}
-                          <option value="{{ device['ip'] }}">
-                            {{ device['ip'] }}
-                          </option>
-                          {% endfor %}
-                          <option value="addNewOption">Agregar IP</option>
-                        </select>
+                        <div class="ip-mac-refresh-select">
+                          <select
+                            class="selectpicker w-100"
+                            name="localIpRed"
+                            id="type_ip_red"
+                            aria-label="Seleccione un red local"
+                            data-none-selected-text="Seleccione un red local"
+                            data-live-search="true"
+                          >
+                            <option value="" selected disabled hidden>
+                              Seleccione una IP local
+                            </option>
+                            {% for device in devices %}
+                            <option value="{{ device['ip'] }}">
+                              {{ device['ip'] }}
+                            </option>
+                            {% endfor %}
+                            <option value="addNewOption">Agregar IP</option>
+                          </select>
+                          <div class="input-group-append">
+                            <button
+                              class="btn btn-outline-secondary reloadButton"
+                              type="button"
+                              id="reload-mac"
+                            >
+                              <i class="fas fa-sync" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
                       <div class="form-group" id="redMacContainer">
                         <label for="type_mac_red">Mac de Red Local</label>
+                        <div class="ip-mac-refresh-select">
+                          <select
+                            class="selectpicker w-100"
+                            name="localMacRed"
+                            id="type_mac_red"
+                            aria-label="Seleccione un red local"
+                            data-none-selected-text="Seleccione un red local"
+                            data-live-search="true"
+                          >
+                            <option value="" selected disabled hidden>
+                              Seleccione una MAC local
+                            </option>
+                            {% for device in devices %}
+                            <option value="{{ device['mac'] }}">
+                              {{ device['mac'] }}
+                            </option>
+                            {% endfor %}
+                            <option value="addNewOption">Agregar MAC</option>
+                          </select>
+                          <div class="input-group-append">
+                            <button
+                              class="btn btn-outline-secondary reloadButton"
+                              type="button"
+                              id="reload-mac"
+                            >
+                              <i class="fas fa-sync" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="form-group" id="redTypeContainer">
+                        <label for="red_type">Tipo de red</label>
                         <select
                           class="selectpicker w-100"
-                          name="localMacRed"
-                          id="type_mac_red"
-                          aria-label="Seleccione un red local"
-                          data-none-selected-text="Seleccione un red local"
-                          data-live-search="true"
+                          id="red_type_select"
+                          aria-label="Tipo de Red Local"
+                          data-none-selected-text="Tipo de Red Local"
                         >
-                          <option value="" hidden selected>
-                            Seleccione una MAC local
+                          <option value="" selected disabled hidden>
+                            Seleccionar...
                           </option>
-                          {% for device in devices %}
-                          <option value="{{ device['mac'] }}">
-                            {{ device['mac'] }}
-                          </option>
-                          {% endfor %}
-                          <option value="addNewOption">Agregar MAC</option>
+                          <option value="red_local">Red Local</option>
+                          <option value="red_externa">Red Externa</option>
                         </select>
+                      </div>
+
+                      <div class="form-group" id="redContainer">
+                        <label for="selectProtocol">IP/Mac de Red Local</label>
+                        <div class="ip-mac-refresh-select">
+                          <select
+                            class="selectpicker w-100"
+                            name="localRed"
+                            id="type_red"
+                            aria-label="Seleccione un red local"
+                            data-none-selected-text="Seleccione un red local"
+                            data-live-search="true"
+                          >
+                            <option value="" selected disabled hidden>
+                              Seleccione una red local
+                            </option>
+                            {% for device in devices %}
+                            <option value="{{ device['mac'] }}">
+                              {{ device['ip'] }} - {{ device['mac'] }}
+                            </option>
+                            {% endfor %}
+                            <option value="addNewOption">Agregar MAC</option>
+                          </select>
+                          <div class="input-group-append">
+                            <button
+                              class="btn btn-outline-secondary reloadButton"
+                              type="button"
+                              id="reload-ip-mac"
+                            >
+                              <i class="fas fa-sync" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
                       <div
@@ -899,7 +678,6 @@
                           class="form-control"
                           id="newEntry"
                           placeholder="Ingrese el nuevo dato"
-                          oninput="formatoIpAdded(this)"
                         />
                         <div class="input-group-append">
                           <button
@@ -910,36 +688,6 @@
                             <i class="fa-solid fa-plus"></i>
                           </button>
                         </div>
-                      </div>
-
-                      <div class="form-group" id="redTypeContainer">
-                        <label for="red_type">Tipo de red</label>
-                        <select class="selectpicker w-100" id="red_type_select">
-                          <option value="" selected>Seleccionar...</option>
-                          <option value="red_local">Red Local</option>
-                          <option value="red_externa">Red Externa</option>
-                        </select>
-                      </div>
-
-                      <div class="form-group" id="redContainer">
-                        <label for="selectProtocol">IP/Mac de Red Local</label>
-                        <select
-                          class="selectpicker w-100"
-                          name="localRed"
-                          id="type_red"
-                          aria-label="Seleccione un red local"
-                          data-none-selected-text="Seleccione un red local"
-                          data-live-search="true"
-                        >
-                          <option value="" hidden selected>
-                            Seleccione un red local
-                          </option>
-                          {% for device in devices %}
-                          <option value="{{ device['mac'] }}">
-                            {{ device['ip'] }} - {{ device['mac'] }}
-                          </option>
-                          {% endfor %}
-                        </select>
                       </div>
 
                       <div class="form-group" id="ipContainer">

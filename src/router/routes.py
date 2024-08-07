@@ -8,6 +8,7 @@ from models.modelUser import modelUser
 from models.funciones import (
     create_automation,
     create_automation_content,
+    create_service_automation,
     deactivate_activate_automation,
     delete_automation,
     delete_automation_content,
@@ -80,6 +81,12 @@ def configurar_rutas(app, login_manager_app):
     def home_page():
         return render_template("home-page.html")
 
+    @app.route("/get_devices", methods=["GET"])
+    @login_required
+    def get_devices():
+        devices = scan_network()
+        return devices
+
     @app.route("/server-vpn")
     @login_required
     def server_vpn():
@@ -124,6 +131,18 @@ def configurar_rutas(app, login_manager_app):
         return render_template(
             "firewall-automation.html",
             plataformas=plataformas,
+            automatizaciones=automatizaciones,
+            comunidades=comunidades,
+        )
+
+    @app.route("/service_automation")
+    @login_required
+    def service_automation():
+        automatizaciones = load_automation()
+        comunidades = load_comunnity()
+
+        return render_template(
+            "service-automation.html",
             automatizaciones=automatizaciones,
             comunidades=comunidades,
         )
@@ -395,6 +414,58 @@ def configurar_rutas(app, login_manager_app):
                 local_ip,
                 initial_ip,
                 final_ip,
+            )
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/add_service_automation", methods=["POST"])
+    @login_required
+    def allow_add_service_automation():
+        try:
+            automation_name = request.form.get("automationName")
+            community = request.form.get("community")
+            service_type = request.form.get("serviceType")
+            action_type = request.form.get("actionType")
+            # Campos Mysql
+            restriction_mysql = request.form.get("restrictionMysql")
+            max_connections = request.form.get("maxConnections")
+            user_name = request.form.get("userName")
+            access_type = request.form.get("accessType")
+            mysql_max_duration = request.form.get("mysqlMaxDuration")
+            # Campos ssh
+            actionssh_type = request.form.get("actionsshType")
+            commands = request.form.get("commands")
+            network_usage = request.form.get("networkUsage")
+            session_duration = request.form.get("sessionDuration")
+            ssh_max_duration = request.form.get("sshMaxDuration")
+            # Campos ftp
+            actionftp_type = request.form.get("actionftpType")
+            upload_directory = request.form.get("uploadDirectory")
+            file_types = request.form.get("fileTypes")
+            download_directory = request.form.get("downloadDirectory")
+            max_transfer_size = request.form.get("maxTransferSize")
+
+            response = create_service_automation(
+                automation_name,
+                community,
+                service_type,
+                action_type,
+                restriction_mysql,
+                max_connections,
+                user_name,
+                access_type,
+                mysql_max_duration,
+                actionssh_type,
+                commands,
+                network_usage,
+                session_duration,
+                ssh_max_duration,
+                actionftp_type,
+                upload_directory,
+                file_types,
+                download_directory,
+                max_transfer_size,
             )
             return response
         except KeyError as e:

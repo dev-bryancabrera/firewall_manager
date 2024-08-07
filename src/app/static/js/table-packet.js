@@ -397,11 +397,5 @@ $("#btn-clean").on("click", function () {
 });
 
 window.addEventListener("beforeunload", function (event) {
-  // Realiza la acción deseada aquí
-  // Por ejemplo, puedes hacer una llamada a una API para guardar el estado o registrar el evento
-  console.log("abandono ilegal");
-
-  // Si deseas mostrar un mensaje de confirmación al usuario antes de salir (no es garantizado en todos los navegadores)
-  // event.preventDefault();
-  // event.returnValue = 'Are you sure you want to leave?';
+  console.log("saliendo..");
 });

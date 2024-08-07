@@ -1780,6 +1780,236 @@ def delete_automation_content(regla_id, regla_nombre, automatizacion_nombre):
         )
 
 
+def create_service_automation(
+    automation_name,
+    community,
+    service_type,
+    action_type,
+    restriction_mysql,
+    max_connections,
+    user_name,
+    access_type,
+    mysql_max_duration,
+    actionssh_type,
+    commands,
+    network_usage,
+    session_duration,
+    ssh_max_duration,
+    actionftp_type,
+    upload_directory,
+    file_types,
+    download_directory,
+    max_transfer_size,
+):
+    try:
+        fecha_creacion = datetime.now()
+
+        def set_mysql_rules(
+            restriction_mysql,
+            max_connections,
+            user_name,
+            access_type,
+            mysql_max_duration,
+        ):
+            if restriction_mysql == "create-database":
+                command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "CREATE DATABASE" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE DATABASE"; content:"CREATE DATABASE"; nocase; sid:1000003; rev:1;)'
+            elif restriction_mysql == "drop-database":
+                command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DROP DATABASE" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP DATABASE"; content:"DROP DATABASE"; nocase; sid:1000003; rev:1;)'
+            elif restriction_mysql == "create-tables":
+                command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "CREATE TABLE" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE TABLE"; content:"CREATE TABLE"; nocase; sid:1000003; rev:1;)'
+            elif restriction_mysql == "drop-tables":
+                command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DROP TABLE" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP TABLE"; content:"DROP TABLE"; nocase; sid:1000004; rev:1;)'
+            elif restriction_mysql == "create-records":
+                command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "INSERT INTO" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to INSERT INTO"; content:"DELETE FROM"; nocase; sid:1000005; rev:1;)'
+            elif restriction_mysql == "delete-records":
+                command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DELETE FROM" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DELETE RECORDS"; content:"DELETE FROM"; nocase; sid:1000005; rev:1;)'
+            elif restriction_mysql == "limit-connections" and max_connections:
+                command = (
+                    f'sudo mysql -e "SET GLOBAL max_connections = {max_connections};"'
+                )
+                snort_rule = None
+            elif (
+                restriction_mysql == "restrict-db-access" and user_name and access_type
+            ):
+                command = f'sudo mysql -e "GRANT {access_type} ON *.* TO {user_name}@localhost;"'
+                snort_rule = None
+
+            run_command(command)
+            if snort_rule:
+                add_snort_rule(snort_rule)
+
+        def set_ssh_rules(
+            actionssh_type, commands, network_usage, session_duration, ssh_max_duration
+        ):
+            if actionssh_type == "limit-commands" and commands:
+                command = f"echo 'command=\"if [[ $SSH_ORIGINAL_COMMAND == {commands}* ]]; then exit 1; else $SSH_ORIGINAL_COMMAND; fi\"' >> /etc/ssh/sshd_config && sudo systemctl restart sshd"
+                snort_rule = None
+            elif actionssh_type == "limit-network-usage" and network_usage:
+                command = f"sudo iptables -A OUTPUT -p tcp --dport 22 -m quota --quota {network_usage} -j ACCEPT && sudo iptables -A OUTPUT -p tcp --dport 22 -j REJECT"
+                snort_rule = None
+            elif actionssh_type == "limit-session-duration" and session_duration:
+                command = f'echo "ClientAliveInterval {session_duration}" >> /etc/ssh/sshd_config && echo "ClientAliveCountMax 1" >> /etc/ssh/sshd_config && sudo systemctl restart sshd'
+                snort_rule = None
+            elif actionssh_type == "monitor-and-kill" and ssh_max_duration:
+                command = f"ps -eo pid,etime,comm | grep sshd | awk '{{split($2,a,\":\"); if (a[1] > {ssh_max_duration}) print $1}}' | xargs kill -9"
+                snort_rule = None
+
+            run_command(command)
+            if snort_rule:
+                add_snort_rule(snort_rule)
+
+        def set_ftp_rules(
+            actionftp_type,
+            upload_directory,
+            file_types,
+            download_directory,
+            max_transfer_size,
+        ):
+            if actionftp_type == "upload-files":
+                command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "STOR" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to UPLOAD FILES"; content:"STOR"; nocase; sid:1000006; rev:1;)'
+            elif actionftp_type == "download-files":
+                command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "RETR" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to DOWNLOAD FILES"; content:"RETR"; nocase; sid:1000007; rev:1;)'
+            elif actionftp_type == "delete-files":
+                command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "DELE" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to DELETE FILES"; content:"DELE"; nocase; sid:1000008; rev:1;)'
+            elif actionftp_type == "create-directories":
+                command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "MKD" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to CREATE DIRECTORIES"; content:"MKD"; nocase; sid:1000009; rev:1;)'
+            elif actionftp_type == "delete-directories":
+                command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "RMD" --algo bm -j REJECT'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to DELETE DIRECTORIES"; content:"RMD"; nocase; sid:1000010; rev:1;)'
+            elif actionftp_type == "limit-transfer-size" and max_transfer_size:
+                command = f"sudo iptables -A OUTPUT -p tcp --dport 21 -m quota --quota {max_transfer_size} -j ACCEPT && sudo iptables -A OUTPUT -p tcp --dport 21 -j REJECT"
+                snort_rule = None
+
+            run_command(command)
+            if snort_rule:
+                add_snort_rule(snort_rule)
+
+        def set_apache_rules(automation_type):
+            if automation_type == "enable-site":
+                command = "sudo a2ensite example.com && sudo systemctl reload apache2"
+                snort_rule = None
+            elif automation_type == "disable-site":
+                command = "sudo a2dissite example.com && sudo systemctl reload apache2"
+                snort_rule = None
+            elif automation_type == "restart-service":
+                command = "sudo systemctl restart apache2"
+                snort_rule = None
+            elif automation_type == "monitor-logs":
+                command = "sudo tail -f /var/log/apache2/access.log"
+                snort_rule = None
+            elif automation_type == "limit-bandwidth":
+                # Esto requiere configuración adicional en el servidor web
+                command = 'echo "Limitar ancho de banda"'
+                snort_rule = None
+
+            run_command(command)
+            if snort_rule:
+                add_snort_rule(snort_rule)
+
+        def add_snort_rule(rule):
+            rules_dir = "/etc/snort/rules"
+            custom_rules_file = os.path.join(rules_dir, "custom.rules")
+
+            # Verificar si el directorio existe, si no, crearlo
+            if not os.path.exists(rules_dir):
+                try:
+                    os.makedirs(rules_dir)
+                    print(f"Directorio creado: {rules_dir}")
+                except OSError as e:
+                    print(f"Error al crear el directorio {rules_dir}: {e}")
+                    return
+
+            # Verificar si el archivo existe, si no, crearlo
+            if not os.path.exists(custom_rules_file):
+                try:
+                    with open(custom_rules_file, "w") as f:
+                        print(f"Archivo creado: {custom_rules_file}")
+                except IOError as e:
+                    print(f"Error al crear el archivo {custom_rules_file}: {e}")
+                    return
+
+            # Agregar la regla al archivo
+            try:
+                with open(custom_rules_file, "a") as f:
+                    f.write(f"{rule}\n")
+                print(f"Regla de Snort agregada: {rule}")
+            except IOError as e:
+                print(f"Error al escribir la regla de Snort: {e}")
+
+        def run_command(command):
+            try:
+                result = subprocess.run(
+                    command, shell=True, check=True, text=True, capture_output=True
+                )
+                print(f"Comando ejecutado: {command}")
+                print(f"Salida: {result.stdout}")
+                if "snort" in command:
+                    # Recarga Snort si el comando involucra Snort
+                    subprocess.run(
+                        "sudo snort -A console -c /etc/snort/snort.conf",
+                        shell=True,
+                        check=True,
+                    )
+            except subprocess.CalledProcessError as e:
+                print(f"Error al ejecutar el comando: {e}")
+                print(f"Salida del error: {e.stderr}")
+
+        if service_type == "mysql":
+            set_mysql_rules(
+                restriction_mysql,
+                max_connections,
+                user_name,
+                access_type,
+                mysql_max_duration,
+            )
+
+        elif service_type == "ssh":
+            set_ssh_rules(
+                actionssh_type,
+                commands,
+                network_usage,
+                session_duration,
+                ssh_max_duration,
+            )
+        elif service_type == "ftp":
+            set_ftp_rules(
+                actionftp_type,
+                upload_directory,
+                file_types,
+                download_directory,
+                max_transfer_size,
+            )
+
+        # automation = Automation(
+        #     0,
+        #     automation_name,
+        #     automation_type,
+        #     restriccion,
+        #     deny_chain,
+        #     horario,
+        #     1,
+        #     fecha_creacion,
+        #     comunidad_id,
+        #     current_user.id,
+        # )
+        # automation = modelAutomation.insertAutomation(automation)
+
+        return jsonify({"message": "¡Automatizacion creada correctamente!"})
+
+    except Exception as e:
+        return f"Error al crear la automatización: {str(e)}"
+
+
 def create_automation(
     automation_name,
     automation_type,

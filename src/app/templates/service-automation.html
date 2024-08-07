@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include 'includes/styles-imports.html' %}
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.4.2/bootstrap-tagsinput.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/service-automation.css') }}"
+    />
+    <title>Automatizacion de firewall</title>
+  </head>
+  <body>
+    {% extends 'navbar.html' %} {% block content %}
+
+    <section class="automation-form-table">
+      <div class="title-automation">
+        <h1>Automatizacion de firewall</h1>
+      </div>
+      <div class="container-automation">
+        <div class="form-automation">
+          <div class="container-ssh">
+            <form class="form-content" id="form-automation">
+              <input
+                type="hidden"
+                name="csrf_token"
+                id="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+
+              <div class="top-row">
+                <div class="form-group">
+                  <label for="automation-name"
+                    >Nombre de la automatizacion</label
+                  >
+                  <input
+                    class="form-control"
+                    id="automation-name"
+                    name="automationName"
+                    placeholder="Nombre de la automatizacion"
+                  />
+                  <!-- oninput="formatoNombreRegla(this)" -->
+                </div>
+
+                <div class="form-group" id="community-list">
+                  <label for="ip-local">Comunidades</label>
+                  <select
+                    class="selectpicker"
+                    id="community"
+                    name="community"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione una comunidad"
+                    data-live-search="true"
+                  >
+                    <option value="" disabled selected hidden>
+                      Seleccione una opción
+                    </option>
+                    {% for comunidad in comunidades %}
+                    <option value="{{ comunidad[0] }}">
+                      {{ comunidad[1] }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="ip-local">Servicio a restringir</label>
+                  <select
+                    class="selectpicker"
+                    id="service-type"
+                    name="serviceType"
+                    aria-label="service"
+                    data-none-selected-text="Seleccione un servicio"
+                  >
+                    <option value="" selected disabled hidden>
+                      Seleccionar tipo
+                    </option>
+                    <option value="mysql">MySQL</option>
+                    <option value="ssh">SSH</option>
+                    <option value="ftp">FTP</option>
+                    <option value="apache">APACHE</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="ip-local">Acciones a tomar</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="action-type"
+                    name="actionType"
+                    aria-label="action"
+                    data-none-selected-text="Seleccione una acción"
+                  >
+                    <option value="" selected disabled>
+                      Seleccionar acción
+                    </option>
+                    <option value="block-at-threshold">
+                      Bloquear cuando se alcance el umbral y notificar al
+                      administrador
+                    </option>
+                    <option value="alert-and-block">
+                      Alertar cuando se alcance un umbral y notificar al
+                      administrador, y bloquear cuando se alcance otro umbral,
+                      también notificando al administrador
+                    </option>
+                    <option value="alert-only">
+                      Solo alertar y notificar al administrador
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="top-row" id="mysql-container">
+                <div class="form-group">
+                  <label for="ip-local">Acción a Automatizar</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="restricion-msyql"
+                    name="restrictionMysql"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione una acción"
+                  >
+                    <option value="" selected disabled>Seleccionar tipo</option>
+                    <option value="create-database">
+                      Creación de base de datos
+                    </option>
+                    <option value="drop-database">
+                      Eliminación de base de datos
+                    </option>
+                    <option value="create-tables">Creación de tablas</option>
+                    <option value="drop-tables">Eliminación de tablas</option>
+                    <option value="create-records">
+                      Creación de registros
+                    </option>
+                    <option value="delete-records">
+                      Eliminación de registros
+                    </option>
+                    <option value="limit-connections">
+                      Limitar número de conexiones
+                    </option>
+                    <option value="restrict-db-access">
+                      Restringir acceso a bases de datos específicas
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="max-connections"
+                    >Número máximo de conexiones</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="max-connections"
+                    name="maxConnections"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="user-name">Nombre del usuario</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="user-name"
+                    name="userName"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="access-type">Tipo de acceso</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="access-type"
+                    name="accessType"
+                    aria-label="Seleccione un tipo de acceso"
+                    data-none-selected-text="Seleccione un tipo de acceso"
+                    data-live-search="true"
+                  >
+                    <option value="" selected disabled hidden>
+                      Seleccionar tipo de acceso
+                    </option>
+                    <option value="read">Solo lectura</option>
+                    <option value="write">Lectura y escritura</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="mysql-max-duration"
+                    >Duración máxima (segundos)</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="mysql-max-duration"
+                    name="mysqlMaxDuration"
+                  />
+                </div>
+              </div>
+
+              <div class="top-row" id="ssh-container">
+                <div class="form-group">
+                  <label for="ip-local">Accion a Automatizar</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="actionssh-type"
+                    name="actionsshType"
+                    aria-label="automatizar"
+                    data-none-selected-text="Seleccione una accion"
+                  >
+                    <option value="" selected disabled hidden>
+                      Seleccionar tipo
+                    </option>
+                    <option value="limit-commands">
+                      Limitar comandos específicos
+                    </option>
+                    <option value="limit-network-usage">
+                      Limitar uso de red (bytes transferidos)
+                    </option>
+                    <option value="limit-session-duration">
+                      Limitar duración de la sesión
+                    </option>
+                    <option value="process-max-duration">
+                      Monitorear y finalizar procesos específicos
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="commands"
+                    >Comandos a limitar (separados por comas)</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="commands"
+                    name="commands"
+                    placeholder="p.ej. rm, cp, mv"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="network-usage">Uso máximo de red (bytes)</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="network-usage"
+                    name="networkUsage"
+                    placeholder="p.ej. 10485760"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="session-duration"
+                    >Duración máxima de la sesión (minutos)</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="session-duration"
+                    name="sessionDuration"
+                    placeholder="p.ej. 60"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="ssh-max-duration"
+                    >Duración máxima del proceso (minutos)</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="ssh-max-duration"
+                    name="sshMaxDuration"
+                    placeholder="p.ej. 30"
+                  />
+                </div>
+              </div>
+
+              <div class="top-row" id="ftp-container">
+                <div class="form-group">
+                  <label for="ip-local">Acción a Automatizar</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="actionftp-type"
+                    name="actionftpType"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione una acción"
+                  >
+                    <option value="" selected disabled>Seleccionar tipo</option>
+                    <option value="upload-files">Subida de archivos</option>
+                    <option value="download-files">Descarga de archivos</option>
+                    <!-- <option value="delete-files">
+                      Eliminación de archivos
+                    </option> -->
+                    <!-- <option value="create-directories">
+                      Creación de directorios
+                    </option>
+                    <option value="delete-directories">
+                      Eliminación de directorios
+                    </option> 
+                    <option value="limit-transfer-size">
+                      Limitar tamaño de transferencia
+                    </option> -->
+                    <option value="max-transfer-bytes">
+                      Tamaño máximo de transferencia
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="upload-directory">Directorio de subida</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="upload-directory"
+                    name="uploadDirectory"
+                    placeholder="p.ej. /uploads"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="download-directory">Directorio de descarga</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="download-directory"
+                    name="downloadDirectory"
+                    placeholder="p.ej. /downloads"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="file-types"
+                    >Tipos de archivos permitidos (separados por comas)</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="file-types"
+                    name="fileTypes"
+                    placeholder="p.ej. jpg, png, pdf"
+                  />
+                </div>
+
+                <!-- <div class="form-group">
+                  <label for="delete-directory"
+                    >Directorio de eliminación</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="delete-directory"
+                    name="deleteDirectory"
+                    placeholder="p.ej. /files"
+                  />
+                </div> 
+                
+                <div class="form-group">
+                  <label for="directory-path"
+                    >Ruta del directorio a crear</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="directory-path"
+                    name="directoryPath"
+                    placeholder="p.ej. /newdir"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="directory-path"
+                    >Ruta del directorio a eliminar</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="directory-path"
+                    name="directoryPath"
+                    placeholder="p.ej. /olddir"
+                  />
+                </div> -->
+
+                <div class="form-group">
+                  <label for="max-transfer-size"
+                    >Tamaño máximo de transferencia (bytes)</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="max-transfer-size"
+                    name="maxTransferSize"
+                    placeholder="p.ej. 10485760"
+                  />
+                </div>
+              </div>
+
+              <div class="top-row" id="apache-container">
+                <div class="form-group">
+                  <label for="ip-local">Acción a Automatizar</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="actionapache-type"
+                    name="actionapacheType"
+                    aria-label="community"
+                    data-none-selected-text="Seleccione una acción"
+                  >
+                    <option value="" selected disabled>Seleccionar tipo</option>
+                    <option value="enable-site">Habilitar un sitio</option>
+                    <option value="disable-site">Deshabilitar un sitio</option>
+                    <option value="restart-service">Reiniciar servicio</option>
+                    <option value="monitor-logs">Monitorear logs</option>
+                    <option value="limit-bandwidth">
+                      Limitar ancho de banda
+                    </option>
+                    <option value="set-maintenance-mode">
+                      Activar modo de mantenimiento
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="top-row">
+                <div class="form-group">
+                  <button
+                    type="submit"
+                    id="btn-create-automation"
+                    class="btn btn-primary"
+                  >
+                    Crear Automatizacion
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="table">
+          <div class="subtitle-tables">
+            <h2>Automatizaciones establecidas</h2>
+          </div>
+          <table
+            id="automation-table"
+            class="table"
+            data-locale="es-ES"
+            data-show-columns="true"
+            data-locale="es-ES"
+          >
+            <thead>
+              <tr>
+                <th data-field="number" data-sortable="true">N° Registro</th>
+                <th data-field="name" data-sortable="true">
+                  Nombre de la Automatizacion
+                </th>
+                <th data-field="type" data-sortable="true">
+                  Tipo de Automatizacion
+                </th>
+                <th data-field="created_date" data-sortable="true">
+                  Fecha de Creacion
+                </th>
+                <th data-field="schedule" data-sortable="true">
+                  Horario de restriccion
+                </th>
+                <th data-field="restriction_type" data-sortable="true">
+                  Acceso restringido
+                </th>
+                <th data-field="community" data-sortable="true">
+                  Comunidad restriccion
+                </th>
+                <th data-field="en/dis"></th>
+                <th data-field="delete"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for automatizacion in automatizaciones %}
+              <tr>
+                <td class="numero">{{ loop.index }}</td>
+                <td class="nombre">{{ automatizacion[1] }}</td>
+                <td class="tipo">{{ automatizacion[2] }}</td>
+                <td class="fecha_creacion">{{ automatizacion[7] }}</td>
+                <td class="horario">{{ automatizacion[3] }}</td>
+                <td class="tipo_restriccion">{{ automatizacion[4] }}</td>
+                <td class="comunidad">{{ automatizacion[10] }}</td>
+                <td>
+                  <button
+                    id="btn-automatizacion-{{ automatizacion[0] }}"
+                    class="btn {{ 'btn-success' if automatizacion[6] == 1 else 'btn-secondary' }}"
+                  >
+                    {{ 'Desactivar' if automatizacion[6] == 1 else 'Activar' }}
+                  </button>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    id="btn-delete-automation"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmarEliminar{{ automatizacion[0] }}"
+                  >
+                    Eliminar Automatizacion
+                  </button>
+
+                  <!-- Modal Eliminar Filtro -->
+                  <div
+                    class="modal fade"
+                    id="confirmarEliminar{{ automatizacion[0] }}"
+                    tabindex="-1"
+                    aria-labelledby="confirmacionModalLabel"
+                    aria-hidden="true"
+                  >
+                    <input
+                      type="hidden"
+                      name="filter_number"
+                      value="{{ automatizacion[0] }}"
+                    />
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="confirmacionModalLabel">
+                            Confirmar Eliminación
+                          </h5>
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          ¿Estás seguro de que deseas eliminar la
+                          automatizacion?
+                        </div>
+                        <div class="modal-footer">
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancelar
+                          </button>
+
+                          <button
+                            class="btn btn-danger"
+                            id="delete-automatizacion-{{ automatizacion[0] }}"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div
+          id="liveToast"
+          class="toast hide"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div class="toast-header">
+            <img
+              src="../static/img/alert_message.png"
+              class="rounded me-2"
+              alt="..."
+            />
+            <strong class="me-auto">Campo Requerido</strong>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="toast"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="toast-body"></div>
+        </div>
+      </div>
+
+      <!-- Alerts Message -->
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
+            </div>
+            <div class="alert-message text-center"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-message-container">
+        <div class="alert-box" style="float: none; margin: 0 auto">
+          <div class="alert alert-success">
+            <div class="alert-icon text-center">
+              <i class="fas fa-check-circle fa-3x text-success"></i>
+            </div>
+            <div class="alert-message text-center">
+              {% if request.args.get('response') %} {{
+              request.args.get('response') }} {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    {% include 'includes/js-imports.html' %}
+    <script src="{{ url_for('static', filename='js/service-automation.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/bootstrap.tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table-locale-all.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/extensions/export/bootstrap-table-export.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/eonasdan-bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    {% endblock %}
+  </body>
+</html>
