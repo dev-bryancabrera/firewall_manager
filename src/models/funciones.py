@@ -1151,6 +1151,12 @@ def allow_connections_detail(
             posicion = rule_parts_iptable.index("--mac-source")
             if posicion + 1 < len(rule_parts_iptable):
                 ip_mac_src = f"-m mac --mac-source {rule_parts_iptable[posicion + 1]}"
+        elif "--src-range" in rule_parts_iptable:
+            posicion = rule_parts_iptable.index("--src-range")
+            if posicion + 1 < len(rule_parts_iptable):
+                ip_mac_src = (
+                    f"-m iprange --src-range {rule_parts_iptable[posicion + 1]}"
+                )
         else:
             ip_mac_src = ""
 
