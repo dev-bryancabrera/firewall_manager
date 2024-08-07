@@ -411,10 +411,12 @@ $(document).ready(function () {
   // Ventana de carga
   function showLoading() {
     $("#loading-overlay").css("display", "flex");
+    $("body").addClass("no-scroll");
   }
 
   function hideLoading() {
     $("#loading-overlay").css("display", "none");
+    $("body").removeClass("no-scroll");
   }
 
   $tablesFirewall.bootstrapTable({});
@@ -524,6 +526,8 @@ $(document).ready(function () {
     var btn_status = $(this);
     btn_status.prop("disabled", true);
 
+    showLoading();
+
     $.ajax({
       type: "GET",
       url: "/desactivar_regla",
@@ -537,6 +541,7 @@ $(document).ready(function () {
         }
       },
       error: function (textStatus, errorThrown) {
+        btn_status.prop("disabled", false);
         console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
         alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
       },
@@ -548,6 +553,8 @@ $(document).ready(function () {
       id_regla: ruleId.val(),
     };
     btnConfirmDeleteRule.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "GET",

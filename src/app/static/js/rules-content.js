@@ -90,6 +90,17 @@ $(document).ready(function () {
 
   var tableRuleContent = $(".table");
 
+  // Ventana de carga
+  function showLoading() {
+    $("#loading-overlay").css("display", "flex");
+    $("body").addClass("no-scroll");
+  }
+
+  function hideLoading() {
+    $("#loading-overlay").css("display", "none");
+    $("body").removeClass("no-scroll");
+  }
+
   tableRuleContent.bootstrapTable({});
 
   modalDomain.on("show.bs.modal", function (event) {
@@ -114,6 +125,8 @@ $(document).ready(function () {
 
     var formData = $(this).serialize();
     btnSaveDomain.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "POST",
@@ -166,6 +179,8 @@ $(document).ready(function () {
       nombre_regla: ruleDetailName.val(),
     };
     btnCreateAutomation.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "POST",
@@ -222,6 +237,8 @@ $(document).ready(function () {
 
     var btn_status = $(this);
     btn_status.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "GET",
@@ -318,6 +335,7 @@ $(document).ready(function () {
     ruleName.val(reglaNombre);
 
     deleteRuleConfirm.off("click").on("click", function () {
+      showLoading();
       if (actionType === "deleteRule") {
         var params = {
           regla: ruleNumber.val(),
@@ -342,7 +360,6 @@ $(document).ready(function () {
           },
         });
       } else if (actionType === "deleteAutomation") {
-        console.log("ascdsf");
         var params = {
           regla_id: ruleNumber.val(),
           regla_nombre: ruleName.val(),
@@ -369,31 +386,6 @@ $(document).ready(function () {
       }
     });
   });
-
-  // btnDeleteAutomation.on("click", function () {
-  //   var params = {
-  //     regla_id: ruleId.val(),
-  //     regla_nombre: ruleDetailName.val(),
-  //   };
-  //   btnDeleteAutomation.prop("disabled", true);
-  //   $.ajax({
-  //     type: "GET",
-  //     url: "/eliminar_automatizacion_content",
-  //     data: params,
-  //     success: function (response) {
-  //       if (response.error) {
-  //         btnDeleteAutomation.prop("disabled", false);
-  //         alertMessage(response.error, "danger");
-  //       } else {
-  //         alertMessage(response.message, "success");
-  //       }
-  //     },
-  //     error: function (error) {
-  //       btnDeleteAutomation.prop("disabled", false);
-  //       alertMessage(error, "danger");
-  //     },
-  //   });
-  // });
 
   function alertMessage(response, alertType) {
     var alertBox = $(".alert");
@@ -422,7 +414,10 @@ $(document).ready(function () {
     $(".alert-message-container").show("medium");
     setTimeout(function () {
       if (alertType === "success") {
+        hideLoading();
         location.reload();
+      } else {
+        hideLoading();
       }
       $(".alert-message-container").hide("medium");
     }, 1500);

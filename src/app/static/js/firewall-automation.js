@@ -92,6 +92,17 @@ $(document).ready(function () {
     }
   });
 
+  // Ventana de carga
+  function showLoading() {
+    $("#loading-overlay").css("display", "flex");
+    $("body").addClass("no-scroll");
+  }
+
+  function hideLoading() {
+    $("#loading-overlay").css("display", "none");
+    $("body").removeClass("no-scroll");
+  }
+
   /* Agregar los dominios personalizado de cada plataforma */
   contentType.change(function () {
     var plataformaSeleccionada = $(this).val();
@@ -293,6 +304,8 @@ $(document).ready(function () {
 
     btnCreateAutomation.prop("disabled", true);
 
+    showLoading();
+
     $.ajax({
       type: "POST",
       url: "/add_automation",
@@ -302,10 +315,17 @@ $(document).ready(function () {
       },
       success: function (response) {
         //$("#modal-filter").find(".close").trigger("click");
-        alertMessage(response.message);
+        if (response.error) {
+          btnCreateAutomation.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
       error: function (xhr, status, error) {
         console.error("Respuesta del servidor:", xhr.responseText);
+        btnCreateAutomation.prop("disabled", false);
+        alertMessage(error, "danger");
       },
     });
   });
@@ -317,6 +337,8 @@ $(document).ready(function () {
 
     var btn_status = $(this);
     btn_status.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "GET",
@@ -331,6 +353,8 @@ $(document).ready(function () {
         }
       },
       error: function (textStatus, errorThrown) {
+        btn_status.prop("disabled", false);
+
         console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
         alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
       },
@@ -345,6 +369,8 @@ $(document).ready(function () {
     var btn_status = $(this);
     btn_status.prop("disabled", true);
 
+    showLoading();
+
     $.ajax({
       type: "GET",
       url: "/eliminar_automatizacion",
@@ -358,6 +384,7 @@ $(document).ready(function () {
         }
       },
       error: function (textStatus, errorThrown) {
+        btn_status.prop("disabled", false);
         console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
         alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
       },
@@ -376,11 +403,38 @@ $(document).ready(function () {
     return false;
   }
 
-  function alertMessage(response) {
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.removeClass("alert-danger").addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.removeClass("alert-success").addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
     $(".alert-message-container").show("medium");
-    $(".alert-message").text(response);
     setTimeout(function () {
-      location.reload();
+      if (alertType === "success") {
+        hideLoading();
+        location.reload();
+      } else {
+        hideLoading();
+      }
       $(".alert-message-container").hide("medium");
     }, 2000);
   }

@@ -396,7 +396,7 @@ def configurar_rutas(app, login_manager_app):
             return jsonify({"message": response})
 
         except Exception as e:
-            return jsonify({"message": str(e)}), 500
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/add_community", methods=["POST"])
     @login_required
@@ -585,7 +585,7 @@ def configurar_rutas(app, login_manager_app):
             return jsonify({"message": response})
 
         except Exception as e:
-            return f"Error al eliminar la regla: {e}"
+            return jsonify({"error": f"Error al eliminar el reporte: {e}"})
 
     @app.route("/eliminar_filtro", methods=["GET"])
     @login_required
@@ -595,10 +595,11 @@ def configurar_rutas(app, login_manager_app):
 
             response = delete_filter(id_reporte)
 
-            return redirect(url_for("packet_filtering", response=response))
+            # return redirect(url_for("packet_filtering", response=response))
+            return response
 
         except Exception as e:
-            return f"Error al eliminar la regla: {e}"
+            return f"Error al eliminar el filtro: {e}"
 
     @app.route("/eliminar_comunidad", methods=["GET"])
     @login_required
@@ -611,7 +612,7 @@ def configurar_rutas(app, login_manager_app):
             return response
 
         except Exception as e:
-            return f"Error al eliminar la comunidad: {e}"
+            return jsonify({"error": f"Error al eliminar la comunidad: {e}"})
 
     @app.route("/desactivar_automatizacion", methods=["GET"])
     @login_required
@@ -640,7 +641,7 @@ def configurar_rutas(app, login_manager_app):
             return response
 
         except Exception as e:
-            return f"Error al eliminar la automatizacion: {e}"
+            return jsonify({"error": f"Error al eliminar la automatizacion: {e}"})
 
     @app.route("/eliminar_clientevpn", methods=["GET"])
     @login_required
@@ -654,7 +655,7 @@ def configurar_rutas(app, login_manager_app):
             return response
 
         except Exception as e:
-            return f"Error al eliminar la automatizacion: {e}"
+            return jsonify({"error": f"Error al eliminar el cliente vpn: {e}"})
 
     # Eliminar una regla establecida
     @app.route("/eliminar_regla", methods=["GET"])
@@ -669,7 +670,7 @@ def configurar_rutas(app, login_manager_app):
             return response
 
         except Exception as e:
-            return f"Error al eliminar la regla: {e}"
+            return jsonify({"error": f"Error al eliminar la regla: {e}"})
 
     @app.route("/eliminar_automatizacion_content", methods=["GET"])
     @login_required
@@ -688,4 +689,4 @@ def configurar_rutas(app, login_manager_app):
             return response
 
         except Exception as e:
-            return f"Error al eliminar la regla: {e}"
+            return jsonify({"error": f"Error al eliminar la automatizacion: {e}"})

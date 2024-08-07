@@ -16,6 +16,8 @@ $(document).ready(function () {
   filterName.removeData("tagsinput");
   var selectFilterType = $("#selectFilterType");
 
+  var filter_id = $("#filter_number");
+
   // Botones para captura de trafico
   var btnCaptureModal = $("#btn-capture-modal");
   var btnCapture = $("#btn-capture");
@@ -596,6 +598,16 @@ $(document).ready(function () {
     }
   });
 
+  function showLoading() {
+    $("#loading-overlay").css("display", "flex");
+    $("body").addClass("no-scroll");
+  }
+
+  function hideLoading() {
+    $("#loading-overlay").css("display", "none");
+    $("body").removeClass("no-scroll");
+  }
+
   $packetTable.bootstrapTable({});
 
   $("#clean-data").click(function () {
@@ -689,34 +701,91 @@ $(document).ready(function () {
 
     btnCreateFilter.prop("disabled", true);
 
+    showLoading();
+
     $.ajax({
       type: "POST",
       url: "/save_filter",
       data: formData,
       success: function (response) {
         //$("#modal-filter").find(".close").trigger("click");
-        alertMessage(response.message);
+        if (response.error) {
+          btnCreateFilter.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
       error: function (xhr, status, error) {
-        console.error(error);
+        btnCreateFilter.prop("disabled", false);
+
+        alertMessage(error, "danger");
       },
     });
   });
 
-  $(".delete-btn").click(function () {
-    // Mostrar el mensaje en la alerta
-    $(".alert-message").text("¡Filtro Eliminado correctamente!");
-    $(".alert-message-container").show("medium");
-    setTimeout(function () {
-      $(".alert-message-container").hide("medium");
-    }, 5000);
+  $(".deletefilterConfirm").on("click", function (event) {
+    console.log("entru");
+    event.preventDefault();
+
+    var btn_delete = $(this);
+    btn_delete.prop("disabled", true);
+
+    showLoading();
+
+    $.ajax({
+      type: "GET",
+      url: "/eliminar_filtro",
+      data: { id_filtro: filter_id.val() },
+      success: function (response) {
+        if (response.error) {
+          btn_delete.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (textStatus, errorThrown) {
+        btn_delete.prop("disabled", false);
+
+        console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
+        alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
+      },
+    });
   });
 
-  function alertMessage(response) {
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.removeClass("alert-danger").addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.removeClass("alert-success").addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
     $(".alert-message-container").show("medium");
-    $(".alert-message").text(response);
     setTimeout(function () {
-      location.reload();
+      if (alertType === "success") {
+        hideLoading();
+        location.reload();
+      } else {
+        hideLoading();
+      }
       $(".alert-message-container").hide("medium");
     }, 2000);
   }

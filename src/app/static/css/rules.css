@@ -9,6 +9,10 @@ body {
   min-height: 100vh;
 }
 
+body.no-scroll {
+  overflow: hidden;
+}
+
 /* Ventana de carga */
 #loading-overlay {
   position: fixed;

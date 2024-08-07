@@ -47,6 +47,17 @@ $(document).ready(function () {
 
   btnGuardarReporte.prop("disabled", true);
 
+  // Ventana de carga
+  function showLoading() {
+    $("#loading-overlay").css("display", "flex");
+    $("body").addClass("no-scroll");
+  }
+
+  function hideLoading() {
+    $("#loading-overlay").css("display", "none");
+    $("body").removeClass("no-scroll");
+  }
+
   $packetTable.bootstrapTable({
     showColumns: true,
     showExport: true,
@@ -113,6 +124,8 @@ $(document).ready(function () {
 
     var csrfToken = document.getElementById("csrf_token").value;
 
+    showLoading();
+
     $.ajax({
       type: "POST",
       url: "/save_report",
@@ -124,16 +137,25 @@ $(document).ready(function () {
         tableData: tableData,
       }),
       success: function (response) {
-        alertMessage(response.message);
+        // alertMessage(response.message);
+        if (response.error) {
+          btnGuardarReporte.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
 
         // Redirigir a la ruta base
         window.location.href = baseUrl + "/traffic-filter";
         sessionStorage.removeItem("datosTabla");
         sessionStorage.removeItem("countPackets");
       },
-      error: function (xhr) {
+      error: function (xhr, error) {
+        btnGuardarReporte.prop("disabled", false);
+
         var errorMessage = xhr.responseText;
         console.error("Error al guardar el reporte:", errorMessage);
+        alertMessage(error, "danger");
       },
     });
   });
@@ -142,12 +164,40 @@ $(document).ready(function () {
     return !elemento.prop("disabled") && elemento.val().trim() === "";
   }
 
-  function alertMessage(response) {
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.removeClass("alert-danger").addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.removeClass("alert-success").addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
     $(".alert-message-container").show("medium");
-    $(".alert-message").text(response);
     setTimeout(function () {
+      if (alertType === "success") {
+        hideLoading();
+        location.reload();
+      } else {
+        hideLoading();
+      }
       $(".alert-message-container").hide("medium");
-    }, 2000);
+    }, 1500);
   }
 
   function mostrarAlerta(elemento, mensaje) {
@@ -201,17 +251,28 @@ btnConfirmDeleteReport.on("click", function () {
   var params = {
     reporte_id: idReport.val(),
   };
+
   btnConfirmDeleteReport.prop("disabled", true);
+
+  showLoading();
+
   $.ajax({
     type: "GET",
     url: "/eliminar_reporte",
     data: params,
     success: function (response) {
-      //alertMessage(response.message);
-      location.reload();
+      if (response.error) {
+        btnConfirmDeleteReport.prop("disabled", false);
+        alertMessage(response.error, "danger");
+      } else {
+        alertMessage(response.message, "success");
+      }
     },
     error: function (xhr, status, error) {
+      btnConfirmDeleteReport.prop("disabled", false);
+
       console.error(error);
+      alertMessage(error, "danger");
     },
   });
 });
@@ -260,6 +321,14 @@ btnBackFilter.click(function () {
   window.location.href = baseUrl + "/traffic-filter";
 });
 
+function showPacketLoading() {
+  $(".loader-packets").css("display", "flex");
+}
+
+function hidePacketLoading() {
+  $(".loader-packets").css("display", "none");
+}
+
 function loadPacketFilter() {
   var paquetes = "";
 
@@ -270,6 +339,8 @@ function loadPacketFilter() {
   }
 
   const urlWithFilter = `/packetdata?command_id=${commandId}&command_filter=${commandFilter}&count_packets=${paquetes}`;
+
+  showPacketLoading();
 
   eventSource = new EventSource(urlWithFilter);
 
@@ -295,6 +366,8 @@ function loadPacketFilter() {
       $("#pause-icon").hide();
       btnGuardarReporte.prop("disabled", false);
       btnBackFilter.prop("disabled", false);
+
+      hidePacketLoading(); // Ocultar el indicador de carga en caso de error
     } else {
       const packetInfo = packetData.split(" ");
       const time = packetInfo[0] + " " + packetInfo[1];
@@ -316,7 +389,23 @@ function loadPacketFilter() {
       };
 
       $packetTable.bootstrapTable("append", row);
+
+      // Ocultar el indicador de carga después de recibir datos
+      hidePacketLoading();
     }
+  };
+
+  // Manejar el cierre de conexión para ocultar el indicador de carga
+  eventSource.onerror = function () {
+    eventSource.close();
+    eventSource = null;
+
+    $("#play-icon").show();
+    $("#pause-icon").hide();
+    btnGuardarReporte.prop("disabled", false);
+    btnBackFilter.prop("disabled", false);
+
+    hidePacketLoading(); // Ocultar el indicador de carga en caso de error de conexión
   };
 }
 

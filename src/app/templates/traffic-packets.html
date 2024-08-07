@@ -27,6 +27,22 @@
     {% extends 'navbar.html' %} {% block content %}
 
     <section class="traffic-packet">
+      <div id="loading-overlay">
+        <div id="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando...</p>
+        </div>
+      </div>
+
+      <div class="loader-packets">
+        <div class="loader-container">
+          <h1>Capturando Paquetes</h1>
+          <div class="loading-wrapper">
+            <div class="loader"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="table-packets">
         <div class="container-title">
           <h2 class="title-packet">Tráfico de paquetes</h2>

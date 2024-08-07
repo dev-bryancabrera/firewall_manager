@@ -35,6 +35,13 @@
     {% extends 'navbar.html' %} {% block content %}
 
     <section class="content-rules">
+      <div id="loading-overlay">
+        <div id="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando...</p>
+        </div>
+      </div>
+
       <div class="tables-contents">
         <div class="container-title">
           <h1 class="title-content">Configurar Reglas por Contenido</h1>
@@ -72,7 +79,7 @@
                       {% else %}
                       <div class="detail" id="status">
                         <span id="estado_automatizacion"
-                          >Automatizacion: Inhabilitada</span
+                          >Automatizacion: Deshabilitada</span
                         >
                       </div>
                       {% endif %}

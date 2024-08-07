@@ -35,6 +35,13 @@
     {% extends 'navbar.html' %} {% block content %}
 
     <section class="traffic-packet">
+      <div id="loading-overlay">
+        <div id="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando...</p>
+        </div>
+      </div>
+
       <div class="table-packets">
         <div class="container-title">
           <h2 class="title-packet">Filtro de Tráfico de paquetes</h2>
@@ -195,6 +202,7 @@
                       <input
                         type="hidden"
                         name="filter_number"
+                        id="filter_number"
                         value="{{ filtro['id'] }}"
                       />
                       <div class="modal-dialog">
@@ -221,11 +229,13 @@
                             >
                               Cancelar
                             </button>
-                            <a
-                              href="{{ url_for('eliminar_filtro', id_filtro=filtro['id']) }}"
-                              class="btn btn-danger delete-btn"
-                              >Eliminar</a
+
+                            <button
+                              class="btn btn-danger deletefilterConfirm"
+                              id="deleteConfirm"
                             >
+                              Eliminar
+                            </button>
                           </div>
                         </div>
                       </div>

@@ -2007,7 +2007,7 @@ def create_service_automation(
         return jsonify({"message": "¡Automatizacion creada correctamente!"})
 
     except Exception as e:
-        return f"Error al crear la automatización: {str(e)}"
+        return jsonify({"error": f"Error al crear la automatización: {str(e)}"})
 
 
 def create_automation(
@@ -2120,7 +2120,7 @@ def create_automation(
         return jsonify({"message": "¡Automatizacion creada correctamente!"})
 
     except Exception as e:
-        return f"Error al crear la automatización: {str(e)}"
+        return jsonify({"error": f"Error al crear la automatización: {str(e)}"})
 
 
 def find_script(script_name):
@@ -2129,7 +2129,7 @@ def find_script(script_name):
             script_path = os.path.join(root, script_name)
             return script_path
     print(f"Script {script_name} no encontrado.")
-    return None
+    return ""
 
 
 def status_openvpn():
@@ -2933,7 +2933,7 @@ def start_capture(command_id, command_filter, count_packets):
         output.strip().split("\n")[0].split(",")[0].split("Interface:")[1].strip()
     )
 
-    base_command = f"/bin/tcpdump -l -c {count_packets} -i {interface}"
+    base_command = f"/sbin/tcpdump -l -c {count_packets} -i {interface}"
 
     default_filter = (
         "(tcp or udp) and (port http or https or smtp or ssh or ftp or telnet)"
@@ -2958,9 +2958,7 @@ def start_capture(command_id, command_filter, count_packets):
 
             domain_command = domain_command.replace("-", "/")
 
-            custom_values = [
-                domain_command,
-            ]
+            custom_values = domain_command
 
     elif tipo_consumo:
         prefix = "dst " if "dst " in command_filter else ""
@@ -3296,18 +3294,19 @@ def delete_report(id_reporte):
     try:
         modelPaquetes.deletePacket(id_reporte)
 
-        return "Reporte Eliminado"
+        return jsonify({"message": "¡Reporte Eliminado correctamente!"})
     except subprocess.CalledProcessError as e:
-        return f"Error al obtener el número de la regla: {e}"
+        return jsonify({"error": f"Error al obtener el número de la regla: {e}"})
 
 
 def delete_filter(id_filter):
     try:
         modelFilterPacket.deleteFilter(id_filter)
 
-        return "Reporte Eliminado"
+        return jsonify({"message": "¡Filtro Eliminado correctamente!"})
+
     except Exception as e:
-        return f"Error al obtener el número de la regla: {str(e)}"
+        return jsonify({"error": f"Error al eliminar el filtro: {str(e)}"})
 
 
 def delete_community(id_community):
@@ -3323,7 +3322,7 @@ def delete_community(id_community):
 
         return jsonify({"message": "¡Comunidad Eliminada Correctamente!"})
     except Exception as e:
-        return f"Error al obtener el id de comunidad: {str(e)}"
+        return jsonify({"error": f"Error al obtener el id de comunidad: {str(e)}"})
 
 
 def deactivate_activate_automation(id_automation):
@@ -3439,4 +3438,4 @@ def delete_automation(id_automation):
         return jsonify({"message": "¡Automatizacion Eliminada Correctamente!"})
 
     except Exception as e:
-        return f"Error al eliminar la automatización: {str(e)}"
+        return jsonify({"error": f"Error al eliminar la automatización: {str(e)}"})
