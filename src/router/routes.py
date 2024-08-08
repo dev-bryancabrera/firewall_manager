@@ -16,6 +16,8 @@ from models.funciones import (
     delete_vpnclient,
     get_plataforms,
     get_plataforms_domain,
+    get_user_databases,
+    get_user_tables,
     load_automation,
     load_comunnity,
     obtener_reglas_ufw,
@@ -87,6 +89,14 @@ def configurar_rutas(app, login_manager_app):
         devices = scan_network()
         return devices
 
+    @app.route("/get_tables", methods=["GET"])
+    @login_required
+    def get_databases():
+        db_name = request.args.get("database")
+
+        tables = get_user_tables(db_name)
+        return tables
+
     @app.route("/server-vpn")
     @login_required
     def server_vpn():
@@ -140,11 +150,13 @@ def configurar_rutas(app, login_manager_app):
     def service_automation():
         automatizaciones = load_automation()
         comunidades = load_comunnity()
+        databases = get_user_databases()
 
         return render_template(
             "service-automation.html",
             automatizaciones=automatizaciones,
             comunidades=comunidades,
+            databases=databases,
         )
 
     @app.route("/user-manual-firewall")
@@ -429,6 +441,7 @@ def configurar_rutas(app, login_manager_app):
             action_type = request.form.get("actionType")
             # Campos Mysql
             restriction_mysql = request.form.get("restrictionMysql")
+            max_connection_type = request.form.get("maxConnectionType")
             max_connections = request.form.get("maxConnections")
             user_name = request.form.get("userName")
             access_type = request.form.get("accessType")
@@ -452,6 +465,7 @@ def configurar_rutas(app, login_manager_app):
                 service_type,
                 action_type,
                 restriction_mysql,
+                max_connection_type,
                 max_connections,
                 user_name,
                 access_type,

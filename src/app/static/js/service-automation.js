@@ -18,10 +18,12 @@ $(document).ready(function () {
 
   // MySQL
   var restrictionMysql = $("#restricion-msyql");
+  var maxConnectionsType = $("#max-connection-type");
   var maxConnections = $("#max-connections");
   var userName = $("#user-name");
   var accessType = $("#access-type");
-  var maxDurationMysql = $("#mysql-max-duration");
+  var databaseType = $("#database-type");
+  var tablesSelect = $("#tables-type");
 
   // SSH
   var actionSshType = $("#actionssh-type");
@@ -40,19 +42,6 @@ $(document).ready(function () {
 
   // Apache
   var actionApacheType = $("#actionapache-type");
-
-  maxConnections.prop("disabled", true);
-  userName.prop("disabled", true);
-  maxDurationMysql.prop("disabled", true);
-  commands.prop("disabled", true);
-  networkUsage.prop("disabled", true);
-  sessionDuration.prop("disabled", true);
-  maxDurationSsh.prop("disabled", true);
-  uploadDirectory.prop("disabled", true);
-  fileTypesFtp.prop("disabled", true);
-  downloadDirectory.prop("disabled", true);
-  deleteDirectory.prop("disabled", true);
-  maxTransferSize.prop("disabled", true);
 
   // Configurar horario de restriccion
   var intialTime = $("#initial-time");
@@ -163,7 +152,6 @@ $(document).ready(function () {
     cleanDisabledInput({
       maxConnections: maxConnections,
       userName: userName,
-      maxDurationMysql: maxDurationMysql,
       commands: commands,
       networkUsage: networkUsage,
       sessionDuration: sessionDuration,
@@ -181,6 +169,7 @@ $(document).ready(function () {
     });
     cleanDisabledMultiselect({
       accessType: accessType,
+      maxConnectionsType: maxConnectionsType,
     });
     ocultarCampos({
       mysqlContainer: mysqlContainer,
@@ -206,22 +195,39 @@ $(document).ready(function () {
     cleanDisabledInput({
       maxConnections: maxConnections,
       userName: userName,
-      maxDurationMysql: maxDurationMysql,
     });
     cleanDisabledMultiselect({
       accessType: accessType,
+      maxConnectionsType: maxConnectionsType,
     });
 
     var selectedOption = restrictionMysql.val();
 
     if (selectedOption === "limit-connections") {
-      maxConnections.prop("disabled", false);
+      maxConnectionsType.prop("disabled", false);
+
+      maxConnectionsType.selectpicker("refresh");
     } else if (selectedOption === "restrict-db-access") {
       userName.prop("disabled", false);
       accessType.prop("disabled", false);
-      maxDurationMysql.prop("disabled", false);
 
       accessType.selectpicker("refresh");
+    }
+  });
+
+  maxConnectionsType.on("change", function () {
+    cleanDisabledInput({
+      maxConnections: maxConnections,
+      userName: userName,
+    });
+
+    var selectedOption = maxConnectionsType.val();
+
+    if (selectedOption === "all-users") {
+      maxConnections.prop("disabled", false);
+    } else if (selectedOption === "specific-user") {
+      userName.prop("disabled", false);
+      maxConnections.prop("disabled", false);
     }
   });
 
@@ -268,6 +274,46 @@ $(document).ready(function () {
     }
   });
 
+  // Ventana de carga
+  function showLoading() {
+    $("#loading-overlay").css("display", "flex");
+    $("body").addClass("no-scroll");
+  }
+
+  function hideLoading() {
+    $("#loading-overlay").css("display", "none");
+    $("body").removeClass("no-scroll");
+  }
+
+  databaseType.change(function () {
+    var databaseSelected = $(this).val();
+
+    $.ajax({
+      url: "/get_tables",
+      type: "GET",
+      data: { database: databaseSelected },
+      success: function (response) {
+        tablesSelect.empty(); // Limpiar las opciones anteriores
+
+        tablesSelect.append(
+          $("<option>").val("all-tables").text("Aplicar a todas las tablas")
+        );
+
+        // Iterar sobre las tablas recibidas en la respuesta y agregar opciones al select
+        $.each(response, function (index, value) {
+          var option = $("<option>").val(value).text(value);
+          tablesSelect.append(option);
+        });
+
+        // Refrescar el selectpicker para que se reflejen los cambios
+        tablesSelect.selectpicker("refresh");
+      },
+      error: function (xhr, status, error) {
+        console.error(error);
+      },
+    });
+  });
+
   $automationTable.bootstrapTable({});
 
   $automationForm.submit(function (event) {
@@ -280,7 +326,50 @@ $(document).ready(function () {
         community,
         "Seleccione una comunidad a asignar la automatizacion"
       ) ||
-      mostrarAlertaSelect(serviceType, "Seleccionar un tipo de restriccion.")
+      mostrarAlertaSelect(
+        serviceType,
+        "Seleccionar un servicio para aplicar la restriccion."
+      ) ||
+      mostrarAlertaSelect(actionType, "Seleccione un tipo de acción.") ||
+      validarSelectContainer(
+        mysqlContainer,
+        restrictionMysql,
+        "Asignar una restricción MySQL."
+      ) ||
+      mostrarAlerta(
+        maxConnections,
+        "Asignar un valor a las conexiones máximas."
+      ) ||
+      mostrarAlerta(userName, "Asignar un nombre de usuario MySQL.") ||
+      mostrarAlertaSelect(accessType, "Asignar un tipo de acceso MySQL.") ||
+      mostrarAlertaSelect(
+        maxConnectionsType,
+        "Asignar un valor para la limitacion de conexiones."
+      ) ||
+      validarSelectContainer(
+        sshContainer,
+        actionSshType,
+        "Seleccione un tipo de acción SSH."
+      ) ||
+      mostrarAlerta(commands, "Asignar comandos SSH.") ||
+      mostrarAlerta(networkUsage, "Asignar un uso de red para SSH.") ||
+      mostrarAlerta(sessionDuration, "Asignar una duración de sesión SSH.") ||
+      mostrarAlerta(maxDurationSsh, "Asignar una duración máxima para SSH.") ||
+      validarSelectContainer(
+        ftpContainer,
+        actionFtpType,
+        "Seleccione un tipo de acción FTP."
+      ) ||
+      mostrarAlerta(uploadDirectory, "Asignar un directorio de carga FTP.") ||
+      mostrarAlerta(fileTypesFtp, "Asignar tipos de archivos FTP.") ||
+      mostrarAlerta(
+        downloadDirectory,
+        "Asignar un directorio de descarga FTP."
+      ) ||
+      mostrarAlerta(
+        maxTransferSize,
+        "Asignar un tamaño máximo de transferencia FTP."
+      )
     ) {
       return;
     }
@@ -290,16 +379,26 @@ $(document).ready(function () {
 
     btnCreateAutomation.prop("disabled", true);
 
+    showLoading();
+
     $.ajax({
       type: "POST",
       url: "/add_service_automation",
       data: formData,
       success: function (response) {
         //$("#modal-filter").find(".close").trigger("click");
-        alertMessage(response.message);
+
+        if (response.error) {
+          btnCreateAutomation.prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
       },
       error: function (xhr, status, error) {
+        btnCreateAutomation.prop("disabled", false);
         console.error("Respuesta del servidor:", xhr.responseText);
+        alertMessage(error, "danger");
       },
     });
   });
@@ -311,6 +410,8 @@ $(document).ready(function () {
 
     var btn_status = $(this);
     btn_status.prop("disabled", true);
+
+    showLoading();
 
     $.ajax({
       type: "GET",
@@ -325,6 +426,8 @@ $(document).ready(function () {
         }
       },
       error: function (textStatus, errorThrown) {
+        btn_status.prop("disabled", false);
+
         console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
         alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
       },
@@ -339,6 +442,8 @@ $(document).ready(function () {
     var btn_status = $(this);
     btn_status.prop("disabled", true);
 
+    showLoading();
+
     $.ajax({
       type: "GET",
       url: "/eliminar_automatizacion",
@@ -352,6 +457,8 @@ $(document).ready(function () {
         }
       },
       error: function (textStatus, errorThrown) {
+        btn_status.prop("disabled", false);
+
         console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
         alertMessage("Ocurrió un error al procesar la solicitud.", "danger");
       },
@@ -370,13 +477,40 @@ $(document).ready(function () {
     return false;
   }
 
-  function alertMessage(response) {
+  function alertMessage(response, alertType) {
+    var alertBox = $(".alert");
+    var alertIcon = $(".alert-icon i");
+    var alertMessage = $(".alert-message");
+
+    // Oculta el contenedor de mensaje
+    $(".alert-message-container").hide("medium");
+
+    // Cambia el tipo de alerta
+    if (alertType === "success") {
+      alertBox.removeClass("alert-danger").addClass("alert-success");
+      alertIcon
+        .removeClass("text-danger")
+        .addClass("text-success")
+        .addClass("fa-check-circle");
+    } else if (alertType === "danger") {
+      alertBox.removeClass("alert-success").addClass("alert-danger");
+      alertIcon
+        .removeClass("text-success")
+        .addClass("text-danger")
+        .addClass("fa-exclamation-circle");
+    }
+
+    alertMessage.text(response);
     $(".alert-message-container").show("medium");
-    $(".alert-message").text(response);
     setTimeout(function () {
-      location.reload();
+      if (alertType === "success") {
+        hideLoading();
+        location.reload();
+      } else {
+        hideLoading();
+      }
       $(".alert-message-container").hide("medium");
-    }, 2000);
+    }, 1500);
   }
 
   function validarMultiselectVacio(elemento) {

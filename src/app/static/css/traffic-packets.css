@@ -7,6 +7,10 @@ body {
   height: auto;
 }
 
+body.no-scroll {
+  overflow: hidden;
+}
+
 .traffic-packet {
   padding-bottom: 25px;
 }

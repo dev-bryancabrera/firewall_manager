@@ -38,6 +38,13 @@
     {% extends 'navbar.html' %} {% block content %}
 
     <section class="automation-form-table">
+      <div id="loading-overlay">
+        <div id="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando...</p>
+        </div>
+      </div>
+
       <div class="title-automation">
         <h1>Automatizacion de firewall</h1>
       </div>
@@ -169,6 +176,23 @@
                 </div>
 
                 <div class="form-group">
+                  <label for="access-type">Limitar conexiones</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="max-connection-type"
+                    name="maxConnectionType"
+                    aria-label="Seleccione un tipo de acceso"
+                    data-none-selected-text="Seleccione un tipo de acceso"
+                  >
+                    <option value="" selected disabled hidden>
+                      Seleccione un tipo de acceso
+                    </option>
+                    <option value="all-users">Todos los usuarios</option>
+                    <option value="specific-user">Usuario específico</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
                   <label for="max-connections"
                     >Número máximo de conexiones</label
                   >
@@ -189,6 +213,7 @@
                     name="userName"
                   />
                 </div>
+
                 <div class="form-group">
                   <label for="access-type">Tipo de acceso</label>
                   <select
@@ -197,27 +222,74 @@
                     name="accessType"
                     aria-label="Seleccione un tipo de acceso"
                     data-none-selected-text="Seleccione un tipo de acceso"
-                    data-live-search="true"
                   >
                     <option value="" selected disabled hidden>
                       Seleccionar tipo de acceso
                     </option>
-                    <option value="read">Solo lectura</option>
-                    <option value="write">Lectura y escritura</option>
+                    <option value="SELECT">Solo lectura</option>
+                    <option value="INSERT">Insertar datos</option>
+                    <option value="UPDATE">Actualizar datos</option>
+                    <option value="DELETE">Eliminar datos</option>
+                    <option value="ALL PRIVILEGES">
+                      Todos los privilegios
+                    </option>
+                    <option value="CREATE">
+                      Crear tablas y bases de datos
+                    </option>
+                    <option value="DROP">
+                      Eliminar tablas y bases de datos
+                    </option>
+                    <option value="ALTER">
+                      Modificar estructura de tablas
+                    </option>
+                    <option value="INDEX">Crear y eliminar índices</option>
+                    <option value="EXECUTE">
+                      Ejecutar procedimientos almacenados
+                    </option>
+                    <option value="SHOW VIEW">
+                      Ver definiciones de vistas
+                    </option>
+                    <option value="CREATE VIEW">Crear vistas</option>
+                    <option value="TRIGGER">Crear y eliminar triggers</option>
+                    <option value="GRANT OPTION">Delegar permisos</option>
+                  </select>
+                </div>
+
+                <!-- <div class="form-group">
+                  <label for="access-type">Bases de datos</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="database-type"
+                    name="databaseType"
+                    aria-label="Seleccione una base de datos"
+                    data-none-selected-text="Seleccione una base de datos"
+                  >
+                    <option value="" disabled selected hidden>
+                      Seleccione una opción
+                    </option>
+                    <option value="all-databases">
+                      Aplicar a todas las bases
+                    </option>
+                    {% for database in databases %}
+                    <option value="{{ database }}">{{ database }}</option>
+                    {% endfor %}
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label for="mysql-max-duration"
-                    >Duración máxima (segundos)</label
+                  <label for="access-type">Tablas de la base de datos</label>
+                  <select
+                    class="selectpicker w-100"
+                    id="tables-type"
+                    name="tablesType"
+                    aria-label="Seleccione una tabla"
+                    data-none-selected-text="Seleccione una tabla"
                   >
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="mysql-max-duration"
-                    name="mysqlMaxDuration"
-                  />
-                </div>
+                    <option value="" selected disabled hidden>
+                      Seleccionar tipo de acceso
+                    </option>
+                  </select>
+                </div> -->
               </div>
 
               <div class="top-row" id="ssh-container">

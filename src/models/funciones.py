@@ -1,7 +1,6 @@
 import base64
 from datetime import datetime
 from io import BytesIO
-
 import os
 import shlex
 from flask import Response, flash, jsonify, send_file
@@ -11,6 +10,8 @@ import pandas as pd
 import re
 import netifaces
 import subprocess
+
+from .db.connectDB import get_connection
 
 # Models
 from models.modelUser import modelUser
@@ -1780,12 +1781,99 @@ def delete_automation_content(regla_id, regla_nombre, automatizacion_nombre):
         )
 
 
+def get_user_databases():
+    default_databases = {
+        "information_schema",
+        "mysql",
+        "performance_schema",
+        "sys",
+        "phpmyadmin",
+    }
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        query = "SHOW DATABASES"
+        cursor.execute(query)
+        result = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        # Filtra las bases de datos que no están en el conjunto de bases de datos por defecto
+        return [row[0] for row in result if row[0] not in default_databases]
+    except Exception as ex:
+        print(f"Error: {ex}")
+        raise
+
+
+def get_user_tables(db_name):
+    connection = None
+    cursor = None
+    try:
+        # Establecer la conexión sin especificar una base de datos
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        # Seleccionar la base de datos después de conectar
+        cursor.execute(f"USE {db_name};")
+
+        # Ejecutar la consulta para obtener las tablas
+        query = "SHOW TABLES"
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+        cursor.close()
+        connection.close()
+
+        # Devuelve la lista de tablas en formato JSON
+        tables = [row[0] for row in result]
+        return jsonify(tables)
+    except Exception as ex:
+        print(f"Error: {ex}")
+        raise
+
+
+def get_user_host(user_name):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        query = "SELECT Host FROM mysql.user WHERE User = %s"
+        cursor.execute(query, (user_name,))
+        result = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        return result[0] if result else None
+    except Exception as ex:
+        print(f"Error: {ex}")
+        raise  # Re-raise the exception to be handled by the caller
+
+
+def execute_sql_command(command):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute(command)
+        connection.commit()
+        cursor.close()
+        connection.close()
+        print(f"Comando ejecutado: {command}")
+    except Exception as ex:
+        print(f"Error al ejecutar el comando: {ex}")
+        connection.rollback()
+        raise  # Re-raise the exception to be handled by the caller
+
+
 def create_service_automation(
     automation_name,
     community,
     service_type,
     action_type,
     restriction_mysql,
+    max_connection_type,
     max_connections,
     user_name,
     access_type,
@@ -1809,38 +1897,77 @@ def create_service_automation(
             max_connections,
             user_name,
             access_type,
-            mysql_max_duration,
         ):
             if restriction_mysql == "create-database":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "CREATE DATABASE" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE DATABASE"; content:"CREATE DATABASE"; nocase; sid:1000003; rev:1;)'
+
             elif restriction_mysql == "drop-database":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DROP DATABASE" --algo bm -j REJECT'
-                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP DATABASE"; content:"DROP DATABASE"; nocase; sid:1000003; rev:1;)'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP DATABASE"; content:"DROP DATABASE"; nocase; sid:1000004; rev:1;)'
+
             elif restriction_mysql == "create-tables":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "CREATE TABLE" --algo bm -j REJECT'
-                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE TABLE"; content:"CREATE TABLE"; nocase; sid:1000003; rev:1;)'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE TABLE"; content:"CREATE TABLE"; nocase; sid:1000005; rev:1;)'
+
             elif restriction_mysql == "drop-tables":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DROP TABLE" --algo bm -j REJECT'
-                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP TABLE"; content:"DROP TABLE"; nocase; sid:1000004; rev:1;)'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP TABLE"; content:"DROP TABLE"; nocase; sid:1000006; rev:1;)'
+
             elif restriction_mysql == "create-records":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "INSERT INTO" --algo bm -j REJECT'
-                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to INSERT INTO"; content:"DELETE FROM"; nocase; sid:1000005; rev:1;)'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to INSERT INTO"; content:"INSERT INTO"; nocase; sid:1000007; rev:1;)'
+
             elif restriction_mysql == "delete-records":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DELETE FROM" --algo bm -j REJECT'
-                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DELETE RECORDS"; content:"DELETE FROM"; nocase; sid:1000005; rev:1;)'
-            elif restriction_mysql == "limit-connections" and max_connections:
-                command = (
-                    f'sudo mysql -e "SET GLOBAL max_connections = {max_connections};"'
-                )
-                snort_rule = None
-            elif (
-                restriction_mysql == "restrict-db-access" and user_name and access_type
-            ):
-                command = f'sudo mysql -e "GRANT {access_type} ON *.* TO {user_name}@localhost;"'
+                snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DELETE RECORDS"; content:"DELETE FROM"; nocase; sid:1000008; rev:1;)'
+
+            elif restriction_mysql == "limit-connections":
+                if max_connection_type == "all-users":
+                    config_file_path = "/etc/mysql/mariadb.conf.d/50-server.cnf"
+                    max_connections_line = f"max_connections = {max_connections}\n"
+
+                    # Lee el archivo y verifica si max_connections ya está presente
+                    updated_lines = []
+                    found_max_connections = False
+
+                    with open(config_file_path, "r") as file:
+                        for line in file:
+                            if "max_connections" in line:
+                                found_max_connections = True
+                                updated_lines.append(max_connections_line)
+                            else:
+                                updated_lines.append(line)
+
+                    # Si no se encontró max_connections, agrégalo al final
+                    if not found_max_connections:
+                        updated_lines.append(max_connections_line)
+
+                    # Escribe las líneas actualizadas de vuelta al archivo
+                    with open(config_file_path, "w") as file:
+                        file.writelines(updated_lines)
+
+                    command = f"SET GLOBAL max_connections = {max_connections};"
+
+                elif max_connection_type == "specific-user":
+                    host = get_user_host(user_name)
+                    command = (
+                        f"GRANT USAGE ON *.* TO '{user_name}'@'{host}' "
+                        f"WITH MAX_USER_CONNECTIONS {max_connections};"
+                    )
                 snort_rule = None
 
-            run_command(command)
+            elif restriction_mysql == "restrict-db-access":
+                host = get_user_host(user_name)
+
+                command = f"GRANT {access_type} ON *.* TO {user_name}@{host};"
+                snort_rule = None
+
+            if restriction_mysql not in ["limit-connections", "restrict-db-access"]:
+                run_command(command)
+            else:
+                execute_sql_command(command)
+
             if snort_rule:
                 add_snort_rule(snort_rule)
 
