@@ -1867,6 +1867,217 @@ def execute_sql_command(command):
         raise  # Re-raise the exception to be handled by the caller
 
 
+def get_ssh_port():
+    try:
+        # Ejecuta el comando para obtener el puerto SSH desde el archivo de configuración
+        result = subprocess.run(
+            ["grep", "^Port", "/etc/ssh/sshd_config"], capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            # Extrae el puerto del resultado
+            port_line = result.stdout.strip()
+            port = port_line.split()[1]
+            return port
+        else:
+            # Puerto por defecto si no se encuentra en el archivo
+            return "22"
+    except Exception as e:
+        print(f"Error al obtener el puerto SSH: {e}")
+        return "22"
+
+
+def create_monitor_traffic_limit_service():
+    bash_script_content = """
+#!/bin/bash
+
+# Archivo de log que se monitoreará
+LOGFILE="/var/log/syslog"
+# Duración del bloqueo en segundos
+BLOCK_DURATION=3600
+
+# Archivo para almacenar las IPs bloqueadas temporalmente
+TEMP_BLOCKED_IP_FILE="/tmp/blocked_ips.txt"
+
+# Crear archivo si no existe
+touch "$TEMP_BLOCKED_IP_FILE"
+
+# Crear una lista de IPs permitidas por UFW para entrada y salida
+EXEMPTED_IPS=($(ufw status numbered | grep -E 'ALLOW IN|ALLOW OUT' | awk '{print $3}' | grep -E '([0-9]{1,3}\.){3}[0-9]{1,3}'))
+
+# Función para limpiar IPs bloqueadas expiradas
+clean_expired_blocks() {
+    local current_time=$(date +%s)
+    # Leer el archivo línea por línea
+    while read -r line; do
+        local ip=$(echo "$line" | cut -d' ' -f1)
+        local block_time=$(echo "$line" | cut -d' ' -f2)
+        local diff=$((current_time - block_time))
+        if (( diff >= BLOCK_DURATION )); then
+            # Desbloquear IP si ha pasado el tiempo de bloqueo
+            sudo iptables -D INPUT -p tcp -s "$ip" --dport 3553 -j REJECT 2>/dev/null
+            sudo iptables -D OUTPUT -p tcp -d "$ip" -j REJECT 2>/dev/null
+            # Eliminar la línea del archivo
+            sed -i "\\|$line|d" "$TEMP_BLOCKED_IP_FILE"
+            echo "La IP $ip ha sido desbloqueada tras $BLOCK_DURATION segundos."
+        fi
+    done < "$TEMP_BLOCKED_IP_FILE"
+}
+
+# Comando para monitorear el log
+tail -F "$LOGFILE" | while read LINE; do
+    clean_expired_blocks
+
+    # Filtrar por la marca "TRAFFIC_LIMIT_EXCEEDED"
+    if [[ "$LINE" == *"TRAFFIC_LIMIT_EXCEEDED"* ]]; then
+        # Extraer la dirección IP fuente (SRC)
+        IP=$(echo "$LINE" | grep -oP '(?<=SRC=)[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+')
+
+        # Verificar si la IP está en la lista de IPs exentas
+        if [[ " ${EXEMPTED_IPS[@]} " =~ " ${IP} " ]]; then
+            echo "La IP $IP está exenta del bloqueo."
+            continue
+        fi
+
+        # Agregar la regla IPTables para bloquear la IP si aún no está bloqueada
+        if ! grep -q "$IP" "$TEMP_BLOCKED_IP_FILE"; then
+            sudo iptables -A INPUT -p tcp -s "$IP" --dport 3553 -j REJECT
+            echo "$IP $(date +%s)" >> "$TEMP_BLOCKED_IP_FILE"
+            echo "Bloqueada la IP $IP en el puerto 3553 debido a límite de tráfico excedido."
+        fi
+    elif [[ "$LINE" == *"TRAFFIC_OUT_LIMIT_EXCEEDED"* ]]; then
+        # Extraer la dirección IP destino (DST)
+        DST_IP=$(echo "$LINE" | grep -oP '(?<=DST=)[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+')
+
+        # Verificar si la IP está en la lista de IPs exentas
+        if [[ " ${EXEMPTED_IPS[@]} " =~ " ${DST_IP} " ]]; then
+            echo "La IP $DST_IP está exenta del bloqueo."
+            continue
+        fi
+
+        # Agregar la regla IPTables para bloquear la IP de destino si aún no está bloqueada
+        if ! grep -q "$DST_IP" "$TEMP_BLOCKED_IP_FILE"; then
+            sudo iptables -A OUTPUT -p tcp -d "$DST_IP" -j REJECT
+            echo "$DST_IP $(date +%s)" >> "$TEMP_BLOCKED_IP_FILE"
+            echo "Bloqueada la IP de destino $DST_IP debido a límite de tráfico excedido."
+        fi
+    fi
+done
+"""
+    with open("/usr/local/bin/monitor_traffic_limit.sh", "w") as bash_script_file:
+        bash_script_file.write(bash_script_content)
+
+        # Hacer el script ejecutable
+        subprocess.run(
+            ["chmod", "+x", "/usr/local/bin/monitor_traffic_limit.sh"], check=True
+        )
+
+    # Crear el servicio systemd en /etc/systemd/system/
+    service_file_path = "/etc/systemd/system/monitor_traffic_limit.service"
+    service_file_content = """
+[Unit]
+Description=Servicio de Monitoreo de Límites de Tráfico
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/monitor_traffic_limit.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+"""
+    with open(service_file_path, "w") as service_file:
+        service_file.write(service_file_content)
+
+    # Recargar los servicios de systemd, iniciar y habilitar el servicio
+    subprocess.run(["sudo", "systemctl", "daemon-reload"])
+    subprocess.run(["sudo", "systemctl", "start", "monitor_traffic_limit.service"])
+    subprocess.run(["sudo", "systemctl", "restart", "monitor_traffic_limit.service"])
+    subprocess.run(["sudo", "systemctl", "enable", "monitor_traffic_limit.service"])
+
+
+def create_process_kill_session():
+    script_content = """#!/bin/bash
+
+# Comando para obtener los procesos sshd
+ps -eo pid,etime,comm | grep sshd | while read -r pid etime comm; do
+    # Extraer tiempo de ejecución en segundos
+    time_str=$etime
+    days=0
+    hours=0
+    minutes=0
+    seconds=0
+
+    if [[ $time_str == *"-"* ]]; then
+        # Formato con días
+        IFS='-' read -r days time_str <<< "$time_str"
+    fi
+
+    # Dividir el tiempo restante en horas, minutos y segundos
+    IFS=':' read -r -a time_parts <<< "$time_str"
+    if [ ${#time_parts[@]} -eq 3 ]; then
+        hours=${time_parts[0]}
+        minutes=${time_parts[1]}
+        seconds=${time_parts[2]}
+    elif [ ${#time_parts[@]} -eq 2 ]; then
+        hours=0
+        minutes=${time_parts[0]}
+        seconds=${time_parts[1]}
+    elif [ ${#time_parts[@]} -eq 1 ]; then
+        hours=0
+        minutes=0
+        seconds=${time_parts[0]}
+    fi
+
+    # Convertir todo a segundos
+    total_seconds=$((days * 24 * 3600 + hours * 3600 + minutes * 60 + seconds))
+
+    # Comparar con el límite de un minuto (60 segundos)
+    if [ "$total_seconds" -gt 60 ]; then
+        echo "PID: $pid ha estado ejecutándose por más de un minuto"
+    fi
+done
+"""
+
+    service_content = """[Unit]
+Description=Check SSHD Process Runtime
+
+[Service]
+ExecStart=/usr/local/bin/check_time.sh
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+    try:
+        # Crear el script
+        with open("/usr/local/bin/check_time.sh", "w") as f:
+            f.write(script_content)
+
+        subprocess.run(["chmod", "+x", "/usr/local/bin/check_time.sh"], check=True)
+
+        # Crear el archivo de servicio
+        with open("/etc/systemd/system/check_time.service", "w") as f:
+            f.write(service_content)
+
+        # Recargar el daemon de systemd y habilitar el servicio
+        subprocess.run(["systemctl", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "enable", "check_time.service"], check=True)
+        subprocess.run(["systemctl", "restart", "check_time.service"], check=True)
+        subprocess.run(["systemctl", "start", "check_time.service"], check=True)
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Script created, made executable, service created, reloaded, and started",
+            }
+        ), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 def create_service_automation(
     automation_name,
     community,
@@ -1974,16 +2185,29 @@ def create_service_automation(
         def set_ssh_rules(
             actionssh_type, commands, network_usage, session_duration, ssh_max_duration
         ):
-            if actionssh_type == "limit-commands" and commands:
-                command = f"echo 'command=\"if [[ $SSH_ORIGINAL_COMMAND == {commands}* ]]; then exit 1; else $SSH_ORIGINAL_COMMAND; fi\"' >> /etc/ssh/sshd_config && sudo systemctl restart sshd"
-                snort_rule = None
-            elif actionssh_type == "limit-network-usage" and network_usage:
-                command = f"sudo iptables -A OUTPUT -p tcp --dport 22 -m quota --quota {network_usage} -j ACCEPT && sudo iptables -A OUTPUT -p tcp --dport 22 -j REJECT"
+            # Obtener el puerto SSH
+            ssh_port = get_ssh_port()
+
+            if actionssh_type == "limit-network-usage" and network_usage:
+                network_usage_bytes = network_usage * 1024 * 1024
+                command = f"""
+sudo iptables -N TRAFFIC_MONITOR &&
+sudo iptables -A INPUT -p tcp --dport {ssh_port} -j TRAFFIC_MONITOR &&
+sudo iptables -A TRAFFIC_MONITOR -m quota --quota {network_usage_bytes} -j RETURN &&
+sudo iptables -A TRAFFIC_MONITOR -j LOG --log-prefix "TRAFFIC_LIMIT_EXCEEDED: " &&
+
+sudo iptables -N TRAFFIC_MONITOR_OUT &&
+sudo iptables -A OUTPUT -p tcp -j TRAFFIC_MONITOR_OUT &&
+sudo iptables -A TRAFFIC_MONITOR_OUT -m quota --quota {network_usage_bytes} -j RETURN &&
+sudo iptables -A TRAFFIC_MONITOR_OUT -j LOG --log-prefix "TRAFFIC_OUT_LIMIT_EXCEEDED: "
+"""
+                create_monitor_traffic_limit_service()
                 snort_rule = None
             elif actionssh_type == "limit-session-duration" and session_duration:
-                command = f'echo "ClientAliveInterval {session_duration}" >> /etc/ssh/sshd_config && echo "ClientAliveCountMax 1" >> /etc/ssh/sshd_config && sudo systemctl restart sshd'
+                command = f"sudo sed -i '/^ClientAliveInterval/c\\ClientAliveInterval {session_duration}' /etc/ssh/sshd_config && sudo systemctl restart sshd"
                 snort_rule = None
             elif actionssh_type == "monitor-and-kill" and ssh_max_duration:
+                create_process_kill_session()
                 command = f"ps -eo pid,etime,comm | grep sshd | awk '{{split($2,a,\":\"); if (a[1] > {ssh_max_duration}) print $1}}' | xargs kill -9"
                 snort_rule = None
 

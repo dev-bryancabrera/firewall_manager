@@ -181,6 +181,12 @@ h2 {
   border: 0.4px solid #000000a8 !important;
 }
 
+.form-group > .select-timer {
+  display: flex;
+  gap: 25px;
+  width: 10px;
+}
+
 /* MULTIPLE INPUT */
 .bootstrap-tagsinput {
   border-color: #000000a8;

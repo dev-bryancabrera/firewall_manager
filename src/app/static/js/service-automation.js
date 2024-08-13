@@ -92,6 +92,23 @@ $(document).ready(function () {
 
   $(".timepicker").datetimepicker(optionsTime);
 
+  // function populateSelect(elementId, max) {
+  //   const select = document.getElementById(elementId);
+  //   for (let i = 0; i <= max; i++) {
+  //     const option = document.createElement("option");
+  //     option.value = i < 10 ? `0${i}` : i; // Asegura formato de dos dígitos
+  //     option.text = option.value;
+  //     select.appendChild(option);
+  //   }
+  //   // Actualiza selectpicker después de agregar opciones
+  //   $(select).selectpicker("refresh");
+  // }
+
+  // // Poblar las horas, minutos y segundos
+  // populateSelect("hours", 23);
+  // populateSelect("minutes", 59);
+  // populateSelect("seconds", 59);
+
   /* Manejar selector de dias */
   function togglePopup() {
     const popup = $("#daysPopup");
