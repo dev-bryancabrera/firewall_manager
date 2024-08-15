@@ -20,6 +20,7 @@ from models.funciones import (
     get_user_tables,
     load_automation,
     load_comunnity,
+    load_service_automation,
     obtener_reglas_ufw,
     obtener_reglas_ufw_contenido,
     delete_rule,
@@ -148,7 +149,7 @@ def configurar_rutas(app, login_manager_app):
     @app.route("/service_automation")
     @login_required
     def service_automation():
-        automatizaciones = load_automation()
+        automatizaciones = load_service_automation()
         comunidades = load_comunnity()
         databases = get_user_databases()
 
@@ -436,7 +437,7 @@ def configurar_rutas(app, login_manager_app):
     def allow_add_service_automation():
         try:
             automation_name = request.form.get("automationName")
-            community = request.form.get("community")
+            community_id = request.form.get("community")
             service_type = request.form.get("serviceType")
             action_type = request.form.get("actionType")
             # Campos Mysql
@@ -448,7 +449,6 @@ def configurar_rutas(app, login_manager_app):
             mysql_max_duration = request.form.get("mysqlMaxDuration")
             # Campos ssh
             actionssh_type = request.form.get("actionsshType")
-            commands = request.form.get("commands")
             network_usage = request.form.get("networkUsage")
             session_duration = request.form.get("sessionDuration")
             ssh_max_duration = request.form.get("sshMaxDuration")
@@ -461,7 +461,7 @@ def configurar_rutas(app, login_manager_app):
 
             response = create_service_automation(
                 automation_name,
-                community,
+                community_id,
                 service_type,
                 action_type,
                 restriction_mysql,
@@ -471,7 +471,6 @@ def configurar_rutas(app, login_manager_app):
                 access_type,
                 mysql_max_duration,
                 actionssh_type,
-                commands,
                 network_usage,
                 session_duration,
                 ssh_max_duration,

@@ -125,17 +125,17 @@
                     <option value="" selected disabled>
                       Seleccionar acción
                     </option>
-                    <option value="block-at-threshold">
+                    <option value="bloquear y notificar">
                       Bloquear cuando se alcance el umbral y notificar al
                       administrador
                     </option>
-                    <option value="alert-and-block">
+                    <option value="alertar y bloquear">
                       Alertar cuando se alcance un umbral y notificar al
                       administrador, y bloquear cuando se alcance otro umbral,
                       también notificando al administrador
                     </option>
-                    <option value="alert-only">
-                      Solo alertar y notificar al administrador
+                    <option value="solo notificar">
+                      Solo notificar al administrador
                     </option>
                   </select>
                 </div>
@@ -152,24 +152,26 @@
                     data-none-selected-text="Seleccione una acción"
                   >
                     <option value="" selected disabled>Seleccionar tipo</option>
-                    <option value="create-database">
+                    <option value="crear base de datos">
                       Creación de base de datos
                     </option>
-                    <option value="drop-database">
+                    <option value="eliminar base de datos">
                       Eliminación de base de datos
                     </option>
-                    <option value="create-tables">Creación de tablas</option>
-                    <option value="drop-tables">Eliminación de tablas</option>
-                    <option value="create-records">
+                    <option value="crear tablas">Creación de tablas</option>
+                    <option value="eliminar tablas">
+                      Eliminación de tablas
+                    </option>
+                    <option value="crear registros">
                       Creación de registros
                     </option>
-                    <option value="delete-records">
+                    <option value="eliminar registros">
                       Eliminación de registros
                     </option>
-                    <option value="limit-connections">
+                    <option value="limitar conexiones">
                       Limitar número de conexiones
                     </option>
-                    <option value="restrict-db-access">
+                    <option value="restringir acceso a base de datos">
                       Restringir acceso a bases de datos específicas
                     </option>
                   </select>
@@ -187,8 +189,12 @@
                     <option value="" selected disabled hidden>
                       Seleccione un tipo de acceso
                     </option>
-                    <option value="all-users">Todos los usuarios</option>
-                    <option value="specific-user">Usuario específico</option>
+                    <option value="todos los usuarios">
+                      Todos los usuarios
+                    </option>
+                    <option value="usuarios especificos">
+                      Usuario específico
+                    </option>
                   </select>
                 </div>
 
@@ -305,36 +311,20 @@
                     <option value="" selected disabled hidden>
                       Seleccionar tipo
                     </option>
-                    <option value="limit-commands">
-                      Limitar comandos específicos
+                    <option value="limitar uso de red">
+                      Limitar uso de red (MB transferidos)
                     </option>
-                    <option value="limit-network-usage">
-                      Limitar uso de red (bytes transferidos)
-                    </option>
-                    <option value="limit-session-duration">
+                    <option value="limitar duracion de la sesion">
                       Limitar duración de la sesión
                     </option>
-                    <option value="process-max-duration">
+                    <option value="duracion de procesos">
                       Monitorear y finalizar procesos específicos
                     </option>
                   </select>
                 </div>
 
                 <div class="form-group">
-                  <label for="commands"
-                    >Comandos a limitar (separados por comas)</label
-                  >
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="commands"
-                    name="commands"
-                    placeholder="p.ej. rm, cp, mv"
-                  />
-                </div>
-
-                <div class="form-group">
-                  <label for="network-usage">Uso máximo de red (bytes)</label>
+                  <label for="network-usage">Uso máximo de red (MB)</label>
                   <input
                     type="text"
                     class="form-control"
@@ -410,8 +400,10 @@
                     data-none-selected-text="Seleccione una acción"
                   >
                     <option value="" selected disabled>Seleccionar tipo</option>
-                    <option value="upload-files">Subida de archivos</option>
-                    <option value="download-files">Descarga de archivos</option>
+                    <option value="subir archivos">Subida de archivos</option>
+                    <option value="descargar archivos">
+                      Descarga de archivos
+                    </option>
                     <!-- <option value="delete-files">
                       Eliminación de archivos
                     </option> -->
@@ -424,7 +416,7 @@
                     <option value="limit-transfer-size">
                       Limitar tamaño de transferencia
                     </option> -->
-                    <option value="max-transfer-bytes">
+                    <option value="transferencia maxima de bytes">
                       Tamaño máximo de transferencia
                     </option>
                   </select>
@@ -529,11 +521,15 @@
                     data-none-selected-text="Seleccione una acción"
                   >
                     <option value="" selected disabled>Seleccionar tipo</option>
-                    <option value="enable-site">Habilitar un sitio</option>
-                    <option value="disable-site">Deshabilitar un sitio</option>
-                    <option value="restart-service">Reiniciar servicio</option>
-                    <option value="monitor-logs">Monitorear logs</option>
-                    <option value="limit-bandwidth">
+                    <option value="habilitar sitio">Habilitar un sitio</option>
+                    <option value="deshabilitar sitio">
+                      Deshabilitar un sitio
+                    </option>
+                    <option value="reiniciar servicio">
+                      Reiniciar servicio
+                    </option>
+                    <option value="monitorear logs">Monitorear logs</option>
+                    <option value="limitar ancho de banda">
                       Limitar ancho de banda
                     </option>
                     <option value="set-maintenance-mode">
@@ -573,19 +569,20 @@
               <tr>
                 <th data-field="number" data-sortable="true">N° Registro</th>
                 <th data-field="name" data-sortable="true">
-                  Nombre de la Automatizacion
+                  Nombre de la Restriccion
                 </th>
-                <th data-field="type" data-sortable="true">
-                  Tipo de Automatizacion
+                <th data-field="type" data-sortable="true">Tipo de Servicio</th>
+                <th data-field="restriction" data-sortable="true">
+                  Restriccion
+                </th>
+                <th data-field="type_alert" data-sortable="true">
+                  Tipo de Alerta
+                </th>
+                <th data-field="restriction_data" data-sortable="true">
+                  Datos de la restriccion
                 </th>
                 <th data-field="created_date" data-sortable="true">
                   Fecha de Creacion
-                </th>
-                <th data-field="schedule" data-sortable="true">
-                  Horario de restriccion
-                </th>
-                <th data-field="restriction_type" data-sortable="true">
-                  Acceso restringido
                 </th>
                 <th data-field="community" data-sortable="true">
                   Comunidad restriccion
@@ -599,17 +596,18 @@
               <tr>
                 <td class="numero">{{ loop.index }}</td>
                 <td class="nombre">{{ automatizacion[1] }}</td>
-                <td class="tipo">{{ automatizacion[2] }}</td>
-                <td class="fecha_creacion">{{ automatizacion[7] }}</td>
-                <td class="horario">{{ automatizacion[3] }}</td>
-                <td class="tipo_restriccion">{{ automatizacion[4] }}</td>
-                <td class="comunidad">{{ automatizacion[10] }}</td>
+                <td class="servicio">{{ automatizacion[2] }}</td>
+                <td class="restriccion">{{ automatizacion[3] }}</td>
+                <td class="tipo_alerta">{{ automatizacion[4] }}</td>
+                <td class="datos_restriccion">{{ automatizacion[5] }}</td>
+                <td class="fecha_creacion">{{ automatizacion[6] }}</td>
+                <td class="comunidad">{{ automatizacion[8] }}</td>
                 <td>
                   <button
                     id="btn-automatizacion-{{ automatizacion[0] }}"
-                    class="btn {{ 'btn-success' if automatizacion[6] == 1 else 'btn-secondary' }}"
+                    class="btn {{ 'btn-success' if automatizacion[7] == 1 else 'btn-secondary' }}"
                   >
-                    {{ 'Desactivar' if automatizacion[6] == 1 else 'Activar' }}
+                    {{ 'Desactivar' if automatizacion[7] == 1 else 'Activar' }}
                   </button>
                 </td>
                 <td>

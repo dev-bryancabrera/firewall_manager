@@ -220,11 +220,11 @@ $(document).ready(function () {
 
     var selectedOption = restrictionMysql.val();
 
-    if (selectedOption === "limit-connections") {
+    if (selectedOption === "limitar conexiones") {
       maxConnectionsType.prop("disabled", false);
 
       maxConnectionsType.selectpicker("refresh");
-    } else if (selectedOption === "restrict-db-access") {
+    } else if (selectedOption === "restringir acceso a base de datos") {
       userName.prop("disabled", false);
       accessType.prop("disabled", false);
 
@@ -240,9 +240,9 @@ $(document).ready(function () {
 
     var selectedOption = maxConnectionsType.val();
 
-    if (selectedOption === "all-users") {
+    if (selectedOption === "todos los usuarios") {
       maxConnections.prop("disabled", false);
-    } else if (selectedOption === "specific-user") {
+    } else if (selectedOption === "usuarios especificos") {
       userName.prop("disabled", false);
       maxConnections.prop("disabled", false);
     }
@@ -258,13 +258,13 @@ $(document).ready(function () {
 
     var selectedOption = actionSshType.val();
 
-    if (selectedOption === "limit-commands") {
+    if (selectedOption === "limitar comandos") {
       commands.prop("disabled", false);
-    } else if (selectedOption === "limit-network-usage") {
+    } else if (selectedOption === "limitar uso de red") {
       networkUsage.prop("disabled", false);
-    } else if (selectedOption === "limit-session-duration") {
+    } else if (selectedOption === "limitar duracion de la sesion") {
       sessionDuration.prop("disabled", false);
-    } else if (selectedOption === "process-max-duration") {
+    } else if (selectedOption === "duracion de procesos") {
       maxDurationSsh.prop("disabled", false);
     }
   });
@@ -280,13 +280,13 @@ $(document).ready(function () {
 
     var selectedOption = ftpContainer.val();
 
-    if (selectedOption === "upload-files") {
+    if (selectedOption === "subir archivos") {
       uploadDirectory.prop("disabled", false);
       fileTypesFtp.prop("disabled", false);
-    } else if (selectedOption === "download-files") {
+    } else if (selectedOption === "descargar archivos") {
       downloadDirectory.prop("disabled", false);
       fileTypesFtp.prop("disabled", false);
-    } else if (selectedOption === "max-transfer-bytes") {
+    } else if (selectedOption === "transferencia maxima de bytes") {
       maxTransferSize.prop("disabled", false);
     }
   });
@@ -368,10 +368,10 @@ $(document).ready(function () {
         actionSshType,
         "Seleccione un tipo de acción SSH."
       ) ||
-      mostrarAlerta(commands, "Asignar comandos SSH.") ||
+      // mostrarAlerta(commands, "Asignar comandos SSH.") ||
       mostrarAlerta(networkUsage, "Asignar un uso de red para SSH.") ||
       mostrarAlerta(sessionDuration, "Asignar una duración de sesión SSH.") ||
-      mostrarAlerta(maxDurationSsh, "Asignar una duración máxima para SSH.") ||
+      // mostrarAlerta(maxDurationSsh, "Asignar una duración máxima para SSH.") ||
       validarSelectContainer(
         ftpContainer,
         actionFtpType,

@@ -21,6 +21,7 @@ from models.modelMonitoreo import modelPaquetes
 from models.modelFilterPacket import modelFilterPacket
 from models.modelCommunity import modelCommunity
 from models.modelAutomation import modelAutomation
+from models.modelServiceAutomation import modelServiceAutomation
 
 # Entities
 from models.entities.user import User
@@ -30,6 +31,7 @@ from models.entities.monitoreo import Monitoreo
 from models.entities.filterPacket import FilterPacket
 from models.entities.community import Community
 from models.entities.automationFirewall import Automation
+from models.entities.serviceAutomation import servAutomation
 
 
 def validar_ingreso(username, password_hash):
@@ -1887,8 +1889,7 @@ def get_ssh_port():
 
 
 def create_monitor_traffic_limit_service():
-    bash_script_content = """
-#!/bin/bash
+    bash_script_content = """#!/bin/bash
 
 # Archivo de log que se monitoreará
 LOGFILE="/var/log/syslog"
@@ -2080,7 +2081,7 @@ WantedBy=multi-user.target
 
 def create_service_automation(
     automation_name,
-    community,
+    community_id,
     service_type,
     action_type,
     restriction_mysql,
@@ -2090,7 +2091,6 @@ def create_service_automation(
     access_type,
     mysql_max_duration,
     actionssh_type,
-    commands,
     network_usage,
     session_duration,
     ssh_max_duration,
@@ -2109,31 +2109,31 @@ def create_service_automation(
             user_name,
             access_type,
         ):
-            if restriction_mysql == "create-database":
+            if restriction_mysql == "crear base de datos":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "CREATE DATABASE" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE DATABASE"; content:"CREATE DATABASE"; nocase; sid:1000003; rev:1;)'
 
-            elif restriction_mysql == "drop-database":
+            elif restriction_mysql == "eliminar base de datos":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DROP DATABASE" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP DATABASE"; content:"DROP DATABASE"; nocase; sid:1000004; rev:1;)'
 
-            elif restriction_mysql == "create-tables":
+            elif restriction_mysql == "crear tablas":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "CREATE TABLE" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to CREATE TABLE"; content:"CREATE TABLE"; nocase; sid:1000005; rev:1;)'
 
-            elif restriction_mysql == "drop-tables":
+            elif restriction_mysql == "eliminar tablas":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DROP TABLE" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DROP TABLE"; content:"DROP TABLE"; nocase; sid:1000006; rev:1;)'
 
-            elif restriction_mysql == "create-records":
+            elif restriction_mysql == "crear registros":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "INSERT INTO" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to INSERT INTO"; content:"INSERT INTO"; nocase; sid:1000007; rev:1;)'
 
-            elif restriction_mysql == "delete-records":
+            elif restriction_mysql == "eliminar registros":
                 command = 'sudo iptables -A INPUT -p tcp --dport 3306 -m string --string "DELETE FROM" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"Attempt to DELETE RECORDS"; content:"DELETE FROM"; nocase; sid:1000008; rev:1;)'
 
-            elif restriction_mysql == "limit-connections":
+            elif restriction_mysql == "limitar conexiones":
                 if max_connection_type == "all-users":
                     config_file_path = "/etc/mysql/mariadb.conf.d/50-server.cnf"
                     max_connections_line = f"max_connections = {max_connections}\n"
@@ -2168,7 +2168,7 @@ def create_service_automation(
                     )
                 snort_rule = None
 
-            elif restriction_mysql == "restrict-db-access":
+            elif restriction_mysql == "restringir acceso a base de datos":
                 host = get_user_host(user_name)
 
                 command = f"GRANT {access_type} ON *.* TO {user_name}@{host};"
@@ -2183,35 +2183,41 @@ def create_service_automation(
                 add_snort_rule(snort_rule)
 
         def set_ssh_rules(
-            actionssh_type, commands, network_usage, session_duration, ssh_max_duration
+            actionssh_type, network_usage, session_duration, ssh_max_duration
         ):
             # Obtener el puerto SSH
             ssh_port = get_ssh_port()
+            commands = []
 
-            if actionssh_type == "limit-network-usage" and network_usage:
+            if actionssh_type == "limitar uso de red" and network_usage:
                 network_usage_bytes = network_usage * 1024 * 1024
-                command = f"""
-sudo iptables -N TRAFFIC_MONITOR &&
-sudo iptables -A INPUT -p tcp --dport {ssh_port} -j TRAFFIC_MONITOR &&
-sudo iptables -A TRAFFIC_MONITOR -m quota --quota {network_usage_bytes} -j RETURN &&
-sudo iptables -A TRAFFIC_MONITOR -j LOG --log-prefix "TRAFFIC_LIMIT_EXCEEDED: " &&
-
-sudo iptables -N TRAFFIC_MONITOR_OUT &&
-sudo iptables -A OUTPUT -p tcp -j TRAFFIC_MONITOR_OUT &&
-sudo iptables -A TRAFFIC_MONITOR_OUT -m quota --quota {network_usage_bytes} -j RETURN &&
-sudo iptables -A TRAFFIC_MONITOR_OUT -j LOG --log-prefix "TRAFFIC_OUT_LIMIT_EXCEEDED: "
-"""
+                commands = [
+                    "sudo iptables -N TRAFFIC_MONITOR",
+                    f"sudo iptables -A INPUT -p tcp --dport {ssh_port} -j TRAFFIC_MONITOR",
+                    f"sudo iptables -A TRAFFIC_MONITOR -m quota --quota {network_usage_bytes} -j RETURN",
+                    'sudo iptables -A TRAFFIC_MONITOR -j LOG --log-prefix "TRAFFIC_LIMIT_EXCEEDED: "',
+                    "sudo iptables -N TRAFFIC_MONITOR_OUT",
+                    "sudo iptables -A OUTPUT -p tcp -j TRAFFIC_MONITOR_OUT",
+                    f"sudo iptables -A TRAFFIC_MONITOR_OUT -m quota --quota {network_usage_bytes} -j RETURN",
+                    'sudo iptables -A TRAFFIC_MONITOR_OUT -j LOG --log-prefix "TRAFFIC_OUT_LIMIT_EXCEEDED: "',
+                ]
                 create_monitor_traffic_limit_service()
                 snort_rule = None
-            elif actionssh_type == "limit-session-duration" and session_duration:
+            elif actionssh_type == "limitar duracion de la sesion" and session_duration:
                 command = f"sudo sed -i '/^ClientAliveInterval/c\\ClientAliveInterval {session_duration}' /etc/ssh/sshd_config && sudo systemctl restart sshd"
                 snort_rule = None
-            elif actionssh_type == "monitor-and-kill" and ssh_max_duration:
+            elif actionssh_type == "duracion de procesos" and ssh_max_duration:
                 create_process_kill_session()
                 command = f"ps -eo pid,etime,comm | grep sshd | awk '{{split($2,a,\":\"); if (a[1] > {ssh_max_duration}) print $1}}' | xargs kill -9"
                 snort_rule = None
 
-            run_command(command)
+            print(commands)
+
+            if command:
+                run_command(command)
+            elif commands:
+                print("fsdffsd")
+                run_command(commands)
             if snort_rule:
                 add_snort_rule(snort_rule)
 
@@ -2299,18 +2305,36 @@ sudo iptables -A TRAFFIC_MONITOR_OUT -j LOG --log-prefix "TRAFFIC_OUT_LIMIT_EXCE
 
         def run_command(command):
             try:
-                result = subprocess.run(
-                    command, shell=True, check=True, text=True, capture_output=True
-                )
-                print(f"Comando ejecutado: {command}")
-                print(f"Salida: {result.stdout}")
-                if "snort" in command:
-                    # Recarga Snort si el comando involucra Snort
-                    subprocess.run(
-                        "sudo snort -A console -c /etc/snort/snort.conf",
-                        shell=True,
-                        check=True,
+                # Si el comando es una lista, iteramos y ejecutamos cada comando
+                if isinstance(command, list):
+                    for cmd in command:
+                        result = subprocess.run(
+                            cmd, shell=True, check=True, text=True, capture_output=True
+                        )
+                        print(f"Comando ejecutado: {cmd}")
+                        print(f"Salida: {result.stdout}")
+                        if "snort" in cmd:
+                            # Recarga Snort si el comando involucra Snort
+                            subprocess.run(
+                                "sudo snort -A console -c /etc/snort/snort.conf",
+                                shell=True,
+                                check=True,
+                            )
+                # Si es un solo comando, ejecutamos directamente
+                elif isinstance(command, str):
+                    result = subprocess.run(
+                        command, shell=True, check=True, text=True, capture_output=True
                     )
+                    print(f"Comando ejecutado: {command}")
+                    print(f"Salida: {result.stdout}")
+                    if "snort" in command:
+                        # Recarga Snort si el comando involucra Snort
+                        subprocess.run(
+                            "sudo snort -A console -c /etc/snort/snort.conf",
+                            shell=True,
+                            check=True,
+                        )
+                print("hasta aquí llego")
             except subprocess.CalledProcessError as e:
                 print(f"Error al ejecutar el comando: {e}")
                 print(f"Salida del error: {e.stderr}")
@@ -2321,13 +2345,12 @@ sudo iptables -A TRAFFIC_MONITOR_OUT -j LOG --log-prefix "TRAFFIC_OUT_LIMIT_EXCE
                 max_connections,
                 user_name,
                 access_type,
-                mysql_max_duration,
+                # mysql_max_duration,
             )
 
         elif service_type == "ssh":
             set_ssh_rules(
                 actionssh_type,
-                commands,
                 network_usage,
                 session_duration,
                 ssh_max_duration,
@@ -2341,19 +2364,21 @@ sudo iptables -A TRAFFIC_MONITOR_OUT -j LOG --log-prefix "TRAFFIC_OUT_LIMIT_EXCE
                 max_transfer_size,
             )
 
-        # automation = Automation(
-        #     0,
-        #     automation_name,
-        #     automation_type,
-        #     restriccion,
-        #     deny_chain,
-        #     horario,
-        #     1,
-        #     fecha_creacion,
-        #     comunidad_id,
-        #     current_user.id,
-        # )
-        # automation = modelAutomation.insertAutomation(automation)
+        restriction = restriction_mysql or actionssh_type or actionftp_type
+
+        srvAutomation = servAutomation(
+            0,
+            automation_name.title(),
+            service_type.upper(),
+            restriction.title(),
+            action_type.title(),
+            "",
+            fecha_creacion,
+            1,
+            community_id,
+            current_user.id,
+        )
+        automation = modelServiceAutomation.insertServAutomation(srvAutomation)
 
         return jsonify({"message": "¡Automatizacion creada correctamente!"})
 
@@ -3605,6 +3630,28 @@ def load_automation():
 
         else:
             return automatizaciones
+    except Exception as e:
+        return f"Error al cargar la lista de automatizaciones: {str(e)}"
+
+
+def load_service_automation():
+    try:
+        service_restrictions = modelServiceAutomation.getServAutomation()
+
+        if service_restrictions:
+            registros_modificados = []
+            for automatizacion in service_restrictions:
+                comunidad = modelCommunity.getCommunityById(automatizacion[8])
+                registro_modificado = list(automatizacion)
+                registro_modificado[2] = registro_modificado[2]
+                registro_modificado[6] = registro_modificado[6].strftime("%d-%m-%Y")
+                registro_modificado.insert(8, comunidad[1])
+                registros_modificados.append(tuple(registro_modificado))
+
+            return registros_modificados
+
+        else:
+            return service_restrictions
     except Exception as e:
         return f"Error al cargar la lista de automatizaciones: {str(e)}"
 
