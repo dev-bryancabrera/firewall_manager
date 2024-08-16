@@ -1,4 +1,4 @@
-function test() {
+function nav_selection() {
   var current = location.pathname;
   $("#navbarSupportedContent ul li a").each(function () {
     var $this = $(this);
@@ -41,17 +41,22 @@ function test() {
 }
 $(document).ready(function () {
   setTimeout(function () {
-    test();
+    nav_selection();
   });
 });
 $(window).on("resize", function () {
   setTimeout(function () {
-    test();
+    nav_selection();
   }, 500);
 });
 $(".navbar-toggler").click(function () {
   $(".navbar-collapse").slideToggle(300);
   setTimeout(function () {
-    test();
+    nav_selection();
   });
+});
+
+// Abri menu de notificaciones
+$(".notification").click(function () {
+  console.log("notifiac");
 });

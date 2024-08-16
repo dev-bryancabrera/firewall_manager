@@ -2188,9 +2188,11 @@ def create_service_automation(
             # Obtener el puerto SSH
             ssh_port = get_ssh_port()
             commands = []
+            command = ""
 
             if actionssh_type == "limitar uso de red" and network_usage:
-                network_usage_bytes = network_usage * 1024 * 1024
+                network_usage_bytes = int(network_usage) * 1024 * 1024
+                print(network_usage_bytes)
                 commands = [
                     "sudo iptables -N TRAFFIC_MONITOR",
                     f"sudo iptables -A INPUT -p tcp --dport {ssh_port} -j TRAFFIC_MONITOR",
@@ -2211,12 +2213,9 @@ def create_service_automation(
                 command = f"ps -eo pid,etime,comm | grep sshd | awk '{{split($2,a,\":\"); if (a[1] > {ssh_max_duration}) print $1}}' | xargs kill -9"
                 snort_rule = None
 
-            print(commands)
-
             if command:
                 run_command(command)
             elif commands:
-                print("fsdffsd")
                 run_command(commands)
             if snort_rule:
                 add_snort_rule(snort_rule)
@@ -2228,10 +2227,10 @@ def create_service_automation(
             download_directory,
             max_transfer_size,
         ):
-            if actionftp_type == "upload-files":
+            if actionftp_type == "subir archivos":
                 command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "STOR" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to UPLOAD FILES"; content:"STOR"; nocase; sid:1000006; rev:1;)'
-            elif actionftp_type == "download-files":
+            elif actionftp_type == "descargar archivos":
                 command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "RETR" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to DOWNLOAD FILES"; content:"RETR"; nocase; sid:1000007; rev:1;)'
             elif actionftp_type == "delete-files":
@@ -2243,7 +2242,7 @@ def create_service_automation(
             elif actionftp_type == "delete-directories":
                 command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "RMD" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to DELETE DIRECTORIES"; content:"RMD"; nocase; sid:1000010; rev:1;)'
-            elif actionftp_type == "limit-transfer-size" and max_transfer_size:
+            elif actionftp_type == "transferencia maxima de bytes" and max_transfer_size:
                 command = f"sudo iptables -A OUTPUT -p tcp --dport 21 -m quota --quota {max_transfer_size} -j ACCEPT && sudo iptables -A OUTPUT -p tcp --dport 21 -j REJECT"
                 snort_rule = None
 
@@ -2308,11 +2307,9 @@ def create_service_automation(
                 # Si el comando es una lista, iteramos y ejecutamos cada comando
                 if isinstance(command, list):
                     for cmd in command:
-                        result = subprocess.run(
+                        subprocess.run(
                             cmd, shell=True, check=True, text=True, capture_output=True
                         )
-                        print(f"Comando ejecutado: {cmd}")
-                        print(f"Salida: {result.stdout}")
                         if "snort" in cmd:
                             # Recarga Snort si el comando involucra Snort
                             subprocess.run(
@@ -2322,11 +2319,10 @@ def create_service_automation(
                             )
                 # Si es un solo comando, ejecutamos directamente
                 elif isinstance(command, str):
-                    result = subprocess.run(
+                    subprocess.run(
                         command, shell=True, check=True, text=True, capture_output=True
                     )
-                    print(f"Comando ejecutado: {command}")
-                    print(f"Salida: {result.stdout}")
+
                     if "snort" in command:
                         # Recarga Snort si el comando involucra Snort
                         subprocess.run(
@@ -2334,7 +2330,6 @@ def create_service_automation(
                             shell=True,
                             check=True,
                         )
-                print("hasta aquí llego")
             except subprocess.CalledProcessError as e:
                 print(f"Error al ejecutar el comando: {e}")
                 print(f"Salida del error: {e.stderr}")

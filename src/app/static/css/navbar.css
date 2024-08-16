@@ -129,6 +129,7 @@ i {
 }
 
 .notification {
+  cursor: pointer;
   left: 0;
   right: 0;
   top: 0;
@@ -143,6 +144,175 @@ i {
   background-color: white;
   box-shadow: 1px 1px 33px 0px rgba(0, 0, 0, 0.37);
   transition: 1s;
+}
+
+/* Menu notificaciones */
+
+.panel {
+  position: absolute;
+  border-radius: 0.5vmin;
+  width: 50vmin;
+  height: 46vmin;
+  margin-top: 15vmin;
+  padding-top: 2vmin;
+  max-height: 0;
+  transition: all 0.5s ease 0s;
+  filter: drop-shadow(2vmin 2vmin 1vmin #0008);
+}
+
+input#btn,
+input#uro {
+  position: absolute;
+  z-index: -3;
+  opacity: 0;
+}
+
+.panel ul:before {
+  content: "";
+  position: absolute;
+  border: 2vmin solid #fff0;
+  border-bottom-color: var(--on);
+  left: calc(50% - 2vmin);
+  top: calc(0vmin + 2px);
+  transition: all 0.5s ease 0s;
+}
+
+#btn:checked + label[for="btn"] + .panel {
+  max-height: 46vmin;
+  margin-top: 10vmin;
+}
+
+#btn:checked + label[for="btn"] + .panel ul:before {
+  top: calc(-2vmin + 2px);
+}
+
+.panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--on);
+  border-radius: 0 0 0.5vmin 0.5vmin;
+  overflow: hidden;
+}
+
+.panel ul li {
+  width: 100%;
+  height: 10vmin;
+  color: var(--dark);
+  border-bottom: 1px solid var(--dark);
+  padding: 1.75vmin 1.25vmin;
+  box-sizing: border-box;
+  font-size: 2.25vmin;
+  position: relative;
+}
+
+.panel ul li:last-child {
+  border-bottom: 0;
+}
+
+.panel ul li img {
+  border-radius: 100%;
+  margin-right: 2vmin;
+  float: left;
+  width: 6vmin;
+  height: 6vmin;
+}
+
+.panel ul li a {
+  text-decoration: none;
+  font-weight: bold;
+  color: var(--link);
+}
+
+.panel ul li.read img {
+  filter: sepia(1) hue-rotate(150deg) contrast(0.75) brightness(0.65)
+    saturate(0.75);
+}
+
+.panel ul li.unread {
+  --link: #3eb0e3;
+}
+
+.panel ul li strong {
+  color: var(--strong);
+}
+.panel ul li.unread strong {
+  --strong: #216a8d;
+}
+
+.panel ul li:after {
+  content: "";
+  position: absolute;
+  right: 1vmin;
+  top: 1vmin;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #3eb0e3;
+  border-radius: 100%;
+}
+.panel ul li.read:after {
+  border-color: var(--dark);
+}
+
+.unread-only {
+  width: 100%;
+  height: 6vmin;
+  background: var(--on);
+  border-radius: 0.5vmin 0.5vmin 0 0;
+  border-bottom: 1px solid var(--dark);
+  color: var(--dark);
+  font-size: 2vmin;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1vmin;
+  padding: 0 2vmin;
+  box-sizing: border-box;
+}
+
+.unread-only:before {
+  content: "NOTIFICATIONS";
+  left: -3vmin;
+  font-size: 2.5vmin;
+  position: relative;
+  color: var(--off);
+  font-weight: 600;
+}
+
+.unread-only label {
+  background: var(--dark);
+  width: 4vmin;
+  height: 2vmin;
+  border-radius: 2vmin;
+}
+
+label[for="uro"]:before {
+  content: "";
+  position: absolute;
+  width: 2vmin;
+  height: 2vmin;
+  background: #e7e7e7;
+  border-radius: 100%;
+  transition: all 0.5s ease 0s;
+  cursor: pointer;
+  right: 4vmin;
+  border: 0.2vmin solid #0001;
+  margin-top: -0.1vmin;
+}
+
+input#uro:checked ~ .panel label[for="uro"]:before {
+  background: #3eb0e3;
+  right: 2vmin;
+}
+
+input#uro:checked ~ .panel .unread-only {
+  color: var(--link);
+}
+
+input#uro:checked ~ .panel ul li.read {
+  display: none;
 }
 
 .collapse > .info-actions .btn {
