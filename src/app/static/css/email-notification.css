@@ -1,0 +1,166 @@
+/* Body Table */
+#bodyTable {
+  table-layout: fixed;
+  background-color: #f9f9f9;
+}
+
+/* Body Cell */
+#bodyCell {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+/* Wrapper Webview */
+.wrapperWebview {
+  max-width: 600px;
+}
+
+.wrapperWebview tbody table td {
+  padding-top: 20px;
+  padding-bottom: 20px;
+  padding-right: 0px;
+}
+
+.wrapperWebview tbody table td a {
+  color: #bbb;
+  font-family: "Open Sans", Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: normal;
+  line-height: 20px;
+  text-transform: none;
+  text-align: right;
+  text-decoration: underline;
+  padding: 0;
+  margin: 0;
+}
+
+/* Wrapper Body */
+.wrapperBody {
+  max-width: 600px;
+}
+
+/* Table Card */
+.tableCard {
+  background-color: #fff;
+  border-color: #e5e5e5;
+  border-style: solid;
+  border-width: 0 1px 1px 1px;
+}
+
+/* Top Border */
+.topBorder {
+  background-color: #f36f21;
+  font-size: 1px;
+  line-height: 3px;
+}
+
+/* Email Logo */
+.emailLogo {
+  padding-top: 60px;
+  padding-bottom: 20px;
+}
+
+.emailLogo a {
+  text-decoration: none;
+}
+
+.emailLogo a img {
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  display: block;
+}
+
+/* imgHero */
+.imgHero {
+  padding-bottom: 20px;
+}
+
+.imgHero a {
+  text-decoration: none;
+}
+
+.imgHero a img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  display: block;
+  color: #f9f9f9;
+}
+
+.mainTitle {
+  padding-bottom: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Main Title */
+.mainTitle h2 {
+  color: #000;
+  font-family: Poppins, Helvetica, Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: normal;
+  line-height: 36px;
+  text-transform: none;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+}
+
+.containtTable {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.description {
+  padding-bottom: 20px;
+}
+/* Description */
+.description p {
+  color: #666;
+  font-family: "Open Sans", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: normal;
+  line-height: 22px;
+  text-transform: none;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+}
+
+.celda-letra {
+  font-size: 1px;
+  line-height: 1px;
+}
+
+/* Email Regards */
+.emailRegards {
+  padding-bottom: 40px;
+}
+
+.emailRegards a {
+  text-decoration: none;
+}
+
+.emailRegards a img {
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  display: block;
+}
+
+.wrapperFooter {
+  max-width: 600px;
+}
+
+/* General Adjustments */
+img {
+  height: auto;
+  width: 100%;
+}

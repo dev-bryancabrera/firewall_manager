@@ -8,12 +8,15 @@ from models.modelUser import modelUser
 from models.funciones import (
     create_automation,
     create_automation_content,
+    create_notification_sender,
     create_service_automation,
     deactivate_activate_automation,
     delete_automation,
     delete_automation_content,
     delete_community,
+    delete_notifications,
     delete_vpnclient,
+    get_notifications,
     get_plataforms,
     get_plataforms_domain,
     get_user_databases,
@@ -21,6 +24,7 @@ from models.funciones import (
     load_automation,
     load_comunnity,
     load_service_automation,
+    mark_read_notification,
     obtener_reglas_ufw,
     obtener_reglas_ufw_contenido,
     delete_rule,
@@ -78,6 +82,36 @@ def configurar_rutas(app, login_manager_app):
     def logout():
         logout_user()
         return redirect(url_for("login"))
+
+    @app.route("/load_notifications", methods=["GET"])
+    def load_notifications():
+        # Recuperar las notificaciones de la base de datos
+        notifications = get_notifications()
+
+        return notifications
+
+    @app.route("/mark_as_read", methods=["GET"])
+    def mark_as_read():
+        try:
+            notification_id = request.args.get("id_notificacion")
+
+            response = mark_read_notification(notification_id)
+
+            return response
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/delete_notification", methods=["DELETE"])
+    def delete_notification():
+        try:
+            data = request.get_json()
+            notification_id = data.get("id_notificacion")
+
+            delete_notifications(notification_id)
+            return "", 204
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/home")
     @login_required
@@ -248,6 +282,26 @@ def configurar_rutas(app, login_manager_app):
         key = request.args.get("key_plataform")
 
         return get_plataforms_domain(key)
+
+    @app.route("/add_notification_email", methods=["POST"])
+    @login_required
+    def allow_notifications_mail():
+        try:
+            email_server = request.form.get("emailServer")
+            email_sender = request.form.get("emailSender")
+            email_password = request.form.get("emailPassword")
+            email_receiver = request.form.get("emailReceiver")
+
+            response = create_notification_sender(
+                email_server,
+                email_sender,
+                email_password,
+                email_receiver,
+            )
+
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
 
     # Definir apertura de conexiones
     @app.route("/add_rule", methods=["POST"])

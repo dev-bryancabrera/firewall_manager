@@ -1,5 +1,6 @@
 import base64
-from datetime import datetime
+import configparser
+from datetime import datetime, timedelta
 from io import BytesIO
 import os
 import shlex
@@ -7,11 +8,13 @@ from flask import Response, flash, jsonify, send_file
 from flask_login import current_user, login_user
 import pandas as pd
 
+
 import re
 import netifaces
 import subprocess
 
 from .db.connectDB import get_connection
+
 
 # Models
 from models.modelUser import modelUser
@@ -22,6 +25,8 @@ from models.modelFilterPacket import modelFilterPacket
 from models.modelCommunity import modelCommunity
 from models.modelAutomation import modelAutomation
 from models.modelServiceAutomation import modelServiceAutomation
+from models.modelNotification import modelNotification
+
 
 # Entities
 from models.entities.user import User
@@ -54,6 +59,74 @@ def validar_ingreso(username, password_hash):
         return False
     except Exception as e:
         return str(e)
+
+
+def get_notifications():
+    try:
+        notifications = modelNotification.getNotifications()
+        response_data = {}
+
+        if notifications:
+            registros_formateados = []
+            now = datetime.now()
+
+            for notification in notifications:
+                fecha_original = notification[3]
+                fecha_formateada = (
+                    fecha_original.strftime("%d-%m-%Y %H:%M")
+                    if isinstance(fecha_original, datetime)
+                    else fecha_original
+                )
+
+                if isinstance(fecha_original, datetime) and (
+                    now - fecha_original
+                ) < timedelta(minutes=5):
+                    fecha_formateada = "Ahora mismo"
+                else:
+                    fecha_formateada = (
+                        fecha_original.strftime("%d-%m-%Y %H:%M")
+                        if isinstance(fecha_original, datetime)
+                        else fecha_original
+                    )
+
+                registro_modificado = {
+                    "id": notification[0],
+                    "mensaje": notification[1],
+                    "leido": notification[2],
+                    "fecha": fecha_formateada,
+                    "fecha_original": fecha_original,
+                }
+                registros_formateados.append(registro_modificado)
+
+            registros_ordenados = sorted(
+                registros_formateados, key=lambda x: x["fecha_original"], reverse=True
+            )
+            response_data["notifications"] = registros_ordenados
+
+        else:
+            response_data["notifications"] = []
+
+        # Verificar si el archivo ~/.email_config existe
+        email_config_path = os.path.expanduser("~/.email_config")
+        if os.path.exists(email_config_path):
+            config = configparser.ConfigParser()
+            config.read(email_config_path)
+            response_data["email_config_exists"] = True
+            response_data["mail_username"] = config.get(
+                "DEFAULT", "MAIL_USERNAME", fallback=""
+            )
+            response_data["mail_password"] = config.get(
+                "DEFAULT", "MAIL_PASSWORD", fallback=""
+            )
+            response_data["mail_default_sender"] = config.get(
+                "DEFAULT", "MAIL_DEFAULT_SENDER", fallback=""
+            )
+        else:
+            response_data["email_config_exists"] = False
+
+        return jsonify(response_data)
+    except Exception as e:
+        return jsonify({"error": f"Error al cargar las notificaciones: {str(e)}"}), 500
 
 
 def is_valid_ip(ip):
@@ -1712,6 +1785,70 @@ def create_automation_content(
         return jsonify({"error": f"Ocurrió un error al escribir en el crontab: {e}"})
 
 
+def create_notification_sender(
+    email_server, email_sender, email_password, email_receiver
+):
+    try:
+        server_config = {
+            "gmail": {"server": "smtp.gmail.com", "port": 587},
+            "office365": {"server": "smtp.office365.com", "port": 587},
+            "yahoo": {"server": "smtp.mail.yahoo.com", "port": 587},
+        }
+
+        # Obtener configuración del servidor
+        config = server_config[email_server.lower()]
+        mail_server = config["server"]
+        mail_port = config["port"]
+
+        email_config = f"""[DEFAULT]
+MAIL_SERVER={mail_server}
+MAIL_PORT={mail_port}
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME={email_sender}
+MAIL_PASSWORD={email_password}
+MAIL_DEFAULT_SENDER={email_receiver}
+"""
+
+        # Ruta del archivo de configuración
+        msmtp_config_path = os.path.expanduser("~/.email_config")
+
+        # Escribir configuración en el archivo
+        with open(msmtp_config_path, "w") as config_file:
+            config_file.write(email_config)
+
+        return jsonify(
+            {"message": "¡Envio de notificaciones por email creada correctamente!"}
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Ocurrió un error al configurar msmtp: {e}"})
+
+
+def mark_read_notification(id_notification):
+    try:
+        modelNotification.updateNotification(id_notification)
+
+        return jsonify({"message": "Notificacion Leida!"})
+
+    except subprocess.CalledProcessError as e:
+        return jsonify(
+            {"error": f"Error al obtener el número de la automatizacion: {e}"}
+        )
+
+
+def delete_notifications(id_notification):
+    try:
+        modelNotification.deleteNotification(id_notification)
+
+        return jsonify({"message": "Notificacion Eliminada!"})
+
+    except subprocess.CalledProcessError as e:
+        return jsonify(
+            {"error": f"Error al obtener el número de la automatizacion: {e}"}
+        )
+
+
 def delete_automation_content(regla_id, regla_nombre, automatizacion_nombre):
     try:
         automations_dir = "/etc/iptables-rules/automations/"
@@ -2242,7 +2379,9 @@ def create_service_automation(
             elif actionftp_type == "delete-directories":
                 command = 'sudo iptables -A INPUT -p tcp --dport 21 -m string --string "RMD" --algo bm -j REJECT'
                 snort_rule = 'alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"Attempt to DELETE DIRECTORIES"; content:"RMD"; nocase; sid:1000010; rev:1;)'
-            elif actionftp_type == "transferencia maxima de bytes" and max_transfer_size:
+            elif (
+                actionftp_type == "transferencia maxima de bytes" and max_transfer_size
+            ):
                 command = f"sudo iptables -A OUTPUT -p tcp --dport 21 -m quota --quota {max_transfer_size} -j ACCEPT && sudo iptables -A OUTPUT -p tcp --dport 21 -j REJECT"
                 snort_rule = None
 
