@@ -526,7 +526,10 @@ body {
   flex-grow: 1;
   padding-left: 20px;
 }
-.formulario {
+.formulario,
+#btn-editar,
+#btn-eliminar,
+#btn-cancelar {
   display: none;
 }
 

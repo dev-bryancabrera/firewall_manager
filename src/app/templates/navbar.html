@@ -54,7 +54,7 @@
                 <div class="hamburger-menu-notification">
                   <div class="notification menu-link has-notifications circle">
                     <i class="fa-solid fa-bell notification-icon"></i>
-                    <i class="fa-regular fa-bell notification-icon"></i>
+                    <i class="fa-regular fa-bell notification-icon active"></i>
                     <span class="notification-count">0</span>
                   </div>
 
@@ -231,9 +231,30 @@
                       placeholder="Correo electronico a donde llegaran las notificaciones"
                     />
                   </div>
-                  <button type="submit" class="btn btn-primary btn-save-data">
-                    Guardar
-                  </button>
+                  <div class="form-group">
+                    <button
+                      type="submit"
+                      class="btn btn-primary btn-save-data"
+                      id="btn-guardar"
+                    >
+                      Guardar
+                    </button>
+                    <button class="btn btn-primary" id="btn-editar">
+                      <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      id="btn-eliminar"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmarEliminar"
+                    >
+                      <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                    <button class="btn btn-secondary" id="btn-cancelar">
+                      <i class="fa-solid fa-xmark"></i> Cancelar
+                    </button>
+                  </div>
                 </form>
               </div>
               <div id="formRed" class="formulario">
@@ -300,6 +321,47 @@
               ></button>
             </div>
             <div class="toast-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal eliminar configuracion -->
+    <div
+      class="modal fade"
+      id="confirmarEliminar"
+      tabindex="-1"
+      aria-labelledby="confirmacionModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmacionModalLabel">
+              Confirmar Eliminación
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Cerrar"
+            ></button>
+          </div>
+          <div class="modal-body">
+            ¿Estás seguro de que deseas eliminar la configuracion actual?
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+
+            <button class="btn btn-danger" id="eliminar-configuracion">
+              Eliminar
+            </button>
           </div>
         </div>
       </div>

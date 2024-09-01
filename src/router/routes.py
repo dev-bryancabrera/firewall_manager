@@ -34,6 +34,7 @@ from models.funciones import (
     setup_vpnclient,
     setup_vpnserver,
     status_openvpn,
+    update_notification_sender,
     validar_ingreso,
     create_community,
     start_capture,
@@ -294,6 +295,26 @@ def configurar_rutas(app, login_manager_app):
 
             response = create_notification_sender(
                 email_server,
+                email_sender,
+                email_password,
+                email_receiver,
+            )
+
+            return response
+        except KeyError as e:
+            return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/update_notification_email", methods=["POST"])
+    @login_required
+    def update_notifications_mail():
+        try:
+            email_sender = request.form.get("emailSender")
+            email_password = request.form.get("emailPassword")
+            email_receiver = request.form.get("emailReceiver")
+
+            print(email_sender)
+
+            response = update_notification_sender(
                 email_sender,
                 email_password,
                 email_receiver,

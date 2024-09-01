@@ -151,6 +151,11 @@ function loadNotifications() {
         $("#email-receiver")
           .closest(".form-group")
           .toggle(!!response.mail_default_sender);
+
+        // MOstrar los botones en caso de que exista un registro de correo
+        $("#btn-editar").show();
+        $("#btn-eliminar").show();
+        $("#btn-guardar").hide();
       }
     },
     error: function (error) {
@@ -158,6 +163,11 @@ function loadNotifications() {
     },
   });
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  // Llamar a loadNotifications después de 1 segundo
+  setTimeout(loadNotifications, 500);
+});
 
 // Mostrar el formulario de correo al hacer clic en "Configurar Correo"
 $("#configuracionCorreo").click(function (e) {
@@ -176,6 +186,92 @@ $("#configuracionRed").click(function (e) {
   e.preventDefault();
   $(".formulario").hide();
   $("#formRed").show();
+});
+
+$("#btn-cancelar").click(function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  $("#email-sender").prop("disabled", true);
+  $("#email-password").prop("disabled", true);
+  $("#email-receiver").prop("disabled", true);
+
+  $("#btn-editar").show().html('<i class="fa-solid fa-pen"></i> Editar');
+  $("#btn-eliminar").show();
+  $("#btn-cancelar").hide();
+});
+
+// $("#btn-eliminar").click(function (e) {
+//   e.preventDefault();
+//   e.stopPropagation();
+
+// });
+
+$("#btn-eliminar").click(function (e) {
+  e.preventDefault();
+
+  // Abrir el segundo modal
+  $("#confirmarEliminar").modal("show");
+});
+
+// Accionr de los botones editar y eliminar
+$("#btn-editar").click(function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  var currentText = $(this).text();
+
+  if (currentText.includes("Editar")) {
+    // Cambiar a modo de edición
+    $(this).html('<i class="fas fa-save"></i> Guardar Cambios');
+    $("#btn-eliminar").hide();
+    $("#btn-cancelar").show();
+
+    $("#email-sender").prop("disabled", false);
+    $("#email-password").prop("disabled", false);
+    $("#email-receiver").prop("disabled", false);
+  } else if (currentText.includes("Guardar Cambios")) {
+    // if (
+    //   mostrarAlerta(automationName, "Asignar un nombre a la automatizacion.") ||
+    //   validarSelectContainer(
+    //     communityList,
+    //     community,
+    //     "Seleccione una comunidad a asignar la automatizacion"
+    //   ) ||
+    //   mostrarAlertaSelect(
+    //     serviceType,
+    //     "Seleccionar un servicio para aplicar la restriccion."
+    //   )
+    // ) {
+    //   return;
+    // }
+
+    // Crear un objeto con los datos que deseas enviar
+    var formData = $("#form-notification").serialize();
+
+    $(this).prop("disabled", true);
+
+    showLoading();
+
+    $.ajax({
+      type: "POST",
+      url: "/update_notification_email",
+      data: formData,
+      success: function (response) {
+        if (response.error) {
+          $(this).prop("disabled", false);
+          alertMessage(response.error, "danger");
+        } else {
+          alertMessage(response.message, "success");
+        }
+      },
+      error: function (xhr, status, error) {
+        $(this).prop("disabled", false);
+        console.error("Respuesta del servidor:", xhr.responseText);
+        alertMessage(error, "danger");
+      },
+    });
+  }
 });
 
 // Ventana de carga
@@ -223,8 +319,6 @@ $(document).ready(function () {
       url: "/add_notification_email",
       data: formData,
       success: function (response) {
-        //$("#modal-filter").find(".close").trigger("click");
-
         if (response.error) {
           btnSaveReceiver.prop("disabled", false);
           alertMessage(response.error, "danger");
@@ -265,8 +359,6 @@ $(document).ready(function () {
   $(".navbar-nav li").removeClass("active");
   target.parent().addClass("active");
 
-  loadNotifications();
-
   $("#settingsIcon").click(function () {
     $("#modalSettings").modal("show");
   });
@@ -293,42 +385,6 @@ $(document).ready(function () {
 
     loadNotifications();
   });
-
-  function alertMessage(response, alertType) {
-    var alertBox = $(".alert");
-    var alertIcon = $(".alert-icon i");
-    var alertMessage = $(".alert-message");
-
-    // Oculta el contenedor de mensaje
-    $(".alert-message-container").hide("medium");
-
-    // Cambia el tipo de alerta
-    if (alertType === "success") {
-      alertBox.removeClass("alert-danger").addClass("alert-success");
-      alertIcon
-        .removeClass("text-danger")
-        .addClass("text-success")
-        .addClass("fa-check-circle");
-    } else if (alertType === "danger") {
-      alertBox.removeClass("alert-success").addClass("alert-danger");
-      alertIcon
-        .removeClass("text-success")
-        .addClass("text-danger")
-        .addClass("fa-exclamation-circle");
-    }
-
-    alertMessage.text(response);
-    $(".alert-message-container").show("medium");
-    setTimeout(function () {
-      if (alertType === "success") {
-        hideLoading();
-        location.reload();
-      } else {
-        hideLoading();
-      }
-      $(".alert-message-container").hide("medium");
-    }, 1500);
-  }
 
   // Cerrar dropdowns al hacer clic en el overlay
   $(document).on("click", "#dropdownOverlay", function () {
@@ -406,42 +462,40 @@ $(document).ready(function () {
   socket.on("block_notification", function (data) {
     loadNotifications();
   });
-
-  // socket.on("block_notification", function (data) {
-  //   var message = data.message;
-  //   var $notificationList = $(".notification-list");
-  //   var $notificationCount = $(".label");
-  //   var $notificationCountNav = $(".notification-count");
-  //   var $solidBellIcon = $(".fa-solid.fa-bell");
-  //   var $regularBellIcon = $(".fa-regular.fa-bell");
-
-  //   // Crear y agregar una nueva notificación
-  //   $notificationList.prepend(`
-  //     <li class="notification-list-item unread" data-id="${data.id}">
-  //       <div class="item-header">
-  //         <p class="message">${message}</p>
-  //         <button class="btn btn-danger delete-notification">
-  //           <i class="fa-solid fa-trash-can"></i>
-  //         </button>
-  //       </div>
-  //       <div class="item-footer">
-  //         <span class="from">Firewall</span>
-  //         <span class="date">Ahora mismo</span>
-  //       </div>
-  //     </li>
-  //   `);
-
-  //   // Actualizar el conteo de notificaciones
-  //   var count = $notificationList.children().length;
-  //   $notificationCount.text(count);
-  //   $notificationCountNav.text(count);
-
-  //   if (count > 0) {
-  //     $solidBellIcon.addClass("active");
-  //     $regularBellIcon.removeClass("active");
-  //   } else {
-  //     $solidBellIcon.removeClass("active");
-  //     $regularBellIcon.addClass("active");
-  //   }
-  // });
 });
+
+function alertMessage(response, alertType) {
+  var alertBox = $(".alert");
+  var alertIcon = $(".alert-icon i");
+  var alertMessage = $(".alert-message");
+
+  // Oculta el contenedor de mensaje
+  $(".alert-message-container").hide("medium");
+
+  // Cambia el tipo de alerta
+  if (alertType === "success") {
+    alertBox.removeClass("alert-danger").addClass("alert-success");
+    alertIcon
+      .removeClass("text-danger")
+      .addClass("text-success")
+      .addClass("fa-check-circle");
+  } else if (alertType === "danger") {
+    alertBox.removeClass("alert-success").addClass("alert-danger");
+    alertIcon
+      .removeClass("text-success")
+      .addClass("text-danger")
+      .addClass("fa-exclamation-circle");
+  }
+
+  alertMessage.text(response);
+  $(".alert-message-container").show("medium");
+  setTimeout(function () {
+    if (alertType === "success") {
+      hideLoading();
+      location.reload();
+    } else {
+      hideLoading();
+    }
+    $(".alert-message-container").hide("medium");
+  }, 1500);
+}

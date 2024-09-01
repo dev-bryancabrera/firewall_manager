@@ -1825,6 +1825,44 @@ MAIL_DEFAULT_SENDER={email_receiver}
         return jsonify({"error": f"Ocurrió un error al configurar msmtp: {e}"})
 
 
+def update_notification_sender(email_sender, email_password, email_receiver):
+    try:
+        # Ruta del archivo de configuración
+        email_config_path = os.path.expanduser("~/.email_config")
+
+        # Leer configuración existente si el archivo existe
+        if os.path.exists(email_config_path):
+            with open(email_config_path, "r") as config_file:
+                lines = config_file.readlines()
+        else:
+            lines = []
+
+        # Inicializar lista para el nuevo contenido del archivo
+        new_lines = []
+
+        # Recorrer las líneas y actualizar solo los campos necesarios
+        for line in lines:
+            if line.startswith("MAIL_USERNAME="):
+                new_lines.append(f"MAIL_USERNAME={email_sender}\n")
+            elif line.startswith("MAIL_PASSWORD="):
+                new_lines.append(f"MAIL_PASSWORD={email_password}\n")
+            elif line.startswith("MAIL_DEFAULT_SENDER="):
+                new_lines.append(f"MAIL_DEFAULT_SENDER={email_receiver}\n")
+            else:
+                new_lines.append(line)
+
+        # Escribir configuración en el archivo
+        with open(email_config_path, "w") as config_file:
+            config_file.writelines(new_lines)
+
+        return jsonify(
+            {"message": "¡Envio de notificaciones por email actualizado correctamente!"}
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Ocurrió un error al configurar msmtp: {e}"})
+
+
 def mark_read_notification(id_notification):
     try:
         modelNotification.updateNotification(id_notification)
