@@ -398,6 +398,11 @@ hr {
   margin-left: -12px !important;
 }
 
+/* Confirmar eliminar */
+#confirmarEliminar .modal-footer {
+  color: #fff;
+}
+
 @media (max-width: 875px) {
   .top-row {
     display: flex;

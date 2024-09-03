@@ -15,6 +15,10 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.css"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/navbar.css') }}"
+    />
     {% include 'includes/styles-imports.html' %}
   </head>
 
@@ -141,7 +145,7 @@
       aria-labelledby="settingsLabel"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-dialog modal-lg modal-dialog-centered nav-modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="settingsLabel">Configuración</h5>
@@ -152,26 +156,28 @@
               aria-label="Close"
             ></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body nav-modal-body d-flex">
             <!-- Menú Lateral -->
-            <div class="menu-lateral">
-              <a href="#" id="configuracionCorreo"
+            <div class="menu-lateral me-3">
+              <a href="#" class="configuracion" data-form-id="formCorreo"
                 >Configurar envío de notificaciones por correo electrónico</a
               >
-              <a href="#" id="configuracionRed">Configurar Red</a>
+              <a href="#" class="configuracion" data-form-id="formRed"
+                >Configurar Red</a
+              >
             </div>
             <!-- Área de Contenido -->
-            <div class="content-area">
+            <div class="content-area flex-grow-1">
+              <!-- Formulario de Correo -->
               <div id="formCorreo" class="formulario">
                 <h2>Configurar Correo</h2>
-                <form class="form-content" id="form-notification">
+                <form class="form-contenido-menu-modal" id="form-notification">
                   <input
                     type="hidden"
                     name="csrf_token"
                     id="csrf_token"
                     value="{{ csrf_token() }}"
                   />
-
                   <div class="form-group">
                     <label for="email-server" class="form-label"
                       >Servidor de correo:</label
@@ -189,7 +195,6 @@
                       <option value="yahoo">YAHOO</option>
                     </select>
                   </div>
-
                   <div class="form-group">
                     <label for="email-sender" class="form-label"
                       >Direccion de Correo</label
@@ -237,7 +242,7 @@
                       class="btn btn-primary btn-save-data"
                       id="btn-guardar"
                     >
-                      Guardar
+                      <i class="fas fa-save"></i> Guardar
                     </button>
                     <button class="btn btn-primary" id="btn-editar">
                       <i class="fa-solid fa-pen"></i> Editar
@@ -246,8 +251,6 @@
                       type="button"
                       class="btn btn-danger"
                       id="btn-eliminar"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmarEliminar"
                     >
                       <i class="fa-solid fa-trash"></i> Eliminar
                     </button>
@@ -257,6 +260,7 @@
                   </div>
                 </form>
               </div>
+              <!-- Formulario de Red -->
               <div id="formRed" class="formulario">
                 <h2>Configurar Red</h2>
                 <form>
@@ -329,7 +333,7 @@
     <!-- Modal eliminar configuracion -->
     <div
       class="modal fade"
-      id="confirmarEliminar"
+      id="confirmar-eliminar"
       tabindex="-1"
       aria-labelledby="confirmacionModalLabel"
       aria-hidden="true"
@@ -347,7 +351,7 @@
               aria-label="Cerrar"
             ></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body nav-modal-body">
             ¿Estás seguro de que deseas eliminar la configuracion actual?
           </div>
           <div class="modal-footer">
@@ -383,6 +387,8 @@
       {% block content %}{% endblock %}
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"

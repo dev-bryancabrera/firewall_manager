@@ -14,6 +14,7 @@ from models.funciones import (
     delete_automation,
     delete_automation_content,
     delete_community,
+    delete_notification_config,
     delete_notifications,
     delete_vpnclient,
     get_notifications,
@@ -323,6 +324,15 @@ def configurar_rutas(app, login_manager_app):
             return response
         except KeyError as e:
             return f"No se proporcionó el campo {e} en la solicitud POST."
+
+    @app.route("/delete_notifications_mail", methods=["DELETE"])
+    def delete_notifications_mail():
+        try:
+            print("llego")
+            response = delete_notification_config()
+            return response
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     # Definir apertura de conexiones
     @app.route("/add_rule", methods=["POST"])

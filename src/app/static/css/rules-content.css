@@ -215,12 +215,12 @@ h2 {
   margin-bottom: 35px;
 }
 
-.modal-dialog {
+.modal-content-rules {
   max-width: 550px !important;
   margin: 1.75rem auto !important;
 }
 
-.modal-content {
+.modal-content-rules .modal-content {
   background: rgb(255, 255, 255) !important;
   width: 100% !important;
   max-width: 850px !important;

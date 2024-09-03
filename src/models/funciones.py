@@ -1863,6 +1863,27 @@ def update_notification_sender(email_sender, email_password, email_receiver):
         return jsonify({"error": f"Ocurrió un error al configurar msmtp: {e}"})
 
 
+def delete_notification_config():
+    try:
+        email_config_path = os.path.expanduser("~/.email_config")
+
+        # Verificar si el archivo existe antes de eliminar
+        if os.path.exists(email_config_path):
+            os.remove(email_config_path)
+            return jsonify(
+                {
+                    "message": "El envio de notificaciones por email ha sido eliminado correctamente."
+                }
+            )
+        else:
+            return jsonify({"message": "El archivo de configuración no existe."})
+
+    except Exception as e:
+        return jsonify(
+            {"error": f"Ocurrió un error al eliminar el archivo de configuración: {e}"}
+        )
+
+
 def mark_read_notification(id_notification):
     try:
         modelNotification.updateNotification(id_notification)

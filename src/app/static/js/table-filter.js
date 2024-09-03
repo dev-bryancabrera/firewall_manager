@@ -19,8 +19,8 @@ $(document).ready(function () {
   var filter_id = $("#filter_number");
 
   // Botones para captura de trafico
-  var btnCaptureModal = $("#btn-capture-modal");
-  var btnCapture = $("#btn-capture");
+  var btnCaptureModal = $(".btn-capture-modal");
+  var btnCapture = $(".btn-capture");
 
   if (sessionStorage.getItem("datosTabla")) {
     btnCaptureModal.css("display", "block");

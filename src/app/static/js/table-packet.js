@@ -488,3 +488,12 @@ $("#btn-clean").on("click", function () {
 window.addEventListener("beforeunload", function (event) {
   console.log("saliendo..");
 });
+
+// Manejo de modales para abrir dos a la vez
+$("#btnLoadReport").click(function () {
+  $("#loadReport").modal("show");
+});
+
+$("#btn_delete_report").click(function () {
+  $("#confirmarEliminar").modal("show");
+});
